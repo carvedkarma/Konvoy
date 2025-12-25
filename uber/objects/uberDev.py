@@ -103,13 +103,25 @@ def appLaunch():
 def driverLocation(address):
 
     print(f'Location Moved to: {address}')
-    driverTasks = appLaunch()
+    driver_data = appLaunch()
+    
+    # Safely extract timestamp
+    if isinstance(driver_data, list):
+        time_stamp = int(time.time() * 1000)
+    else:
+        try:
+            time_stamp = int(driver_data['driverTasks']['meta']['lastModifiedTimeMs'])
+        except (KeyError, TypeError):
+            time_stamp = int(time.time() * 1000)
+
     lat, long = locationTracker(address)
-    time_stamp = int(driverTasks['driverTasks']['meta']['lastModifiedTimeMs'])
     try:
         while True:
-            print(with_ride)
-            if with_ride == 1 or config.stop_signal == 1: break
+            print(f"Ride status: {with_ride}")
+            if with_ride == 1 or config.stop_signal == 1: 
+                config.stop_signal = 0 # Reset for next time
+                break
+                
             json_data = {
                 'data': {
                     'positions': [
@@ -149,6 +161,6 @@ def driverLocation(address):
             print(response.json())
 
             time.sleep(4)
-    except:
-        print("Location Issue!!!")
+    except Exception as e:
+        print(f"Location Issue: {e}")
     return
