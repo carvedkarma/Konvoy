@@ -38,24 +38,24 @@
                     </td>
                     <td class="px-4 py-3 text-sm text-zinc-500">{{ user.email }}</td>
                     <td class="px-4 py-3">
-                        <form action="{{ url_for('update_role', user_id=user.id) }}" method="POST" class="flex items-center space-x-2">
-                            <select name="role_id" class="text-xs bg-white border border-zinc-200 rounded-lg px-2 py-1.5 focus:outline-none">
-                                <optgroup label="System">
-                                    <option value="system_user" {% if user.role == 'user' and not user.role_id %}selected{% endif %}>User</option>
-                                    <option value="system_moderator" {% if user.role == 'moderator' and not user.role_id %}selected{% endif %}>Moderator</option>
-                                    <option value="system_owner" {% if user.role == 'owner' %}selected{% endif %}>Owner</option>
-                                </optgroup>
-                                {% if roles %}
-                                <optgroup label="Custom">
-                                    {% for role in roles %}
-                                    {% if not role.is_system %}
-                                    <option value="{{ role.id }}" {% if user.role_id == role.id %}selected{% endif %}>{{ role.display_name }}</option>
-                                    {% endif %}
-                                    {% endfor %}
-                                </optgroup>
-                                {% endif %}
-                            </select>
-                            <button type="submit" class="px-2 py-1.5 bg-black text-white text-xs rounded-lg hover:bg-zinc-800">Save</button>
+                        <form action="{{ url_for('update_roles', user_id=user.id) }}" method="POST">
+                            <div class="flex flex-wrap gap-1.5 mb-2">
+                                {% for role in roles %}
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="role_ids" value="{{ role.id }}" 
+                                           {% if role in user.roles %}checked{% endif %}
+                                           class="sr-only peer">
+                                    <span class="px-2 py-1 text-[10px] font-medium rounded-full border transition-all
+                                                 peer-checked:{{ role.get_badge_classes() }} 
+                                                 peer-checked:ring-2 peer-checked:ring-offset-1 peer-checked:ring-zinc-400
+                                                 bg-zinc-50 text-zinc-400 border-zinc-200
+                                                 hover:bg-zinc-100">
+                                        {{ role.display_name }}
+                                    </span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <button type="submit" class="px-2 py-1 bg-black text-white text-[10px] rounded-lg hover:bg-zinc-800">Save Roles</button>
                         </form>
                     </td>
                     <td class="px-4 py-3 text-right">

@@ -60,18 +60,30 @@ with app.app_context():
     db.create_all()
     create_default_roles()
     
+    users_without_roles = User.query.filter(~User.roles.any()).all()
+    for user in users_without_roles:
+        role_record = Role.query.filter_by(name=user.role).first()
+        if role_record:
+            user.roles.append(role_record)
+    if users_without_roles:
+        db.session.commit()
+        print(f"Migrated {len(users_without_roles)} users to multi-role system.")
+    
     owner_email = os.environ.get("KONVOY_OWNER_EMAIL")
     owner_password = os.environ.get("KONVOY_OWNER_PASSWORD")
     
     if owner_email and owner_password:
         owner = User.query.filter_by(email=owner_email).first()
         if not owner:
+            owner_role = Role.query.filter_by(name='owner').first()
             owner = User(
                 email=owner_email,
                 username=owner_email.split('@')[0],
                 role='owner'
             )
             owner.set_password(owner_password)
+            if owner_role:
+                owner.roles.append(owner_role)
             db.session.add(owner)
             db.session.commit()
             print("Owner account configured from environment variables.")
@@ -152,37 +164,39 @@ def admin():
     return render_template('admin.html', users=users, roles=roles)
 
 
-@app.route('/admin/update-role/<int:user_id>', methods=['POST'])
+@app.route('/admin/update-roles/<int:user_id>', methods=['POST'])
 @login_required
-def update_role(user_id):
+def update_roles(user_id):
     if not current_user.can_manage_users():
         return jsonify(status="error", message="Access denied"), 403
     
     user = User.query.get_or_404(user_id)
-    role_value = request.form.get('role_id', '')
+    role_ids = request.form.getlist('role_ids')
     
-    if not role_value:
-        flash('No role selected.', 'error')
-        return redirect(url_for('admin'))
-    
-    if role_value.startswith('system_'):
-        system_role = role_value.replace('system_', '')
-        if system_role in ['user', 'moderator', 'owner']:
-            user.role = system_role
-            user.role_id = None
-            db.session.commit()
-            flash(f'Role updated for {user.username}.', 'success')
-    else:
+    new_roles = []
+    for role_id in role_ids:
         try:
-            custom_role_id = int(role_value)
-            custom_role = Role.query.get(custom_role_id)
-            if custom_role:
-                user.role = 'user'
-                user.role_id = custom_role_id
-                db.session.commit()
-                flash(f'Role updated for {user.username} to {custom_role.display_name}.', 'success')
+            role = Role.query.get(int(role_id))
+            if role:
+                new_roles.append(role)
         except (ValueError, TypeError):
-            flash('Invalid role selection.', 'error')
+            pass
+    
+    if not new_roles:
+        default_role = Role.query.filter_by(name='user').first()
+        if default_role:
+            new_roles = [default_role]
+    
+    user.roles = new_roles
+    
+    if new_roles:
+        primary = user.get_primary_role()
+        if primary:
+            user.role = primary.name
+    
+    db.session.commit()
+    role_names = ', '.join([r.display_name for r in new_roles])
+    flash(f'Roles updated for {user.username}: {role_names}', 'success')
     
     return redirect(url_for('admin'))
 
