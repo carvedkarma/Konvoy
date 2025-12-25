@@ -30,10 +30,17 @@ def get_database_url():
             db_url = db_url.replace('postgres://', 'postgresql://', 1)
     return db_url
 
-app.config["SQLALCHEMY_DATABASE_URI"] = get_database_url()
+database_url = get_database_url()
+if not database_url:
+    print("ERROR: DATABASE_URL is not set. Please configure your database.")
+else:
+    print(f"Database configured: {'production (neon)' if 'neon' in database_url else 'development'}")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
+    "connect_args": {"connect_timeout": 10}
 }
 
 db.init_app(app)
