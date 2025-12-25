@@ -234,6 +234,40 @@ def create_role():
     return redirect(url_for('roles'))
 
 
+@app.route('/roles/edit/<int:role_id>', methods=['GET', 'POST'])
+@login_required
+def edit_role(role_id):
+    if not current_user.is_owner():
+        flash('Access denied. Owner privileges required.', 'error')
+        return redirect(url_for('root'))
+    
+    role = Role.query.get_or_404(role_id)
+    
+    if request.method == 'POST':
+        display_name = request.form.get('display_name', '').strip()
+        color = request.form.get('color', 'gray')
+        
+        if not display_name:
+            flash('Display name is required.', 'error')
+            return redirect(url_for('edit_role', role_id=role_id))
+        
+        role.display_name = display_name
+        role.color = color
+        
+        if not role.is_system:
+            role.can_change_location = request.form.get('can_change_location') == '1'
+            role.can_fetch_ride = request.form.get('can_fetch_ride') == '1'
+            role.can_access_admin = request.form.get('can_access_admin') == '1'
+            role.can_manage_users = request.form.get('can_manage_users') == '1'
+            role.can_manage_roles = request.form.get('can_manage_roles') == '1'
+        
+        db.session.commit()
+        flash(f'Role "{display_name}" updated successfully!', 'success')
+        return redirect(url_for('roles'))
+    
+    return render_template('edit_role.html', role=role)
+
+
 @app.route('/roles/delete/<int:role_id>', methods=['POST'])
 @login_required
 def delete_role(role_id):

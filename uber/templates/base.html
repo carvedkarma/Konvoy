@@ -76,7 +76,7 @@
                         <div class="dropdown-menu absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-zinc-100 py-1">
                             <div class="px-3 py-2 border-b border-zinc-100">
                                 <p class="text-sm font-medium text-zinc-900">{{ current_user.get_display_name() }}</p>
-                                <p class="text-xs text-zinc-400">{{ current_user.get_role_display() }}</p>
+                                <span class="inline-block mt-1 px-2 py-0.5 text-[10px] font-medium rounded-full border {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
                             </div>
                             <a href="{{ url_for('profile') }}" class="block px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50">Profile</a>
                             <a href="{{ url_for('logout') }}" class="block px-3 py-2 text-sm text-red-500 hover:bg-red-50">Sign Out</a>

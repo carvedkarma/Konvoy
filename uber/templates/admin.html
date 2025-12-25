@@ -28,7 +28,10 @@
                                 {{ user.get_initials() }}
                             </div>
                             <div>
-                                <span class="text-sm font-medium text-zinc-900">{{ user.get_display_name() }}</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm font-medium text-zinc-900">{{ user.get_display_name() }}</span>
+                                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full border {{ user.get_role_badge_classes() }}">{{ user.get_role_display() }}</span>
+                                </div>
                                 <p class="text-xs text-zinc-400">@{{ user.username }}</p>
                             </div>
                         </div>

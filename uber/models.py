@@ -30,6 +30,21 @@ class Role(db.Model):
     
     users = db.relationship('User', backref='role_obj', lazy=True)
     
+    def get_badge_classes(self):
+        color_map = {
+            'gray': 'bg-zinc-100 text-zinc-600 border-zinc-200',
+            'red': 'bg-red-100 text-red-600 border-red-200',
+            'orange': 'bg-orange-100 text-orange-600 border-orange-200',
+            'yellow': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+            'green': 'bg-green-100 text-green-600 border-green-200',
+            'teal': 'bg-teal-100 text-teal-600 border-teal-200',
+            'blue': 'bg-blue-100 text-blue-600 border-blue-200',
+            'indigo': 'bg-indigo-100 text-indigo-600 border-indigo-200',
+            'purple': 'bg-purple-100 text-purple-600 border-purple-200',
+            'pink': 'bg-pink-100 text-pink-600 border-pink-200',
+        }
+        return color_map.get(self.color, color_map['gray'])
+    
     def __repr__(self):
         return f'<Role {self.name}>'
 
@@ -94,6 +109,22 @@ class User(UserMixin, db.Model):
         if self.role == self.ROLE_MODERATOR:
             return 'blue'
         return 'gray'
+    
+    def get_role_badge_classes(self):
+        color_map = {
+            'gray': 'bg-zinc-100 text-zinc-600 border-zinc-200',
+            'red': 'bg-red-100 text-red-600 border-red-200',
+            'orange': 'bg-orange-100 text-orange-600 border-orange-200',
+            'yellow': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+            'green': 'bg-green-100 text-green-600 border-green-200',
+            'teal': 'bg-teal-100 text-teal-600 border-teal-200',
+            'blue': 'bg-blue-100 text-blue-600 border-blue-200',
+            'indigo': 'bg-indigo-100 text-indigo-600 border-indigo-200',
+            'purple': 'bg-purple-100 text-purple-600 border-purple-200',
+            'pink': 'bg-pink-100 text-pink-600 border-pink-200',
+        }
+        color = self.get_role_color()
+        return color_map.get(color, color_map['gray'])
     
     def get_display_name(self):
         if self.first_name and self.last_name:

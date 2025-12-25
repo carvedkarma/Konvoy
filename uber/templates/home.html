@@ -7,7 +7,8 @@
     <div class="w-full max-w-sm">
         <div class="text-center mb-6">
             <h1 class="text-2xl font-bold text-zinc-900">Welcome back, {{ current_user.get_display_name() }}</h1>
-            <p class="text-sm text-zinc-500 mt-1">What would you like to do?</p>
+            <span class="inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full border {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
+            <p class="text-sm text-zinc-500 mt-2">What would you like to do?</p>
         </div>
 
         <div class="glass-panel p-5 rounded-xl premium-shadow space-y-3">
