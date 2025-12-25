@@ -1,188 +1,155 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Konvoy | Premium</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-        }
-        .premium-shadow {
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-        }
-        .pulsate-core {
-            animation: pulse-core 2s infinite ease-in-out;
-        }
-        .pulsate-ring {
-            animation: pulse-ring 2s infinite ease-out;
-        }
-        @keyframes pulse-core {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.9; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes pulse-ring {
-            0% { transform: scale(1); opacity: 0.5; }
-            100% { transform: scale(1.6); opacity: 0; }
-        }
-        .gradient-bg {
-            background: radial-gradient(circle at top right, #ffffff 0%, #f3f4f6 100%);
-        }
-        .shake {
-            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-1px, 0, 0); }
-            20%, 80% { transform: translate3d(2px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-            40%, 60% { transform: translate3d(4px, 0, 0); }
-        }
-        .input-error {
-            border-color: #ef4444 !important;
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
-        }
-    </style>
-</head>
-<body class="gradient-bg min-h-screen flex flex-col">
-    <!-- Sophisticated Header -->
-    <nav class="p-8">
-        <div class="max-w-7xl mx-auto flex justify-center items-center">
-            <h1 class="text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-black via-zinc-600 to-black hover:scale-105 transition-transform cursor-default">Konvoy</h1>
-        </div>
-    </nav>
+{% extends "base.html" %}
 
-    <!-- Main Experience Area -->
-    <main class="flex-grow flex items-center justify-center px-4 -mt-20">
-        <div id="container" class="w-full max-w-sm transition-all duration-700 ease-in-out">
+{% block title %}Konvoy | Change Location{% endblock %}
+
+{% block extra_styles %}
+.pulsate-core {
+    animation: pulse-core 2s infinite ease-in-out;
+}
+.pulsate-ring {
+    animation: pulse-ring 2s infinite ease-out;
+}
+@keyframes pulse-core {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+    100% { transform: scale(1); opacity: 1; }
+}
+@keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+.shake {
+    animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+.input-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
+}
+{% endblock %}
+
+{% block content %}
+<div class="gradient-bg min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-12">
+    <div id="container" class="w-full max-w-sm transition-all duration-700 ease-in-out">
+        
+        <div id="searchState" class="glass-panel p-6 rounded-3xl premium-shadow">
+            <h2 class="text-2xl font-extrabold mb-1 text-gray-900 tracking-tight leading-tight">Always the ride you want.</h2>
+            <p class="text-gray-500 mb-6 text-base font-medium">Get a premium experience in seconds.</p>
             
-            <!-- Elegant Search Interface -->
-            <div id="searchState" class="glass-panel p-6 rounded-[2rem] premium-shadow">
-                <h2 class="text-2xl font-extrabold mb-1 text-gray-900 tracking-tight leading-tight">Always the ride you want.</h2>
-                <p class="text-gray-500 mb-6 text-base font-medium">Get a premium experience in seconds.</p>
-                
-                <div class="space-y-6">
-                    <div class="relative group">
-                        <div class="absolute left-5 top-1/2 -translate-y-1/2 text-black opacity-50">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                        </div>
-                        <input type="text" id="destinationInput" 
-                            class="w-full p-4 pl-12 bg-white border-2 border-gray-50 rounded-xl text-lg font-semibold placeholder:text-gray-300 focus:outline-none focus:border-black transition-all"
-                            placeholder="Where to?">
+            <div class="space-y-6">
+                <div class="relative group">
+                    <div class="absolute left-5 top-1/2 -translate-y-1/2 text-purple-500 opacity-70">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
                     </div>
-                    
-                    <button id="searchBtn" 
-                        class="w-full bg-black text-white py-4 rounded-xl font-bold text-xl hover:bg-zinc-800 transition-all active:scale-[0.98] shadow-2xl shadow-black/20">
-                        Change Location
-                    </button>
-                </div>
-            </div>
-
-            <!-- Immersive Pulsing State -->
-            <div id="pulsingState" class="hidden flex flex-col items-center justify-center">
-                <div class="relative flex items-center justify-center">
-                    <div class="pulsate-ring absolute w-32 h-32 bg-black rounded-full opacity-20"></div>
-                    <div class="pulsate-ring absolute w-48 h-48 bg-black rounded-full opacity-10" style="animation-delay: 0.5s"></div>
-                    <div class="pulsate-ring absolute w-64 h-64 bg-black rounded-full opacity-5" style="animation-delay: 1s"></div>
-                    
-                    <button id="stopBtn" 
-                        class="pulsate-core relative z-10 w-32 h-32 bg-black text-white rounded-full font-bold text-xl shadow-2xl flex items-center justify-center border-[4px] border-white active:scale-95 transition-transform uppercase tracking-widest">
-                        Cancel
-                    </button>
+                    <input type="text" id="destinationInput" 
+                        class="w-full p-4 pl-12 bg-white border-2 border-gray-100 rounded-xl text-lg font-semibold placeholder:text-gray-300 focus:outline-none focus:border-purple-500 transition-all"
+                        placeholder="Where to?">
                 </div>
                 
-                <div class="mt-12 text-center">
-                    <h3 class="text-2xl font-extrabold text-gray-900 mb-3 tracking-tight">Securing your ride</h3>
-                    <div class="flex items-center justify-center space-x-3">
-                        <span class="w-2 h-2 bg-black rounded-full animate-bounce"></span>
-                        <span class="w-2 h-2 bg-black rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
-                        <span class="w-2 h-2 bg-black rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
-                    </div>
-                    <p class="mt-8 text-xs font-black tracking-[0.4em] text-gray-400 uppercase opacity-60">Connecting to global network</p>
-                </div>
+                <button id="searchBtn" 
+                    class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-xl hover:from-purple-700 hover:to-pink-700 transition-all active:scale-[0.98] shadow-lg">
+                    Change Location
+                </button>
             </div>
         </div>
-    </main>
 
-    <!-- Subtle Footer Info -->
-    <footer class="p-12 text-center text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
-        &copy; 2025 Konvoy Technologies Inc. All Rights Reserved.
-    </footer>
-
-    <script>
-        const searchState = document.getElementById('searchState');
-        const pulsingState = document.getElementById('pulsingState');
-        const container = document.getElementById('container');
-        const searchBtn = document.getElementById('searchBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const destinationInput = document.getElementById('destinationInput');
-
-        searchBtn.addEventListener('click', async () => {
-            const destination = destinationInput.value.trim();
-            
-            if (!destination) {
-                destinationInput.classList.add('input-error', 'shake');
-                setTimeout(() => {
-                    destinationInput.classList.remove('shake');
-                }, 400);
-                return;
-            }
-            
-            destinationInput.classList.remove('input-error');
-
-            // Smooth transition
-            container.style.opacity = '0';
-            container.style.transform = 'scale(0.95)';
-            
-            setTimeout(async () => {
-                searchState.classList.add('hidden');
-                pulsingState.classList.remove('hidden');
-                container.style.opacity = '1';
-                container.style.transform = 'scale(1)';
+        <div id="pulsingState" class="hidden flex flex-col items-center justify-center py-12">
+            <div class="relative flex items-center justify-center">
+                <div class="pulsate-ring absolute w-32 h-32 bg-purple-500 rounded-full opacity-20"></div>
+                <div class="pulsate-ring absolute w-48 h-48 bg-purple-500 rounded-full opacity-10" style="animation-delay: 0.5s"></div>
+                <div class="pulsate-ring absolute w-64 h-64 bg-purple-500 rounded-full opacity-5" style="animation-delay: 1s"></div>
                 
-                try {
-                    await fetch('/submit', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: `destination=${encodeURIComponent(destination)}`
-                    });
-                } catch (e) { console.error(e); }
-            }, 300);
-        });
-
-        stopBtn.addEventListener('click', async () => {
-            container.style.opacity = '0';
-            container.style.transform = 'scale(1.05)';
+                <button id="stopBtn" 
+                    class="pulsate-core relative z-10 w-32 h-32 bg-gradient-to-br from-purple-600 to-pink-600 text-white rounded-full font-bold text-xl shadow-2xl flex items-center justify-center border-4 border-white active:scale-95 transition-transform uppercase tracking-widest">
+                    Cancel
+                </button>
+            </div>
             
-            setTimeout(async () => {
-                try {
-                    await fetch('/stop', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                    });
-                } catch (e) { console.error(e); }
+            <div class="mt-12 text-center">
+                <h3 class="text-2xl font-extrabold text-white mb-3 tracking-tight">Securing your ride</h3>
+                <div class="flex items-center justify-center space-x-3">
+                    <span class="w-2 h-2 bg-white rounded-full animate-bounce"></span>
+                    <span class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+                    <span class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
+                </div>
+                <p class="mt-8 text-xs font-black tracking-[0.4em] text-white/60 uppercase">Connecting to global network</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-                pulsingState.classList.add('hidden');
-                searchState.classList.remove('hidden');
-                destinationInput.value = '';
-                container.style.opacity = '1';
-                container.style.transform = 'scale(1)';
-            }, 300);
-        });
+{% block extra_scripts %}
+<script>
+    const searchState = document.getElementById('searchState');
+    const pulsingState = document.getElementById('pulsingState');
+    const container = document.getElementById('container');
+    const searchBtn = document.getElementById('searchBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const destinationInput = document.getElementById('destinationInput');
 
-        // Clear error style on input
-        destinationInput.addEventListener('input', () => {
-            destinationInput.classList.remove('input-error');
-        });
-    </script>
-</body>
-</html>
+    searchBtn.addEventListener('click', async () => {
+        const destination = destinationInput.value.trim();
+        
+        if (!destination) {
+            destinationInput.classList.add('input-error', 'shake');
+            setTimeout(() => {
+                destinationInput.classList.remove('shake');
+            }, 400);
+            return;
+        }
+        
+        destinationInput.classList.remove('input-error');
+
+        container.style.opacity = '0';
+        container.style.transform = 'scale(0.95)';
+        
+        setTimeout(async () => {
+            searchState.classList.add('hidden');
+            pulsingState.classList.remove('hidden');
+            container.style.opacity = '1';
+            container.style.transform = 'scale(1)';
+            
+            try {
+                await fetch('/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `destination=${encodeURIComponent(destination)}`
+                });
+            } catch (e) { console.error(e); }
+        }, 300);
+    });
+
+    stopBtn.addEventListener('click', async () => {
+        container.style.opacity = '0';
+        container.style.transform = 'scale(1.05)';
+        
+        setTimeout(async () => {
+            try {
+                await fetch('/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+            } catch (e) { console.error(e); }
+
+            pulsingState.classList.add('hidden');
+            searchState.classList.remove('hidden');
+            destinationInput.value = '';
+            container.style.opacity = '1';
+            container.style.transform = 'scale(1)';
+        }, 300);
+    });
+
+    destinationInput.addEventListener('input', () => {
+        destinationInput.classList.remove('input-error');
+    });
+</script>
+{% endblock %}

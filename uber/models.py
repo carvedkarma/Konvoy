@@ -12,6 +12,28 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 
 
+class Role(db.Model):
+    __tablename__ = 'roles'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    display_name = db.Column(db.String(100), nullable=False)
+    color = db.Column(db.String(20), default='gray')
+    is_system = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    can_change_location = db.Column(db.Boolean, default=False)
+    can_fetch_ride = db.Column(db.Boolean, default=False)
+    can_access_admin = db.Column(db.Boolean, default=False)
+    can_manage_roles = db.Column(db.Boolean, default=False)
+    can_manage_users = db.Column(db.Boolean, default=False)
+    
+    users = db.relationship('User', backref='role_obj', lazy=True)
+    
+    def __repr__(self):
+        return f'<Role {self.name}>'
+
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
@@ -20,6 +42,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default='user', nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
@@ -43,5 +66,76 @@ class User(UserMixin, db.Model):
     def can_manage_users(self):
         return self.role == self.ROLE_OWNER
     
+    def has_permission(self, permission):
+        if self.role == self.ROLE_OWNER:
+            return True
+        if self.role_obj:
+            return getattr(self.role_obj, permission, False)
+        if self.role == self.ROLE_MODERATOR:
+            return permission in ['can_change_location', 'can_fetch_ride']
+        if self.role == self.ROLE_USER:
+            return permission in ['can_change_location', 'can_fetch_ride']
+        return False
+    
+    def get_role_display(self):
+        if self.role_obj:
+            return self.role_obj.display_name
+        return self.role.title()
+    
+    def get_role_color(self):
+        if self.role == self.ROLE_OWNER:
+            return 'yellow'
+        if self.role_obj:
+            return self.role_obj.color
+        if self.role == self.ROLE_MODERATOR:
+            return 'blue'
+        return 'gray'
+    
     def __repr__(self):
         return f'<User {self.username}>'
+
+
+def create_default_roles():
+    default_roles = [
+        {
+            'name': 'owner',
+            'display_name': 'Owner',
+            'color': 'yellow',
+            'is_system': True,
+            'can_change_location': True,
+            'can_fetch_ride': True,
+            'can_access_admin': True,
+            'can_manage_roles': True,
+            'can_manage_users': True
+        },
+        {
+            'name': 'moderator',
+            'display_name': 'Moderator',
+            'color': 'blue',
+            'is_system': True,
+            'can_change_location': True,
+            'can_fetch_ride': True,
+            'can_access_admin': True,
+            'can_manage_roles': False,
+            'can_manage_users': False
+        },
+        {
+            'name': 'user',
+            'display_name': 'User',
+            'color': 'gray',
+            'is_system': True,
+            'can_change_location': True,
+            'can_fetch_ride': True,
+            'can_access_admin': False,
+            'can_manage_roles': False,
+            'can_manage_users': False
+        }
+    ]
+    
+    for role_data in default_roles:
+        existing = Role.query.filter_by(name=role_data['name']).first()
+        if not existing:
+            role = Role(**role_data)
+            db.session.add(role)
+    
+    db.session.commit()

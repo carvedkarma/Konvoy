@@ -4,7 +4,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from datetime import datetime
 from objects.uberDev import vehicleDetails, appLaunch, driverLocation
 import config
-from models import db, User
+from models import db, User, Role, create_default_roles
 from forms import LoginForm, RegisterForm, RoleForm
 
 app = Flask(__name__)
@@ -37,6 +37,8 @@ def load_user(user_id):
 
 with app.app_context():
     db.create_all()
+    create_default_roles()
+    
     owner_email = os.environ.get("KONVOY_OWNER_EMAIL")
     owner_password = os.environ.get("KONVOY_OWNER_PASSWORD")
     
@@ -123,7 +125,8 @@ def admin():
         return redirect(url_for('root'))
     
     users = User.query.all()
-    return render_template('admin.html', users=users)
+    roles = Role.query.all()
+    return render_template('admin.html', users=users, roles=roles)
 
 
 @app.route('/admin/update-role/<int:user_id>', methods=['POST'])
@@ -133,12 +136,30 @@ def update_role(user_id):
         return jsonify(status="error", message="Access denied"), 403
     
     user = User.query.get_or_404(user_id)
-    new_role = request.form.get('role')
+    role_value = request.form.get('role_id', '')
     
-    if new_role in ['user', 'moderator', 'owner']:
-        user.role = new_role
-        db.session.commit()
-        flash(f'Role updated for {user.username}.', 'success')
+    if not role_value:
+        flash('No role selected.', 'error')
+        return redirect(url_for('admin'))
+    
+    if role_value.startswith('system_'):
+        system_role = role_value.replace('system_', '')
+        if system_role in ['user', 'moderator', 'owner']:
+            user.role = system_role
+            user.role_id = None
+            db.session.commit()
+            flash(f'Role updated for {user.username}.', 'success')
+    else:
+        try:
+            custom_role_id = int(role_value)
+            custom_role = Role.query.get(custom_role_id)
+            if custom_role:
+                user.role = 'user'
+                user.role_id = custom_role_id
+                db.session.commit()
+                flash(f'Role updated for {user.username} to {custom_role.display_name}.', 'success')
+        except (ValueError, TypeError):
+            flash('Invalid role selection.', 'error')
     
     return redirect(url_for('admin'))
 
@@ -161,15 +182,92 @@ def delete_user(user_id):
     return redirect(url_for('admin'))
 
 
+@app.route('/roles')
+@login_required
+def roles():
+    if not current_user.is_owner():
+        flash('Access denied. Owner privileges required.', 'error')
+        return redirect(url_for('root'))
+    
+    all_roles = Role.query.order_by(Role.is_system.desc(), Role.created_at.asc()).all()
+    return render_template('roles.html', roles=all_roles)
+
+
+@app.route('/roles/create', methods=['POST'])
+@login_required
+def create_role():
+    if not current_user.is_owner():
+        flash('Access denied. Owner privileges required.', 'error')
+        return redirect(url_for('root'))
+    
+    name = request.form.get('name', '').lower().strip().replace(' ', '_')
+    display_name = request.form.get('display_name', '').strip()
+    color = request.form.get('color', 'gray')
+    
+    if not name or not display_name:
+        flash('Role name and display name are required.', 'error')
+        return redirect(url_for('roles'))
+    
+    existing = Role.query.filter_by(name=name).first()
+    if existing:
+        flash(f'A role with name "{name}" already exists.', 'error')
+        return redirect(url_for('roles'))
+    
+    role = Role(
+        name=name,
+        display_name=display_name,
+        color=color,
+        is_system=False,
+        can_change_location=request.form.get('can_change_location') == '1',
+        can_fetch_ride=request.form.get('can_fetch_ride') == '1',
+        can_access_admin=request.form.get('can_access_admin') == '1',
+        can_manage_users=request.form.get('can_manage_users') == '1',
+        can_manage_roles=request.form.get('can_manage_roles') == '1'
+    )
+    
+    db.session.add(role)
+    db.session.commit()
+    flash(f'Role "{display_name}" created successfully!', 'success')
+    return redirect(url_for('roles'))
+
+
+@app.route('/roles/delete/<int:role_id>', methods=['POST'])
+@login_required
+def delete_role(role_id):
+    if not current_user.is_owner():
+        flash('Access denied. Owner privileges required.', 'error')
+        return redirect(url_for('root'))
+    
+    role = Role.query.get_or_404(role_id)
+    
+    if role.is_system:
+        flash('System roles cannot be deleted.', 'error')
+        return redirect(url_for('roles'))
+    
+    User.query.filter_by(role_id=role_id).update({'role_id': None, 'role': 'user'})
+    
+    db.session.delete(role)
+    db.session.commit()
+    flash(f'Role "{role.display_name}" has been deleted.', 'success')
+    return redirect(url_for('roles'))
+
+
 @app.route('/change-location')
 @login_required
 def home():
+    if not current_user.has_permission('can_change_location'):
+        flash('You do not have permission to access this page.', 'error')
+        return redirect(url_for('root'))
     return render_template('index.html')
 
 
 @app.route('/fetch-ride')
 @login_required
 def fetch_ride():
+    if not current_user.has_permission('can_fetch_ride'):
+        flash('You do not have permission to access this page.', 'error')
+        return redirect(url_for('root'))
+    
     if config.ride_signal == 1:
         ride_data = appLaunch()
         return render_template('ride_details.html', ride_data=ride_data)
