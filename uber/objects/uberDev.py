@@ -103,70 +103,59 @@ def appLaunch():
 def driverLocation(address):
 
     print(f'Location Moved to: {address}')
-    driver_data = appLaunch()
-    
-    # Safely extract timestamp
-    if isinstance(driver_data, list):
-        time_stamp = int(time.time() * 1000)
-    else:
-        try:
-            time_stamp = int(driver_data['driverTasks']['meta']['lastModifiedTimeMs'])
-        except (KeyError, TypeError):
-            time_stamp = int(time.time() * 1000)
-
+    driverTasks = appLaunch()
     lat, long = locationTracker(address)
-    try:
-        while True:
-            # Check for stop signal at the start of each iteration
-            if config.stop_signal == 1: 
-                print("Stop signal detected. Breaking driverLocation loop.")
-                config.stop_signal = 0 # Reset for next time
-                break
-                
-            if with_ride == 1: 
-                print("Ride in progress. Breaking driverLocation loop.")
-                break
+    time_stamp = int(driverTasks['driverTasks']['meta']['lastModifiedTimeMs'])
+    # try:
+    while True:
+        # Check for stop signal at the start of each iteration
+        if config.stop_signal == 1:
+            print("Stop signal detected. Breaking driverLocation loop.")
+            config.stop_signal = 0  # Reset for next time
+            break
 
-            json_data = {
-                'data': {
-                    'positions': [
-                        {
-                            'positionNavigationData': {
-                                'location': {
-                                    'allTimestamps': [
-                                        {
-                                            'ts': time_stamp,
-                                        },
-                                    ],
-                                    'latitude': float(lat),
-                                    'speed': -1,
-                                    'course': -1,
-                                    'horizontalAccuracy': 8.17965569028195,
-                                    'provider': 'ios_core',
-                                    'verticalAccuracy': 30,
-                                    'altitude': 30.969567390469884,
-                                    'bestTimestamp': {
+        if with_ride == 1:
+            print("Ride in progress. Breaking driverLocation loop.")
+            break
+        json_data = {
+            'data': {
+                'positions': [
+                    {
+                        'positionNavigationData': {
+                            'location': {
+                                'allTimestamps': [
+                                    {
                                         'ts': time_stamp,
                                     },
-                                    'longitude': float(long),
+                                ],
+                                'latitude': float(lat),
+                                'speed': -1,
+                                'course': -1,
+                                'horizontalAccuracy': 8.17965569028195,
+                                'provider': 'ios_core',
+                                'verticalAccuracy': 30,
+                                'altitude': 30.969567390469884,
+                                'bestTimestamp': {
+                                    'ts': time_stamp,
                                 },
+                                'longitude': float(long),
                             },
                         },
-                    ],
-                },
-            }
-            headers['authorization'] = 'Bearer ' + refreshToken()
-            response = requests.post(
-                'https://cn-geo1.uber.com/rt/locations/v1/upload-driver-device-locations',
-                cookies=cookies,
-                headers=headers,
-                json=json_data,
-            )
-            time_stamp += 4000
-            print(response.json())
+                    },
+                ],
+            },
+        }
+        headers['authorization'] = 'Bearer ' + refreshToken()
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/locations/v1/upload-driver-device-locations',
+            cookies=cookies,
+            headers=headers,
+            json=json_data,
+        )
+        time_stamp += 4000
+        print(response.json())
 
-            # Small delay to prevent tight loop, though requests take time
-            time.sleep(4)
-    except Exception as e:
-        print(f"Location Issue: {e}")
+        time.sleep(4)
+    # except:
+    #     print("Location Issue!!!")
     return
