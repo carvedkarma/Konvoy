@@ -18,7 +18,7 @@ Preferred communication style: Simple, everyday language.
 ### Database Layer
 - **PostgreSQL** database accessed via SQLAlchemy ORM
 - Uses Flask-SQLAlchemy with a custom DeclarativeBase for model definitions
-- Tables: `users` (authentication), `roles` (custom permissions)
+- Tables: `users` (authentication), `roles` (custom permissions), `user_roles` (many-to-many association)
 - Connection pooling configured with `pool_recycle` and `pool_pre_ping` for reliability
 
 ### Authentication System
@@ -31,6 +31,8 @@ Preferred communication style: Simple, everyday language.
 ### Role & Permission System
 - **System Roles**: User, Moderator, Owner (built-in)
 - **Custom Roles**: Created by owners with specific permissions
+- **Multi-Role Support**: Users can have multiple roles assigned via `user_roles` association table
+- **Permission Aggregation**: Permissions are combined from all assigned roles (if any role grants a permission, user has it)
 - **Permissions**:
   - `can_change_location`: Access to location change feature
   - `can_fetch_ride`: Access to fetch ride feature
@@ -38,6 +40,7 @@ Preferred communication style: Simple, everyday language.
   - `can_manage_users`: Ability to manage user accounts
   - `can_manage_roles`: Ability to create/delete custom roles
 - **Owner**: Full control including role management page
+- **Locked UI States**: Users see all features but without permission see lock icons and locked panels
 
 ### Uber API Integration
 - Custom API client in `objects/uberDev.py` interacts with Uber's internal endpoints
