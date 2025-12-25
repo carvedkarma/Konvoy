@@ -48,6 +48,12 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 
 
+user_roles = db.Table('user_roles',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True)
+)
+
+
 class Role(db.Model):
     __tablename__ = 'roles'
     
@@ -64,7 +70,7 @@ class Role(db.Model):
     can_manage_roles = db.Column(db.Boolean, default=False)
     can_manage_users = db.Column(db.Boolean, default=False)
     
-    users = db.relationship('User', backref='role_obj', lazy=True)
+    users = db.relationship('User', secondary=user_roles, back_populates='roles')
     
     def get_badge_classes(self):
         color_map = {
@@ -107,6 +113,8 @@ class User(UserMixin, db.Model):
     uber_refresh_token = db.Column(db.Text, nullable=True)
     uber_connected = db.Column(db.Boolean, default=False)
     
+    roles = db.relationship('Role', secondary=user_roles, back_populates='users')
+    
     ROLE_USER = 'user'
     ROLE_MODERATOR = 'moderator'
     ROLE_OWNER = 'owner'
@@ -118,38 +126,54 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
     
     def is_owner(self):
+        for role in self.roles:
+            if role.name == self.ROLE_OWNER:
+                return True
         return self.role == self.ROLE_OWNER
     
     def is_moderator(self):
+        for role in self.roles:
+            if role.name in [self.ROLE_MODERATOR, self.ROLE_OWNER]:
+                return True
         return self.role in [self.ROLE_MODERATOR, self.ROLE_OWNER]
     
     def can_manage_users(self):
-        return self.role == self.ROLE_OWNER
+        return self.is_owner()
     
     def has_permission(self, permission):
-        role_record = self.role_obj
-        if not role_record:
-            role_record = Role.query.filter_by(name=self.role).first()
+        for role in self.roles:
+            if getattr(role, permission, False):
+                return True
         
-        if role_record:
-            return getattr(role_record, permission, False)
+        if not self.roles:
+            role_record = Role.query.filter_by(name=self.role).first()
+            if role_record:
+                return getattr(role_record, permission, False)
         
         return False
     
+    def get_primary_role(self):
+        priority = ['owner', 'moderator', 'user']
+        for p in priority:
+            for role in self.roles:
+                if role.name == p:
+                    return role
+        if self.roles:
+            return self.roles[0]
+        return Role.query.filter_by(name=self.role).first()
+    
     def get_role_display(self):
-        role_record = self.role_obj
-        if not role_record:
-            role_record = Role.query.filter_by(name=self.role).first()
-        if role_record:
-            return role_record.display_name
+        if len(self.roles) > 1:
+            return ', '.join([r.display_name for r in self.roles])
+        primary = self.get_primary_role()
+        if primary:
+            return primary.display_name
         return self.role.title()
     
     def get_role_color(self):
-        role_record = self.role_obj
-        if not role_record:
-            role_record = Role.query.filter_by(name=self.role).first()
-        if role_record:
-            return role_record.color
+        primary = self.get_primary_role()
+        if primary:
+            return primary.color
         return 'gray'
     
     def get_role_badge_classes(self):
@@ -167,6 +191,20 @@ class User(UserMixin, db.Model):
         }
         color = self.get_role_color()
         return color_map.get(color, color_map['gray'])
+    
+    def get_all_roles(self):
+        return self.roles
+    
+    def add_role(self, role):
+        if role not in self.roles:
+            self.roles.append(role)
+    
+    def remove_role(self, role):
+        if role in self.roles:
+            self.roles.remove(role)
+    
+    def set_roles(self, role_list):
+        self.roles = role_list
     
     def get_display_name(self):
         if self.first_name and self.last_name:
