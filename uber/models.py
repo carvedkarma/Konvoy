@@ -3,6 +3,42 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import DeclarativeBase
 from datetime import datetime
+import json
+import base64
+import os
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+
+def get_encryption_key():
+    secret = os.environ.get("FLASK_SECRET_KEY", "fallback-secret-key")
+    salt = b'uber_credentials_salt'
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(secret.encode()))
+    return Fernet(key)
+
+
+def encrypt_data(data):
+    if not data:
+        return None
+    fernet = get_encryption_key()
+    return fernet.encrypt(data.encode()).decode()
+
+
+def decrypt_data(encrypted_data):
+    if not encrypted_data:
+        return None
+    try:
+        fernet = get_encryption_key()
+        return fernet.decrypt(encrypted_data.encode()).decode()
+    except:
+        return None
 
 
 class Base(DeclarativeBase):

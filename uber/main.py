@@ -4,7 +4,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from datetime import datetime, timedelta
 from objects.uberDev import vehicleDetails, appLaunch, driverLocation
 import config
-from models import db, User, Role, create_default_roles
+from models import db, User, Role, create_default_roles, encrypt_data, decrypt_data
 from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm
 import secrets
 
@@ -382,6 +382,49 @@ def profile():
     form.username.data = current_user.username
     form.email.data = current_user.email
     return render_template('profile.html', form=form)
+
+
+@app.route('/uber-connect', methods=['GET', 'POST'])
+@login_required
+def uber_connect():
+    if request.method == 'POST':
+        cookies_json = request.form.get('cookies', '').strip()
+        headers_json = request.form.get('headers', '').strip()
+        refresh_token = request.form.get('refresh_token', '').strip()
+        
+        if not cookies_json or not headers_json or not refresh_token:
+            flash('All fields are required.', 'error')
+            return render_template('uber_connect.html')
+        
+        try:
+            import json
+            json.loads(cookies_json)
+            json.loads(headers_json)
+        except json.JSONDecodeError:
+            flash('Invalid JSON format for cookies or headers.', 'error')
+            return render_template('uber_connect.html')
+        
+        current_user.uber_cookies = encrypt_data(cookies_json)
+        current_user.uber_headers = encrypt_data(headers_json)
+        current_user.uber_refresh_token = encrypt_data(refresh_token)
+        current_user.uber_connected = True
+        db.session.commit()
+        flash('Uber account connected successfully!', 'success')
+        return redirect(url_for('root'))
+    
+    return render_template('uber_connect.html')
+
+
+@app.route('/uber-disconnect', methods=['POST'])
+@login_required
+def uber_disconnect():
+    current_user.uber_cookies = None
+    current_user.uber_headers = None
+    current_user.uber_refresh_token = None
+    current_user.uber_connected = False
+    db.session.commit()
+    flash('Uber account disconnected.', 'success')
+    return redirect(url_for('profile'))
 
 
 @app.route('/change-password', methods=['GET', 'POST'])
