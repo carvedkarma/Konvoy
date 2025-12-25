@@ -205,6 +205,50 @@ def delete_user(user_id):
     return redirect(url_for('admin'))
 
 
+@app.route('/admin/edit-user/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id):
+    if not current_user.can_manage_users():
+        flash('Access denied.', 'error')
+        return redirect(url_for('root'))
+    
+    user = User.query.get_or_404(user_id)
+    all_roles = Role.query.filter_by(is_system=False).all()
+    
+    if request.method == 'POST':
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        
+        if email != user.email:
+            existing = User.query.filter_by(email=email).first()
+            if existing:
+                flash('Email already in use.', 'error')
+                return render_template('edit_user.html', user=user, roles=all_roles)
+        
+        if username != user.username:
+            existing = User.query.filter_by(username=username).first()
+            if existing:
+                flash('Username already taken.', 'error')
+                return render_template('edit_user.html', user=user, roles=all_roles)
+        
+        user.first_name = first_name
+        user.last_name = last_name
+        user.username = username
+        user.email = email
+        
+        new_password = request.form.get('new_password', '').strip()
+        if new_password:
+            user.set_password(new_password)
+        
+        db.session.commit()
+        flash(f'User {user.username} updated successfully.', 'success')
+        return redirect(url_for('admin'))
+    
+    return render_template('edit_user.html', user=user, roles=all_roles)
+
+
 @app.route('/roles')
 @login_required
 def roles():

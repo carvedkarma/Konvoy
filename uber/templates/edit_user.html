@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Konvoy | Edit User{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-8">
+    <div class="mb-5">
+        <a href="{{ url_for('admin') }}" class="text-xs text-zinc-400 hover:text-zinc-600 flex items-center mb-2">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Back to Users
+        </a>
+        <h1 class="text-xl font-bold text-zinc-900">Edit User</h1>
+        <p class="text-sm text-zinc-500">Modify user account details</p>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6 premium-shadow">
+        <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-600 font-semibold mr-4">
+                {{ user.get_initials() }}
+            </div>
+            <div>
+                <span class="text-sm font-medium text-zinc-900">{{ user.get_display_name() }}</span>
+                <div class="flex items-center space-x-2 mt-1">
+                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full border {{ user.get_role_badge_classes() }}">{{ user.get_role_display() }}</span>
+                    <span class="text-xs text-zinc-400">@{{ user.username }}</span>
+                </div>
+            </div>
+        </div>
+
+        <form action="{{ url_for('edit_user', user_id=user.id) }}" method="POST" class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-zinc-500 mb-1">First Name</label>
+                    <input type="text" name="first_name" value="{{ user.first_name or '' }}" 
+                        class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-zinc-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-zinc-500 mb-1">Last Name</label>
+                    <input type="text" name="last_name" value="{{ user.last_name or '' }}" 
+                        class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-zinc-400">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-zinc-500 mb-1">Username</label>
+                <input type="text" name="username" value="{{ user.username }}" required 
+                    class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-zinc-400">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-zinc-500 mb-1">Email</label>
+                <input type="email" name="email" value="{{ user.email }}" required 
+                    class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-zinc-400">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-zinc-500 mb-1">New Password</label>
+                <input type="password" name="new_password" placeholder="Leave blank to keep current" 
+                    class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-zinc-400">
+                <p class="text-xs text-zinc-400 mt-1">Only fill if you want to reset the password</p>
+            </div>
+
+            <div class="p-3 bg-zinc-50 rounded-lg">
+                <p class="text-xs text-zinc-500">Member since {{ user.created_at.strftime('%b %d, %Y') }}</p>
+                {% if user.last_login %}
+                <p class="text-xs text-zinc-400">Last login: {{ user.last_login.strftime('%b %d, %Y at %I:%M %p') }}</p>
+                {% endif %}
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" class="w-full bg-black text-white py-2.5 rounded-lg font-medium text-sm hover:bg-zinc-800 transition-colors">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
