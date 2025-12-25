@@ -1,83 +1,68 @@
 {% extends "base.html" %}
 
-{% block title %}Konvoy | User Authority{% endblock %}
+{% block title %}Konvoy | Users{% endblock %}
 
 {% block content %}
-<div class="gradient-bg min-h-screen py-16 px-4">
-    <div class="max-w-7xl mx-auto">
-        <div class="mb-12 text-center">
-            <h1 class="text-5xl font-black text-white tracking-tighter uppercase mb-3">User Control</h1>
-            <p class="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em]">Authorize personnel access levels</p>
-        </div>
+<div class="max-w-5xl mx-auto px-4 py-6">
+    <div class="mb-5">
+        <h1 class="text-xl font-bold text-zinc-900">User Management</h1>
+        <p class="text-sm text-zinc-500">Manage accounts and roles</p>
+    </div>
 
-        <div class="glass-panel rounded-3xl premium-shadow overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="border-b border-white/5">
-                            <th class="px-8 py-6 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Personnel</th>
-                            <th class="px-8 py-6 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Identifiers</th>
-                            <th class="px-8 py-6 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Authority Protocol</th>
-                            <th class="px-8 py-6 text-right text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-white/5">
-                        {% for user in users %}
-                        <tr class="hover:bg-white/[0.02] transition-colors">
-                            <td class="px-8 py-6">
-                                <div class="flex items-center space-x-4">
-                                    <div class="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center text-white text-xs font-black">
-                                        {{ user.username[0]|upper }}
-                                    </div>
-                                    <div>
-                                        <p class="text-[11px] font-black text-white uppercase tracking-widest">{{ user.username }}</p>
-                                        <p class="text-[9px] font-bold text-white/30 uppercase tracking-widest mt-1">Personnel #{{ user.id }}</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-8 py-6">
-                                <p class="text-[11px] font-bold text-white/60 tracking-wider">{{ user.email }}</p>
-                            </td>
-                            <td class="px-8 py-6">
-                                <form action="{{ url_for('update_role', user_id=user.id) }}" method="POST" class="flex items-center space-x-3">
-                                    <select name="role_id" class="text-[10px] font-black uppercase tracking-widest bg-zinc-900 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-white transition-all appearance-none cursor-pointer">
-                                        <optgroup label="System Protocols" class="bg-black">
-                                            <option value="system_user" {% if user.role == 'user' and not user.role_id %}selected{% endif %}>User</option>
-                                            <option value="system_moderator" {% if user.role == 'moderator' and not user.role_id %}selected{% endif %}>Moderator</option>
-                                            <option value="system_owner" {% if user.role == 'owner' %}selected{% endif %}>Owner</option>
-                                        </optgroup>
-                                        {% if roles %}
-                                        <optgroup label="Custom Protocols" class="bg-black">
-                                            {% for role in roles %}
-                                            {% if not role.is_system %}
-                                            <option value="{{ role.id }}" {% if user.role_id == role.id %}selected{% endif %}>{{ role.display_name }}</option>
-                                            {% endif %}
-                                            {% endfor %}
-                                        </optgroup>
-                                        {% endif %}
-                                    </select>
-                                    <button type="submit" class="px-4 py-2.5 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-zinc-200 transition-all">
-                                        Update
-                                    </button>
-                                </form>
-                            </td>
-                            <td class="px-8 py-6 text-right">
-                                {% if user.id != current_user.id %}
-                                <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('Terminate this access?')">
-                                    <button type="submit" class="text-white/20 hover:text-red-400 transition-colors p-2">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
-                                </form>
+    <div class="glass-panel rounded-xl premium-shadow overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-zinc-50 border-b border-zinc-100">
+                <tr>
+                    <th class="px-4 py-3 text-xs font-medium text-zinc-500">User</th>
+                    <th class="px-4 py-3 text-xs font-medium text-zinc-500">Email</th>
+                    <th class="px-4 py-3 text-xs font-medium text-zinc-500">Role</th>
+                    <th class="px-4 py-3 text-xs font-medium text-zinc-500 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-100">
+                {% for user in users %}
+                <tr class="hover:bg-zinc-50">
+                    <td class="px-4 py-3">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-600 text-xs font-semibold mr-3">
+                                {{ user.username[0]|upper }}
+                            </div>
+                            <span class="text-sm font-medium text-zinc-900">{{ user.username }}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-zinc-500">{{ user.email }}</td>
+                    <td class="px-4 py-3">
+                        <form action="{{ url_for('update_role', user_id=user.id) }}" method="POST" class="flex items-center space-x-2">
+                            <select name="role_id" class="text-xs bg-white border border-zinc-200 rounded-lg px-2 py-1.5 focus:outline-none">
+                                <optgroup label="System">
+                                    <option value="system_user" {% if user.role == 'user' and not user.role_id %}selected{% endif %}>User</option>
+                                    <option value="system_moderator" {% if user.role == 'moderator' and not user.role_id %}selected{% endif %}>Moderator</option>
+                                    <option value="system_owner" {% if user.role == 'owner' %}selected{% endif %}>Owner</option>
+                                </optgroup>
+                                {% if roles %}
+                                <optgroup label="Custom">
+                                    {% for role in roles %}
+                                    {% if not role.is_system %}
+                                    <option value="{{ role.id }}" {% if user.role_id == role.id %}selected{% endif %}>{{ role.display_name }}</option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </optgroup>
                                 {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                            </select>
+                            <button type="submit" class="px-2 py-1.5 bg-black text-white text-xs rounded-lg hover:bg-zinc-800">Save</button>
+                        </form>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        {% if user.id != current_user.id %}
+                        <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('Delete this user?')">
+                            <button type="submit" class="text-red-500 hover:text-red-600 text-xs">Delete</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

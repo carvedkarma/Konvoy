@@ -1,68 +1,59 @@
 {% extends "base.html" %}
 
-{% block title %}Konvoy | Status{% endblock %}
+{% block title %}Konvoy | Ride Details{% endblock %}
 
 {% block content %}
-<div class="gradient-bg min-h-screen py-16 px-4">
-    <div class="max-w-4xl mx-auto">
-        <div class="mb-12 text-center">
-            <h1 class="text-5xl font-black text-white tracking-tighter uppercase mb-3">Ride Intelligence</h1>
-            <p class="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em]">Active Mission Parameters</p>
-        </div>
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-sm">
+        <div class="glass-panel p-5 rounded-xl premium-shadow">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-lg font-bold text-zinc-900">Ride Details</h2>
+                <span class="px-2 py-1 bg-green-100 text-green-600 rounded text-xs font-medium">Active</span>
+            </div>
 
-        <div class="glass-panel rounded-[2.5rem] p-10 premium-shadow">
-            {% if ride_info %}
-            <div class="space-y-10">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div class="bg-white/5 border border-white/5 p-6 rounded-2xl">
-                        <p class="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2">Protocol</p>
-                        <p class="text-xs font-black text-white uppercase">{{ ride_info.type|default('UNKNOWN') }}</p>
+            {% if ride_data and ride_data != 0 %}
+            <div class="space-y-4">
+                <div class="flex items-center p-3 bg-zinc-50 rounded-lg">
+                    <div class="w-10 h-10 bg-zinc-200 rounded-full flex items-center justify-center text-zinc-600 text-sm font-bold mr-3">
+                        {{ ride_data[1][0] }}{{ ride_data[2][0] }}
                     </div>
-                    <div class="bg-white/5 border border-white/5 p-6 rounded-2xl">
-                        <p class="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2">Status</p>
-                        <p class="text-xs font-black text-white uppercase">{{ ride_info.status|default('ACTIVE') }}</p>
-                    </div>
-                    <div class="bg-white/5 border border-white/5 p-6 rounded-2xl">
-                        <p class="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2">ETA</p>
-                        <p class="text-xs font-black text-white uppercase">{{ ride_info.eta|default('---') }} MIN</p>
-                    </div>
-                    <div class="bg-white/5 border border-white/5 p-6 rounded-2xl">
-                        <p class="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2">ID</p>
-                        <p class="text-xs font-black text-white uppercase">#{{ ride_info.id|default('000') }}</p>
+                    <div>
+                        <p class="text-sm font-medium text-zinc-900">{{ ride_data[1] }} {{ ride_data[2] }}</p>
+                        <div class="flex items-center text-xs text-yellow-600">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                            {{ ride_data[3] }}
+                        </div>
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    <div class="p-6 bg-white rounded-2xl">
-                        <p class="text-[9px] font-black text-black/40 uppercase tracking-widest mb-2">Destination Alpha</p>
-                        <p class="text-sm font-black text-black uppercase">{{ ride_info.destination|default('UNASSIGNED') }}</p>
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-xs text-zinc-400 mb-1">Pickup</p>
+                        <p class="text-sm text-zinc-700">{{ ride_data[4] }}</p>
                     </div>
-                    <div class="p-6 border border-white/10 rounded-2xl">
-                        <p class="text-[9px] font-black text-white/30 uppercase tracking-widest mb-2">Origin Point</p>
-                        <p class="text-sm font-black text-white uppercase">{{ ride_info.origin|default('LOCAL_SECTOR') }}</p>
+                    <div>
+                        <p class="text-xs text-zinc-400 mb-1">Drop-off</p>
+                        <p class="text-sm text-zinc-700">{{ ride_data[5] }}</p>
                     </div>
                 </div>
             </div>
             {% else %}
-            <div class="text-center py-20">
-                <div class="w-16 h-16 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-6 h-6 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            <div class="text-center py-8">
+                <div class="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                     </svg>
                 </div>
-                <h3 class="text-sm font-black text-white uppercase tracking-widest">No Active Mission</h3>
-                <p class="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-2">Standby for intelligence update</p>
+                <p class="text-sm font-medium text-zinc-700">No ride found</p>
+                <p class="text-xs text-zinc-400 mt-1">Searching for available rides...</p>
             </div>
             {% endif %}
 
-            <div class="mt-12 pt-10 border-t border-white/5 text-center">
-                <a href="{{ url_for('root') }}" class="inline-flex items-center text-[10px] font-black text-white/40 uppercase tracking-[0.3em] hover:text-white transition-colors">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    Return to Command
-                </a>
-            </div>
+            <a href="{{ url_for('root') }}" class="block w-full mt-5 bg-black text-white py-3 rounded-lg font-medium text-sm text-center hover:bg-zinc-800 transition-colors">
+                Back to Home
+            </a>
         </div>
     </div>
 </div>
