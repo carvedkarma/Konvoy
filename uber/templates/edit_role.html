@@ -55,7 +55,6 @@
                 </div>
             </div>
 
-            {% if not role.is_system %}
             <div>
                 <label class="block text-xs font-medium text-zinc-500 mb-2">Permissions</label>
                 <div class="space-y-2">
@@ -81,11 +80,6 @@
                     </label>
                 </div>
             </div>
-            {% else %}
-            <div class="p-3 bg-zinc-50 rounded-lg">
-                <p class="text-xs text-zinc-500">System role permissions cannot be modified.</p>
-            </div>
-            {% endif %}
 
             <div class="pt-2">
                 <button type="submit" class="w-full bg-black text-white py-2.5 rounded-lg font-medium text-sm hover:bg-zinc-800 transition-colors">

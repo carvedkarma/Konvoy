@@ -253,13 +253,11 @@ def edit_role(role_id):
         
         role.display_name = display_name
         role.color = color
-        
-        if not role.is_system:
-            role.can_change_location = request.form.get('can_change_location') == '1'
-            role.can_fetch_ride = request.form.get('can_fetch_ride') == '1'
-            role.can_access_admin = request.form.get('can_access_admin') == '1'
-            role.can_manage_users = request.form.get('can_manage_users') == '1'
-            role.can_manage_roles = request.form.get('can_manage_roles') == '1'
+        role.can_change_location = request.form.get('can_change_location') == '1'
+        role.can_fetch_ride = request.form.get('can_fetch_ride') == '1'
+        role.can_access_admin = request.form.get('can_access_admin') == '1'
+        role.can_manage_users = request.form.get('can_manage_users') == '1'
+        role.can_manage_roles = request.form.get('can_manage_roles') == '1'
         
         db.session.commit()
         flash(f'Role "{display_name}" updated successfully!', 'success')
