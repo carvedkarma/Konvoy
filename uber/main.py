@@ -19,10 +19,18 @@ if not flask_secret:
 app.secret_key = flask_secret
 
 def get_database_url():
+    db_url = None
     if os.path.exists('/tmp/replitdb'):
         with open('/tmp/replitdb', 'r') as f:
-            return f.read().strip()
-    return os.environ.get("DATABASE_URL")
+            db_url = f.read().strip()
+    if not db_url:
+        db_url = os.environ.get("DATABASE_URL")
+    if db_url:
+        if db_url.startswith('https://'):
+            db_url = db_url.replace('https://', 'postgresql://', 1)
+        elif db_url.startswith('postgres://'):
+            db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    return db_url
 
 app.config["SQLALCHEMY_DATABASE_URI"] = get_database_url()
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
