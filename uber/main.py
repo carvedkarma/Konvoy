@@ -3,6 +3,7 @@ from objects.uberDev import vehicleDetails, appLaunch, driverLocation
 from config import stop_signal
 
 app = Flask(__name__)
+stop_signal = 0
 
 # Global variables to store the state
 stored_destination = None
@@ -25,6 +26,7 @@ def submit():
 @app.route('/stop', methods=['POST'])
 def stop():
 
+    global stop_signal
     stop_signal = 1
     print(
         f"Stop signal received. Variable 'stop_signal' set to: {stop_signal}")

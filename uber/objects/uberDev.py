@@ -117,11 +117,16 @@ def driverLocation(address):
     lat, long = locationTracker(address)
     try:
         while True:
-            print(f"Ride status: {with_ride}")
-            if with_ride == 1 or config.stop_signal == 1: 
+            # Check for stop signal at the start of each iteration
+            if config.stop_signal == 1: 
+                print("Stop signal detected. Breaking driverLocation loop.")
                 config.stop_signal = 0 # Reset for next time
                 break
                 
+            if with_ride == 1: 
+                print("Ride in progress. Breaking driverLocation loop.")
+                break
+
             json_data = {
                 'data': {
                     'positions': [
@@ -160,6 +165,7 @@ def driverLocation(address):
             time_stamp += 4000
             print(response.json())
 
+            # Small delay to prevent tight loop, though requests take time
             time.sleep(4)
     except Exception as e:
         print(f"Location Issue: {e}")
