@@ -70,12 +70,12 @@
                     <div class="dropdown relative">
                         <button class="flex items-center space-x-2">
                             <div class="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-600 text-sm font-semibold">
-                                {{ current_user.username[0]|upper }}
+                                {{ current_user.get_initials() }}
                             </div>
                         </button>
                         <div class="dropdown-menu absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-zinc-100 py-1">
                             <div class="px-3 py-2 border-b border-zinc-100">
-                                <p class="text-sm font-medium text-zinc-900">{{ current_user.username }}</p>
+                                <p class="text-sm font-medium text-zinc-900">{{ current_user.get_display_name() }}</p>
                                 <p class="text-xs text-zinc-400">{{ current_user.get_role_display() }}</p>
                             </div>
                             <a href="{{ url_for('profile') }}" class="block px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50">Profile</a>

@@ -6,7 +6,7 @@
 <div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
     <div class="w-full max-w-sm">
         <div class="text-center mb-6">
-            <h1 class="text-2xl font-bold text-zinc-900">Welcome back, {{ current_user.username }}</h1>
+            <h1 class="text-2xl font-bold text-zinc-900">Welcome back, {{ current_user.get_display_name() }}</h1>
             <p class="text-sm text-zinc-500 mt-1">What would you like to do?</p>
         </div>
 

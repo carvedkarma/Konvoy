@@ -40,6 +40,8 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    first_name = db.Column(db.String(80), nullable=True)
+    last_name = db.Column(db.String(80), nullable=True)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default='user', nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=True)
@@ -92,6 +94,20 @@ class User(UserMixin, db.Model):
         if self.role == self.ROLE_MODERATOR:
             return 'blue'
         return 'gray'
+    
+    def get_display_name(self):
+        if self.first_name and self.last_name:
+            return f'{self.first_name} {self.last_name}'
+        elif self.first_name:
+            return self.first_name
+        return self.username
+    
+    def get_initials(self):
+        if self.first_name and self.last_name:
+            return f'{self.first_name[0]}{self.last_name[0]}'.upper()
+        elif self.first_name:
+            return self.first_name[0].upper()
+        return self.username[0].upper()
     
     def __repr__(self):
         return f'<User {self.username}>'

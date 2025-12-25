@@ -11,6 +11,8 @@ class LoginForm(FlaskForm):
 
 
 class RegisterForm(FlaskForm):
+    first_name = StringField('First Name', validators=[DataRequired(), Length(min=1, max=80)])
+    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=1, max=80)])
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
@@ -38,6 +40,8 @@ class RoleForm(FlaskForm):
 
 
 class ProfileForm(FlaskForm):
+    first_name = StringField('First Name', validators=[DataRequired(), Length(min=1, max=80)])
+    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=1, max=80)])
     username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     submit = SubmitField('Save Changes')
