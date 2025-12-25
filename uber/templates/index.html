@@ -3,57 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uber | Search</title>
+    <title>Uber | Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        .pulsate {
-            animation: pulse 1.5s infinite ease-in-out;
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.05); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.8; }
+        .premium-shadow {
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .pulsate-core {
+            animation: pulse-core 2s infinite ease-in-out;
+        }
+        .pulsate-ring {
+            animation: pulse-ring 2s infinite ease-out;
+        }
+        @keyframes pulse-core {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        }
+        .search-input:focus {
+            box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
         }
     </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen">
-    <nav class="bg-black text-white p-4">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold tracking-tighter">Uber</h1>
+<body class="gradient-bg min-h-screen flex flex-col">
+    <!-- Sophisticated Header -->
+    <nav class="p-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold tracking-tight text-black">Uber</h1>
+            <div class="hidden md:flex space-x-8 text-sm font-semibold text-gray-600">
+                <a href="#" class="hover:text-black transition-colors">Company</a>
+                <a href="#" class="hover:text-black transition-colors">Safety</a>
+                <a href="#" class="hover:text-black transition-colors">Help</a>
+            </div>
         </div>
     </nav>
 
-    <main class="max-w-6xl mx-auto mt-20 px-4 flex justify-center">
-        <div id="container" class="w-full max-w-lg bg-white p-8 rounded-2xl shadow-xl transition-all duration-500">
-            <!-- Search State -->
-            <div id="searchState">
-                <h2 class="text-3xl font-bold mb-8 text-gray-900">Where to?</h2>
-                <div class="relative group">
-                    <input type="text" id="destinationInput" 
-                        class="w-full p-4 pl-12 bg-gray-100 border-none rounded-xl text-lg focus:ring-2 focus:ring-black transition-all"
-                        placeholder="Enter destination">
-                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
+    <!-- Main Experience Area -->
+    <main class="flex-grow flex items-center justify-center px-4 -mt-12">
+        <div id="container" class="w-full max-w-xl transition-all duration-700 ease-in-out">
+            
+            <!-- Elegant Search Interface -->
+            <div id="searchState" class="glass-panel p-10 rounded-[2.5rem] premium-shadow">
+                <h2 class="text-4xl font-bold mb-2 text-gray-900 tracking-tight">Go anywhere.</h2>
+                <p class="text-gray-500 mb-10 text-lg">Your premium ride is just a tap away.</p>
+                
+                <div class="space-y-6">
+                    <div class="relative group">
+                        <div class="absolute left-6 top-1/2 -translate-y-1/2 text-black">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <input type="text" id="destinationInput" 
+                            class="search-input w-full p-6 pl-16 bg-white border border-gray-100 rounded-2xl text-xl font-medium focus:outline-none focus:border-black transition-all"
+                            placeholder="Enter destination">
                     </div>
+                    
+                    <button id="searchBtn" 
+                        class="w-full bg-black text-white py-6 rounded-2xl font-bold text-xl hover:bg-zinc-800 transition-all active:scale-[0.98] shadow-lg shadow-black/10">
+                        Request Premium
+                    </button>
                 </div>
-                <button id="searchBtn" 
-                    class="w-full mt-6 bg-black text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition-all active:scale-95">
-                    Search
-                </button>
             </div>
 
-            <!-- Pulsing State -->
-            <div id="pulsingState" class="hidden flex flex-col items-center justify-center py-10">
-                <button id="stopBtn" 
-                    class="pulsate w-48 h-48 bg-black text-white rounded-full font-bold text-2xl shadow-2xl flex items-center justify-center border-4 border-gray-200">
-                    STOP
-                </button>
-                <p class="mt-8 text-gray-500 font-medium tracking-wide uppercase">Searching for nearby rides...</p>
+            <!-- Immersive Pulsing State -->
+            <div id="pulsingState" class="hidden flex flex-col items-center justify-center">
+                <div class="relative flex items-center justify-center">
+                    <!-- Outer pulsating rings -->
+                    <div class="pulsate-ring absolute w-64 h-64 bg-black rounded-full opacity-20"></div>
+                    <div class="pulsate-ring absolute w-80 h-80 bg-black rounded-full opacity-10" style="animation-delay: 0.5s"></div>
+                    
+                    <!-- Main Button -->
+                    <button id="stopBtn" 
+                        class="pulsate-core relative z-10 w-52 h-52 bg-black text-white rounded-full font-bold text-3xl shadow-2xl flex items-center justify-center border-[6px] border-white active:scale-95 transition-transform">
+                        CANCEL
+                    </button>
+                </div>
+                
+                <div class="mt-16 text-center">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Finding your driver</h3>
+                    <div class="flex items-center justify-center space-x-2">
+                        <span class="w-1.5 h-1.5 bg-black rounded-full animate-bounce"></span>
+                        <span class="w-1.5 h-1.5 bg-black rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+                        <span class="w-1.5 h-1.5 bg-black rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
+                    </div>
+                    <p class="mt-6 text-sm font-bold tracking-[0.2em] text-gray-400 uppercase">Connecting to Uber Network</p>
+                </div>
             </div>
         </div>
     </main>
+
+    <!-- Subtle Footer Info -->
+    <footer class="p-8 text-center text-xs text-gray-400 font-medium">
+        &copy; 2025 Uber Technologies Inc. All rights reserved.
+    </footer>
 
     <script>
         const searchState = document.getElementById('searchState');
@@ -67,33 +126,44 @@
             const destination = destinationInput.value.trim();
             if (!destination) return;
 
-            // Transition to pulsing state
-            searchState.classList.add('hidden');
-            pulsingState.classList.remove('hidden');
+            // Smooth transition
+            container.style.opacity = '0';
+            container.style.transform = 'scale(0.95)';
             
-            // Backend call to save variable
-            try {
-                await fetch('/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `destination=${encodeURIComponent(destination)}`
-                });
-            } catch (e) { console.error(e); }
+            setTimeout(async () => {
+                searchState.classList.add('hidden');
+                pulsingState.classList.remove('hidden');
+                container.style.opacity = '1';
+                container.style.transform = 'scale(1)';
+                
+                try {
+                    await fetch('/submit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `destination=${encodeURIComponent(destination)}`
+                    });
+                } catch (e) { console.error(e); }
+            }, 300);
         });
 
         stopBtn.addEventListener('click', async () => {
-            // Backend call to save stop signal as 1
-            try {
-                await fetch('/stop', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
-            } catch (e) { console.error(e); }
+            container.style.opacity = '0';
+            container.style.transform = 'scale(1.05)';
+            
+            setTimeout(async () => {
+                try {
+                    await fetch('/stop', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                    });
+                } catch (e) { console.error(e); }
 
-            // Reset to search state
-            pulsingState.classList.add('hidden');
-            searchState.classList.remove('hidden');
-            destinationInput.value = '';
+                pulsingState.classList.add('hidden');
+                searchState.classList.remove('hidden');
+                destinationInput.value = '';
+                container.style.opacity = '1';
+                container.style.transform = 'scale(1)';
+            }, 300);
         });
     </script>
 </body>
