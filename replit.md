@@ -41,10 +41,18 @@ Preferred communication style: Simple, everyday language.
 
 ### Uber API Integration
 - Custom API client in `objects/uberDev.py` interacts with Uber's internal endpoints
-- Uses stored cookies and headers for authentication (stored in `source/cred.py`)
+- **Per-user credentials**: Each user can connect their own Uber driver account
+- Credentials (cookies, headers, refresh tokens) are encrypted with Fernet using PBKDF2HMAC key derivation
 - Features include: vehicle details, driver location tracking, token refresh
 - Location geocoding via OpenStreetMap's Nominatim API
 - Ride signal system to detect active rides
+
+### Uber Account Connection
+- Users can connect their Uber driver accounts via `/uber-connect`
+- Credentials are captured from Uber mobile app API requests and stored encrypted
+- CSRF-protected forms prevent unauthorized credential changes
+- Users can disconnect their accounts from profile settings
+- All Uber API functions accept per-user credentials as parameters
 
 ### Frontend Architecture
 - Server-side rendered templates using Jinja2
@@ -80,7 +88,9 @@ uber/
 │   ├── index.html       # Location change interface
 │   ├── ride_details.html # Ride info display
 │   ├── admin.html       # User management
-│   └── roles.html       # Role & permission management
+│   ├── roles.html       # Role & permission management
+│   ├── profile.html     # User profile & Uber connection status
+│   └── uber_connect.html # Uber account connection page
 └── static/
     └── images/          # Static assets
 ```
@@ -107,3 +117,4 @@ uber/
 - Werkzeug (password hashing)
 - psycopg2-binary (PostgreSQL adapter)
 - Gunicorn (production server)
+- cryptography (Fernet encryption for Uber credentials)
