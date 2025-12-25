@@ -63,3 +63,14 @@ class ResetPasswordForm(FlaskForm):
     password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message='Passwords must match')])
     submit = SubmitField('Reset Password')
+
+
+class UberConnectForm(FlaskForm):
+    cookies = StringField('Cookies (JSON)')
+    headers = StringField('Headers (JSON)')
+    refresh_token = StringField('Refresh Token')
+    submit = SubmitField('Connect Uber Account')
+
+
+class UberDisconnectForm(FlaskForm):
+    submit = SubmitField('Disconnect')

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from objects.uberDev import vehicleDetails, appLaunch, driverLocation
 import config
 from models import db, User, Role, create_default_roles, encrypt_data, decrypt_data
-from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm
+from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm, UberConnectForm, UberDisconnectForm
 import secrets
 
 app = Flask(__name__)
@@ -355,19 +355,20 @@ def delete_role(role_id):
 @login_required
 def profile():
     form = ProfileForm()
+    disconnect_form = UberDisconnectForm()
     
     if form.validate_on_submit():
         if form.email.data != current_user.email:
             existing = User.query.filter_by(email=form.email.data).first()
             if existing:
                 flash('Email already in use.', 'error')
-                return render_template('profile.html', form=form)
+                return render_template('profile.html', form=form, disconnect_form=disconnect_form)
         
         if form.username.data != current_user.username:
             existing = User.query.filter_by(username=form.username.data).first()
             if existing:
                 flash('Username already taken.', 'error')
-                return render_template('profile.html', form=form)
+                return render_template('profile.html', form=form, disconnect_form=disconnect_form)
         
         current_user.first_name = form.first_name.data
         current_user.last_name = form.last_name.data
@@ -381,20 +382,23 @@ def profile():
     form.last_name.data = current_user.last_name
     form.username.data = current_user.username
     form.email.data = current_user.email
-    return render_template('profile.html', form=form)
+    return render_template('profile.html', form=form, disconnect_form=disconnect_form)
 
 
 @app.route('/uber-connect', methods=['GET', 'POST'])
 @login_required
 def uber_connect():
-    if request.method == 'POST':
+    form = UberConnectForm()
+    disconnect_form = UberDisconnectForm()
+    
+    if form.validate_on_submit():
         cookies_json = request.form.get('cookies', '').strip()
         headers_json = request.form.get('headers', '').strip()
         refresh_token = request.form.get('refresh_token', '').strip()
         
         if not cookies_json or not headers_json or not refresh_token:
             flash('All fields are required.', 'error')
-            return render_template('uber_connect.html')
+            return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form)
         
         try:
             import json
@@ -402,7 +406,7 @@ def uber_connect():
             json.loads(headers_json)
         except json.JSONDecodeError:
             flash('Invalid JSON format for cookies or headers.', 'error')
-            return render_template('uber_connect.html')
+            return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form)
         
         current_user.uber_cookies = encrypt_data(cookies_json)
         current_user.uber_headers = encrypt_data(headers_json)
@@ -412,18 +416,20 @@ def uber_connect():
         flash('Uber account connected successfully!', 'success')
         return redirect(url_for('root'))
     
-    return render_template('uber_connect.html')
+    return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form)
 
 
 @app.route('/uber-disconnect', methods=['POST'])
 @login_required
 def uber_disconnect():
-    current_user.uber_cookies = None
-    current_user.uber_headers = None
-    current_user.uber_refresh_token = None
-    current_user.uber_connected = False
-    db.session.commit()
-    flash('Uber account disconnected.', 'success')
+    form = UberDisconnectForm()
+    if form.validate_on_submit():
+        current_user.uber_cookies = None
+        current_user.uber_headers = None
+        current_user.uber_refresh_token = None
+        current_user.uber_connected = False
+        db.session.commit()
+        flash('Uber account disconnected.', 'success')
     return redirect(url_for('profile'))
 
 
