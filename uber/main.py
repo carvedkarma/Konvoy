@@ -62,9 +62,16 @@ with app.app_context():
     
     users_without_roles = User.query.filter(~User.roles.any()).all()
     for user in users_without_roles:
-        role_record = Role.query.filter_by(name=user.role).first()
-        if role_record:
-            user.roles.append(role_record)
+        if user.role_id:
+            custom_role = Role.query.get(user.role_id)
+            if custom_role:
+                user.roles.append(custom_role)
+                user.role_id = None
+        
+        system_role = Role.query.filter_by(name=user.role).first()
+        if system_role and system_role not in user.roles:
+            user.roles.append(system_role)
+    
     if users_without_roles:
         db.session.commit()
         print(f"Migrated {len(users_without_roles)} users to multi-role system.")
@@ -188,11 +195,14 @@ def update_roles(user_id):
             new_roles = [default_role]
     
     user.roles = new_roles
+    user.role_id = None
     
     if new_roles:
         primary = user.get_primary_role()
         if primary:
             user.role = primary.name
+    else:
+        user.role = 'user'
     
     db.session.commit()
     role_names = ', '.join([r.display_name for r in new_roles])
