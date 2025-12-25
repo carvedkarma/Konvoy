@@ -17,7 +17,14 @@ if not flask_secret:
     print("WARNING: FLASK_SECRET_KEY not set. Using generated key for this session.")
     
 app.secret_key = flask_secret
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+
+def get_database_url():
+    if os.path.exists('/tmp/replitdb'):
+        with open('/tmp/replitdb', 'r') as f:
+            return f.read().strip()
+    return os.environ.get("DATABASE_URL")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = get_database_url()
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
