@@ -6,3 +6,6 @@ stored_destination = None
 
 # Stores the stop signal (0 or 1)
 stop_signal = 0
+
+# Stores the ride signal (0 or 1)
+ride_signal = 0
