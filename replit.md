@@ -1,0 +1,101 @@
+# Konvoy - Uber Driver Management System
+
+## Overview
+
+Konvoy is a premium Flask-based web application designed for managing Uber driver operations. The system provides user authentication with role-based access control (user, moderator, owner), integrates with Uber's internal APIs to fetch vehicle details and driver location data, and offers a luxury glassmorphism-styled dashboard interface for ride management.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Backend Framework
+- **Flask** serves as the core web framework
+- The application uses Flask-Login for session management and user authentication
+- Flask-WTF handles form validation and CSRF protection
+
+### Database Layer
+- **PostgreSQL** database accessed via SQLAlchemy ORM
+- Uses Flask-SQLAlchemy with a custom DeclarativeBase for model definitions
+- Single `users` table stores authentication and role information
+- Connection pooling configured with `pool_recycle` and `pool_pre_ping` for reliability
+
+### Authentication System
+- Password hashing via Werkzeug's security utilities
+- Three-tier role system: user, moderator, owner
+- Owner account auto-created on startup if environment variables are set
+- Session-based authentication with Flask-Login
+- Protected routes require login to access
+
+### User Roles
+- **User**: Basic access to location change and ride fetching
+- **Moderator**: Enhanced access privileges
+- **Owner**: Full control including admin panel for role management
+
+### Uber API Integration
+- Custom API client in `objects/uberDev.py` interacts with Uber's internal endpoints
+- Uses stored cookies and headers for authentication (stored in `source/cred.py`)
+- Features include: vehicle details, driver location tracking, token refresh
+- Location geocoding via OpenStreetMap's Nominatim API
+- Ride signal system to detect active rides
+
+### Frontend Architecture
+- Server-side rendered templates using Jinja2
+- Tailwind CSS loaded via CDN for styling
+- Premium glassmorphism design with:
+  - Frosted glass panels with blur effects
+  - Gradient metallic logo
+  - Dark/light contrast themes
+  - Responsive mobile-first design
+- Pages: login, register, home hub, location change, ride details, admin panel
+
+### Configuration Management
+- Environment variables for sensitive data (Flask secret key, database URL, owner credentials)
+- Global state stored in `config.py` for ride/stop signals and destination tracking
+
+## Project Structure
+
+```
+uber/
+├── main.py              # Flask application with routes and auth
+├── models.py            # SQLAlchemy User model with roles
+├── forms.py             # WTForms for login/register
+├── config.py            # Global state variables
+├── objects/
+│   └── uberDev.py       # Uber API integration
+├── source/
+│   └── cred.py          # API credentials
+├── templates/
+│   ├── login.html       # Premium login page
+│   ├── register.html    # Account creation page
+│   ├── home.html        # Main hub with navigation
+│   ├── index.html       # Location change interface
+│   ├── ride_details.html # Ride info display
+│   └── admin.html       # User role management
+└── static/
+    └── images/          # Static assets
+```
+
+## External Dependencies
+
+### Database
+- PostgreSQL (configured via `DATABASE_URL` environment variable)
+
+### Third-Party APIs
+- **Uber Internal APIs** (`cn-geo1.uber.com`): Vehicle data, driver status, location updates
+- **OpenStreetMap Nominatim**: Address geocoding for location tracking
+
+### Required Environment Variables
+- `DATABASE_URL`: PostgreSQL connection string (auto-configured)
+- `FLASK_SECRET_KEY`: Session encryption key
+- `KONVOY_OWNER_EMAIL`: Auto-create owner account email
+- `KONVOY_OWNER_PASSWORD`: Auto-create owner account password
+
+### Python Dependencies
+- Flask, Flask-Login, Flask-SQLAlchemy, Flask-WTF
+- Requests (HTTP client for Uber API)
+- WTForms with email-validator
+- Werkzeug (password hashing)
+- psycopg2-binary (PostgreSQL adapter)
+- Gunicorn (production server)
