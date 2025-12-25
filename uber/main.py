@@ -21,9 +21,8 @@ def home():
 
 @app.route('/fetch-ride')
 def fetch_ride():
-    ride_data = appLaunch()[0]
-    print(ride_data)
-    if ride_data == 1:
+    if config.ride_signal == 1:
+        ride_data = appLaunch()
         return render_template('ride_details.html', ride_data=ride_data)
     else:
         return render_template('ride_details.html', ride_data=None)
