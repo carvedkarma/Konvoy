@@ -42,9 +42,10 @@
                 </button>
             </form>
 
-            <p class="mt-4 text-center text-sm text-zinc-500">
-                Don't have an account? <a href="{{ url_for('register') }}" class="text-black font-medium hover:underline">Sign up</a>
-            </p>
+            <div class="mt-4 text-center text-sm text-zinc-500 space-y-2">
+                <p>Don't have an account? <a href="{{ url_for('register') }}" class="text-black font-medium hover:underline">Sign up</a></p>
+                <p><a href="{{ url_for('forgot_password') }}" class="text-zinc-400 hover:text-zinc-600">Forgot password?</a></p>
+            </div>
         </div>
     </div>
 </div>

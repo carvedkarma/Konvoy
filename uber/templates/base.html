@@ -78,6 +78,7 @@
                                 <p class="text-sm font-medium text-zinc-900">{{ current_user.username }}</p>
                                 <p class="text-xs text-zinc-400">{{ current_user.get_role_display() }}</p>
                             </div>
+                            <a href="{{ url_for('profile') }}" class="block px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50">Profile</a>
                             <a href="{{ url_for('logout') }}" class="block px-3 py-2 text-sm text-red-500 hover:bg-red-50">Sign Out</a>
                         </div>
                     </div>

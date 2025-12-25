@@ -1,11 +1,12 @@
 import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from datetime import datetime
+from datetime import datetime, timedelta
 from objects.uberDev import vehicleDetails, appLaunch, driverLocation
 import config
 from models import db, User, Role, create_default_roles
-from forms import LoginForm, RegisterForm, RoleForm
+from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm
+import secrets
 
 app = Flask(__name__)
 
@@ -250,6 +251,99 @@ def delete_role(role_id):
     db.session.commit()
     flash(f'Role "{role.display_name}" has been deleted.', 'success')
     return redirect(url_for('roles'))
+
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    form = ProfileForm()
+    
+    if form.validate_on_submit():
+        if form.email.data != current_user.email:
+            existing = User.query.filter_by(email=form.email.data).first()
+            if existing:
+                flash('Email already in use.', 'error')
+                return render_template('profile.html', form=form)
+        
+        if form.username.data != current_user.username:
+            existing = User.query.filter_by(username=form.username.data).first()
+            if existing:
+                flash('Username already taken.', 'error')
+                return render_template('profile.html', form=form)
+        
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        db.session.commit()
+        flash('Profile updated successfully.', 'success')
+        return redirect(url_for('profile'))
+    
+    form.username.data = current_user.username
+    form.email.data = current_user.email
+    return render_template('profile.html', form=form)
+
+
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    
+    if form.validate_on_submit():
+        if not current_user.check_password(form.current_password.data):
+            flash('Current password is incorrect.', 'error')
+            return render_template('change_password.html', form=form)
+        
+        current_user.set_password(form.new_password.data)
+        db.session.commit()
+        flash('Password updated successfully.', 'success')
+        return redirect(url_for('profile'))
+    
+    return render_template('change_password.html', form=form)
+
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('root'))
+    
+    form = ForgotPasswordForm()
+    
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            token = secrets.token_urlsafe(32)
+            user.reset_token = token
+            user.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
+            db.session.commit()
+            flash(f'Password reset link: /reset-password/{token} (valid for 1 hour)', 'success')
+        else:
+            flash('If an account with that email exists, a reset link has been generated.', 'info')
+        return redirect(url_for('forgot_password'))
+    
+    return render_template('forgot_password.html', form=form)
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('root'))
+    
+    user = User.query.filter_by(reset_token=token).first()
+    
+    if not user or not user.reset_token_expiry or user.reset_token_expiry < datetime.utcnow():
+        flash('Invalid or expired reset link.', 'error')
+        return redirect(url_for('login'))
+    
+    form = ResetPasswordForm()
+    
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        user.reset_token = None
+        user.reset_token_expiry = None
+        db.session.commit()
+        flash('Password has been reset. Please sign in.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', form=form)
 
 
 @app.route('/change-location')

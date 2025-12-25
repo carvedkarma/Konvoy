@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Konvoy | Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-8">
+    <div class="mb-5">
+        <h1 class="text-xl font-bold text-zinc-900">Profile Settings</h1>
+        <p class="text-sm text-zinc-500">Manage your account details</p>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6 premium-shadow mb-4">
+        <h2 class="text-sm font-semibold text-zinc-900 mb-4">Account Information</h2>
+        
+        <form method="POST" class="space-y-4">
+            {{ form.hidden_tag() }}
+            
+            <div>
+                <label class="block text-xs font-medium text-zinc-500 mb-1">Username</label>
+                {{ form.username(class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-zinc-400 focus:bg-white") }}
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-zinc-500 mb-1">Email</label>
+                {{ form.email(class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-zinc-400 focus:bg-white") }}
+            </div>
+
+            <div class="pt-2">
+                <button type="submit" class="w-full bg-black text-white py-2.5 rounded-lg font-medium text-sm hover:bg-zinc-800 transition-colors">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="glass-panel rounded-xl p-6 premium-shadow">
+        <h2 class="text-sm font-semibold text-zinc-900 mb-2">Security</h2>
+        <p class="text-xs text-zinc-500 mb-4">Update your password to keep your account secure</p>
+        
+        <a href="{{ url_for('change_password') }}" class="block w-full bg-zinc-100 text-zinc-700 py-2.5 rounded-lg font-medium text-sm text-center hover:bg-zinc-200 transition-colors">
+            Change Password
+        </a>
+    </div>
+
+    <div class="mt-4 p-4 bg-zinc-50 rounded-lg border border-zinc-100">
+        <div class="flex items-center justify-between text-xs text-zinc-400">
+            <span>Member since {{ current_user.created_at.strftime('%b %d, %Y') }}</span>
+            <span class="px-2 py-1 bg-white border border-zinc-200 rounded">{{ current_user.get_role_display() }}</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
