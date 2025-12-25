@@ -500,18 +500,17 @@ def reset_password(token):
 @app.route('/change-location')
 @login_required
 def home():
-    if not current_user.has_permission('can_change_location'):
-        flash('You do not have permission to access this page.', 'error')
-        return redirect(url_for('root'))
-    return render_template('index.html')
+    has_permission = current_user.has_permission('can_change_location')
+    return render_template('index.html', has_permission=has_permission)
 
 
 @app.route('/fetch-ride')
 @login_required
 def fetch_ride():
-    if not current_user.has_permission('can_fetch_ride'):
-        flash('You do not have permission to access this page.', 'error')
-        return redirect(url_for('root'))
+    has_permission = current_user.has_permission('can_fetch_ride')
+    
+    if not has_permission:
+        return render_template('ride_details.html', has_permission=False, ride_data=None)
     
     if not current_user.uber_connected:
         flash('Please connect your Uber account first.', 'error')
@@ -524,9 +523,9 @@ def fetch_ride():
     
     if config.ride_signal == 1:
         ride_data = appLaunch(cookies, headers, refresh_token)
-        return render_template('ride_details.html', ride_data=ride_data)
+        return render_template('ride_details.html', has_permission=True, ride_data=ride_data)
     else:
-        return render_template('ride_details.html', ride_data=None)
+        return render_template('ride_details.html', has_permission=True, ride_data=None)
 
 
 @app.route('/submit', methods=['POST'])

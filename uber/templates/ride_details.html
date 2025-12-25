@@ -5,6 +5,20 @@
 {% block content %}
 <div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
     <div class="w-full max-w-sm">
+        {% if not has_permission %}
+        <div class="glass-panel p-6 rounded-xl premium-shadow text-center">
+            <div class="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+            </div>
+            <h2 class="text-lg font-bold text-zinc-900 mb-2">Access Locked</h2>
+            <p class="text-sm text-zinc-500 mb-5">You don't have permission to fetch ride details. Contact an administrator to request access.</p>
+            <a href="{{ url_for('root') }}" class="block w-full bg-black text-white py-3 rounded-lg font-medium text-sm hover:bg-zinc-800 transition-colors">
+                Back to Home
+            </a>
+        </div>
+        {% else %}
         <div class="glass-panel p-5 rounded-xl premium-shadow">
             <div class="flex justify-between items-start mb-4">
                 <h2 class="text-lg font-bold text-zinc-900">Ride Details</h2>
@@ -55,6 +69,7 @@
                 Back to Home
             </a>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
