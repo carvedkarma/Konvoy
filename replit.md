@@ -18,20 +18,26 @@ Preferred communication style: Simple, everyday language.
 ### Database Layer
 - **PostgreSQL** database accessed via SQLAlchemy ORM
 - Uses Flask-SQLAlchemy with a custom DeclarativeBase for model definitions
-- Single `users` table stores authentication and role information
+- Tables: `users` (authentication), `roles` (custom permissions)
 - Connection pooling configured with `pool_recycle` and `pool_pre_ping` for reliability
 
 ### Authentication System
 - Password hashing via Werkzeug's security utilities
-- Three-tier role system: user, moderator, owner
+- System roles: user, moderator, owner + custom roles
 - Owner account auto-created on startup if environment variables are set
 - Session-based authentication with Flask-Login
-- Protected routes require login to access
+- Protected routes with permission-based access control
 
-### User Roles
-- **User**: Basic access to location change and ride fetching
-- **Moderator**: Enhanced access privileges
-- **Owner**: Full control including admin panel for role management
+### Role & Permission System
+- **System Roles**: User, Moderator, Owner (built-in)
+- **Custom Roles**: Created by owners with specific permissions
+- **Permissions**:
+  - `can_change_location`: Access to location change feature
+  - `can_fetch_ride`: Access to fetch ride feature
+  - `can_access_admin`: Access to admin panel
+  - `can_manage_users`: Ability to manage user accounts
+  - `can_manage_roles`: Ability to create/delete custom roles
+- **Owner**: Full control including role management page
 
 ### Uber API Integration
 - Custom API client in `objects/uberDev.py` interacts with Uber's internal endpoints
@@ -59,7 +65,7 @@ Preferred communication style: Simple, everyday language.
 ```
 uber/
 ├── main.py              # Flask application with routes and auth
-├── models.py            # SQLAlchemy User model with roles
+├── models.py            # SQLAlchemy User and Role models
 ├── forms.py             # WTForms for login/register
 ├── config.py            # Global state variables
 ├── objects/
@@ -67,12 +73,14 @@ uber/
 ├── source/
 │   └── cred.py          # API credentials
 ├── templates/
+│   ├── base.html        # Shared header/layout template
 │   ├── login.html       # Premium login page
 │   ├── register.html    # Account creation page
 │   ├── home.html        # Main hub with navigation
 │   ├── index.html       # Location change interface
 │   ├── ride_details.html # Ride info display
-│   └── admin.html       # User role management
+│   ├── admin.html       # User management
+│   └── roles.html       # Role & permission management
 └── static/
     └── images/          # Static assets
 ```
