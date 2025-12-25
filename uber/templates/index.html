@@ -9,5 +9,9 @@
         <input type="text" name="user_input" placeholder="Type here...">
         <button type="submit">Submit</button>
     </form>
+    
+    {% if current_value %}
+    <p>Current saved variable value: <strong>{{ current_value }}</strong></p>
+    {% endif %}
 </body>
 </html>
