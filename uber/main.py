@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# Variable to store ride data
-latest_ride_request = {}
+# Global variable to store the destination
+stored_destination = None
 
 @app.route('/')
 def home():
@@ -11,18 +11,10 @@ def home():
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    global latest_ride_request
-    pickup = request.form.get('pickup')
-    destination = request.form.get('destination')
-    
-    # Save to variable
-    latest_ride_request = {
-        'pickup': pickup,
-        'destination': destination
-    }
-    
-    print(f"New Ride Request Saved: {latest_ride_request}")
-    return jsonify(status="success", message="Request saved")
+    global stored_destination
+    stored_destination = request.form.get('destination')
+    print(f"Destination Saved: {stored_destination}")
+    return jsonify(status="success")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
