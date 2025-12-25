@@ -66,6 +66,11 @@ class User(UserMixin, db.Model):
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
     
+    uber_cookies = db.Column(db.Text, nullable=True)
+    uber_headers = db.Column(db.Text, nullable=True)
+    uber_refresh_token = db.Column(db.Text, nullable=True)
+    uber_connected = db.Column(db.Boolean, default=False)
+    
     ROLE_USER = 'user'
     ROLE_MODERATOR = 'moderator'
     ROLE_OWNER = 'owner'
