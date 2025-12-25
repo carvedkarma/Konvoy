@@ -81,7 +81,15 @@
             } catch (e) { console.error(e); }
         });
 
-        stopBtn.addEventListener('click', () => {
+        stopBtn.addEventListener('click', async () => {
+            // Backend call to save stop signal as 1
+            try {
+                await fetch('/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+            } catch (e) { console.error(e); }
+
             // Reset to search state
             pulsingState.classList.add('hidden');
             searchState.classList.remove('hidden');
