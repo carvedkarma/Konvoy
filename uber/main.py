@@ -8,7 +8,14 @@ from models import db, User
 from forms import LoginForm, RegisterForm, RoleForm
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "konvoy-ultra-secret-key-2025"
+
+flask_secret = os.environ.get("FLASK_SECRET_KEY")
+if not flask_secret:
+    import secrets
+    flask_secret = secrets.token_hex(32)
+    print("WARNING: FLASK_SECRET_KEY not set. Using generated key for this session.")
+    
+app.secret_key = flask_secret
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
@@ -30,17 +37,21 @@ def load_user(user_id):
 
 with app.app_context():
     db.create_all()
-    owner = User.query.filter_by(role='owner').first()
-    if not owner:
-        owner = User(
-            email='owner@konvoy.com',
-            username='owner',
-            role='owner'
-        )
-        owner.set_password('owner123')
-        db.session.add(owner)
-        db.session.commit()
-        print("Default owner account created: owner@konvoy.com / owner123")
+    owner_email = os.environ.get("KONVOY_OWNER_EMAIL")
+    owner_password = os.environ.get("KONVOY_OWNER_PASSWORD")
+    
+    if owner_email and owner_password:
+        owner = User.query.filter_by(email=owner_email).first()
+        if not owner:
+            owner = User(
+                email=owner_email,
+                username=owner_email.split('@')[0],
+                role='owner'
+            )
+            owner.set_password(owner_password)
+            db.session.add(owner)
+            db.session.commit()
+            print("Owner account configured from environment variables.")
 
 
 stop_signal = 0
