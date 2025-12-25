@@ -507,8 +507,17 @@ def fetch_ride():
         flash('You do not have permission to access this page.', 'error')
         return redirect(url_for('root'))
     
+    if not current_user.uber_connected:
+        flash('Please connect your Uber account first.', 'error')
+        return redirect(url_for('uber_connect'))
+    
+    import json
+    cookies = json.loads(decrypt_data(current_user.uber_cookies))
+    headers = json.loads(decrypt_data(current_user.uber_headers))
+    refresh_token = decrypt_data(current_user.uber_refresh_token)
+    
     if config.ride_signal == 1:
-        ride_data = appLaunch()
+        ride_data = appLaunch(cookies, headers, refresh_token)
         return render_template('ride_details.html', ride_data=ride_data)
     else:
         return render_template('ride_details.html', ride_data=None)
@@ -517,8 +526,16 @@ def fetch_ride():
 @app.route('/submit', methods=['POST'])
 @login_required
 def submit():
+    if not current_user.uber_connected:
+        return jsonify(status="error", message="Uber account not connected")
+    
+    import json
+    cookies = json.loads(decrypt_data(current_user.uber_cookies))
+    headers = json.loads(decrypt_data(current_user.uber_headers))
+    refresh_token = decrypt_data(current_user.uber_refresh_token)
+    
     config.stored_destination = request.form.get('destination')
-    response = driverLocation(config.stored_destination)
+    response = driverLocation(config.stored_destination, cookies, headers, refresh_token)
     print(f"Destination Saved: {config.stored_destination}")
     return jsonify(status="success")
 

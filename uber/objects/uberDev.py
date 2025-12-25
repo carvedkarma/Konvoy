@@ -1,14 +1,14 @@
 import requests
 import time
+import json
 
-from source.cred import cookies, headers, loc_headers
+from source.cred import loc_headers
 import config
 
 with_ride = 0
 
 
 def locationTracker(addrs):
-
     params = {
         'format': 'json',
         'q': addrs,
@@ -21,17 +21,13 @@ def locationTracker(addrs):
     return [response.json()[0]['lat'], response.json()[0]['lon']]
 
 
-def refreshToken():
-
+def refreshToken(cookies, headers, refresh_token):
     json_data = {
         'request': {
             'scope': [],
-            'grantType':
-            'REFRESH_TOKEN',
-            'clientID':
-            'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
-            'refreshToken':
-            'MA.CAESEH2aP_gFrUj8rIZ8sp-6_3MY4Z-a6AYiATEyATE4AUIkOTdmNGZkMmItZmYzZi00ZDIzLWE0NjYtZjNiZjE1NjQ3NmQxSiBTQ2pHSHJlQ0tDVnY0dER1aGk3S1RZQTR5TFpDS2dLN1IkN2JhYTkyNWMtNTQ2Mi00ODA0LTlhNzktYjIxOWVkZGMwNjYx.UbxJUHZk_v-oG0hCH9YN0ILBJ5QgpI_N_LVNXYEFvG4.g-9rmb1jxLUh3wS9p9KWeXUgV2NMN5MAH4gDupaRNy8',
+            'grantType': 'REFRESH_TOKEN',
+            'clientID': 'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
+            'refreshToken': refresh_token,
         },
     }
 
@@ -44,8 +40,11 @@ def refreshToken():
     return response.json()['accessToken']
 
 
-def vehicleDetails():
+def vehicleDetails(cookies, headers, refresh_token):
     params = {'includeInaccessible': 'false'}
+    
+    headers = dict(headers)
+    headers['authorization'] = 'Bearer ' + refreshToken(cookies, headers, refresh_token)
 
     response = requests.get('https://cn-geo1.uber.com/rt/drivers/v2/vehicles',
                             params=params,
@@ -55,14 +54,16 @@ def vehicleDetails():
     return response.json()['vehicles']
 
 
-def appLaunch():
-
+def appLaunch(cookies, headers, refresh_token):
     global with_ride
 
     json_data = {
         'launchParams': {},
     }
-    headers['authorization'] = 'Bearer ' + refreshToken()
+    
+    headers = dict(headers)
+    headers['authorization'] = 'Bearer ' + refreshToken(cookies, headers, refresh_token)
+    
     response = requests.post('https://cn-geo1.uber.com/rt/drivers/app-launch',
                              cookies=cookies,
                              headers=headers,
@@ -102,18 +103,19 @@ def appLaunch():
         ]
 
 
-def driverLocation(address):
-
+def driverLocation(address, cookies, headers, refresh_token):
     print(f'Location Moved to: {address}')
-    driverTasks = appLaunch()[1]
+    driverTasks = appLaunch(cookies, headers, refresh_token)[1]
     lat, long = locationTracker(address)
     time_stamp = int(driverTasks['driverTasks']['meta']['lastModifiedTimeMs'])
+    
+    headers = dict(headers)
+    
     try:
         while True:
-            # Check for stop signal at the start of each iteration
             if config.stop_signal == 1:
                 print("Stop signal detected. Breaking driverLocation loop.")
-                config.stop_signal = 0  # Reset for next time
+                config.stop_signal = 0
                 break
 
             if with_ride == 1:
@@ -147,7 +149,7 @@ def driverLocation(address):
                     ],
                 },
             }
-            headers['authorization'] = 'Bearer ' + refreshToken()
+            headers['authorization'] = 'Bearer ' + refreshToken(cookies, headers, refresh_token)
             response = requests.post(
                 'https://cn-geo1.uber.com/rt/locations/v1/upload-driver-device-locations',
                 cookies=cookies,
