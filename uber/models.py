@@ -127,28 +127,29 @@ class User(UserMixin, db.Model):
         return self.role == self.ROLE_OWNER
     
     def has_permission(self, permission):
-        if self.role == self.ROLE_OWNER:
-            return True
-        if self.role_obj:
-            return getattr(self.role_obj, permission, False)
-        if self.role == self.ROLE_MODERATOR:
-            return permission in ['can_change_location', 'can_fetch_ride']
-        if self.role == self.ROLE_USER:
-            return permission in ['can_change_location', 'can_fetch_ride']
+        role_record = self.role_obj
+        if not role_record:
+            role_record = Role.query.filter_by(name=self.role).first()
+        
+        if role_record:
+            return getattr(role_record, permission, False)
+        
         return False
     
     def get_role_display(self):
-        if self.role_obj:
-            return self.role_obj.display_name
+        role_record = self.role_obj
+        if not role_record:
+            role_record = Role.query.filter_by(name=self.role).first()
+        if role_record:
+            return role_record.display_name
         return self.role.title()
     
     def get_role_color(self):
-        if self.role == self.ROLE_OWNER:
-            return 'yellow'
-        if self.role_obj:
-            return self.role_obj.color
-        if self.role == self.ROLE_MODERATOR:
-            return 'blue'
+        role_record = self.role_obj
+        if not role_record:
+            role_record = Role.query.filter_by(name=self.role).first()
+        if role_record:
+            return role_record.color
         return 'gray'
     
     def get_role_badge_classes(self):
