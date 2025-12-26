@@ -3,6 +3,7 @@
 {% block title %}Konvoy | Location{% endblock %}
 
 {% block extra_styles %}
+<style>
 .pulse-ring {
     animation: pulse-ring 2s infinite ease-out;
 }
@@ -10,11 +11,86 @@
     0% { transform: scale(1); opacity: 0.4; }
     100% { transform: scale(1.5); opacity: 0; }
 }
+
+.map-bg {
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(34, 139, 34, 0.3) 0%, transparent 25%),
+        radial-gradient(circle at 70% 60%, rgba(34, 139, 34, 0.25) 0%, transparent 20%),
+        radial-gradient(circle at 40% 70%, rgba(46, 125, 50, 0.2) 0%, transparent 30%),
+        radial-gradient(circle at 80% 20%, rgba(56, 142, 60, 0.2) 0%, transparent 25%),
+        linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #1a1a2e 75%, #16213e 100%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 400% 400%;
+    animation: map-shift 20s ease infinite;
+}
+@keyframes map-shift {
+    0%, 100% { background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0%, 0% 50%; }
+    50% { background-position: 100% 100%, 0% 0%, 100% 0%, 0% 100%, 100% 50%; }
+}
+
+.map-gradient {
+    background: radial-gradient(circle at center, transparent 0%, transparent 30%, rgba(255,255,255,0.95) 70%, white 100%);
+}
+
+.car-float {
+    animation: car-float 3s ease-in-out infinite;
+}
+@keyframes car-float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+
+.input-glow {
+    transition: all 0.3s ease;
+}
+.input-glow:focus {
+    box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+}
+
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 20px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+.typing-indicator.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+.typing-indicator span {
+    width: 6px;
+    height: 6px;
+    background: #000;
+    border-radius: 50%;
+    animation: typing-bounce 1.4s infinite ease-in-out;
+}
+.typing-indicator span:nth-child(1) { animation-delay: 0s; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+.location-pin {
+    animation: pin-bounce 2s ease-in-out infinite;
+}
+@keyframes pin-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
-    <div id="container" class="w-full max-w-sm transition-all duration-300">
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-8 relative">
+    <div class="absolute inset-0 map-bg opacity-30"></div>
+    <div class="absolute inset-0 map-gradient"></div>
+    
+    <div id="container" class="w-full max-w-md transition-all duration-300 relative z-10">
         
         {% if not has_permission %}
         <div class="glass-panel p-6 rounded-xl premium-shadow text-center">
@@ -30,36 +106,93 @@
             </a>
         </div>
         {% else %}
-        <div id="searchState" class="glass-panel p-6 rounded-xl premium-shadow">
-            <h2 class="text-lg font-bold text-zinc-900 mb-1">Change Location</h2>
-            <p class="text-sm text-zinc-500 mb-5">Enter your target destination</p>
+        <div id="searchState" class="glass-panel p-6 rounded-2xl premium-shadow">
+            {% if default_vehicle %}
+            <div class="flex justify-center mb-4">
+                <div class="relative">
+                    {% if default_vehicle.imageUrl %}
+                    <img src="{{ default_vehicle.imageUrl }}" alt="{{ default_vehicle.make }} {{ default_vehicle.model }}" 
+                        class="w-40 h-24 object-contain car-float">
+                    {% else %}
+                    <div class="w-40 h-24 bg-zinc-100 rounded-lg flex items-center justify-center car-float">
+                        <svg class="w-16 h-16 text-zinc-300" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                        </svg>
+                    </div>
+                    {% endif %}
+                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                        <span class="px-2 py-0.5 bg-black text-white text-[10px] font-bold rounded-full whitespace-nowrap">
+                            {{ default_vehicle.make }} {{ default_vehicle.model }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="text-center mb-5">
+                <div class="inline-flex items-center justify-center w-12 h-12 bg-black rounded-full mb-3 location-pin">
+                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-zinc-900">Change Location</h2>
+                <p class="text-sm text-zinc-500 mt-1">Enter your target destination</p>
+            </div>
             
             <div class="space-y-4">
-                <input type="text" id="destinationInput" 
-                    class="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-zinc-400"
-                    placeholder="Enter address or city">
+                <div class="relative">
+                    <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input type="text" id="destinationInput" 
+                        class="w-full pl-10 pr-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-black input-glow"
+                        placeholder="Enter address or city">
+                </div>
+                
+                <div id="typingIndicator" class="typing-indicator justify-center">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
                 
                 <button id="searchBtn" 
-                    class="w-full bg-black text-white py-3 rounded-lg font-medium text-sm hover:bg-zinc-800 transition-colors">
-                    Update Location
+                    class="w-full bg-black text-white py-3.5 rounded-xl font-medium text-sm hover:bg-zinc-800 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                    <span class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        </svg>
+                        Update Location
+                    </span>
                 </button>
             </div>
         </div>
 
-        <div id="pulsingState" class="hidden flex flex-col items-center justify-center py-16">
-            <div class="relative flex items-center justify-center">
-                <div class="pulse-ring absolute w-24 h-24 bg-black rounded-full opacity-20"></div>
-                <div class="pulse-ring absolute w-32 h-32 bg-black rounded-full opacity-10" style="animation-delay: 0.5s"></div>
+        <div id="pulsingState" class="hidden">
+            <div class="glass-panel p-8 rounded-2xl premium-shadow">
+                {% if default_vehicle and default_vehicle.imageUrl %}
+                <div class="flex justify-center mb-6">
+                    <img src="{{ default_vehicle.imageUrl }}" alt="Vehicle" class="w-32 h-20 object-contain car-float">
+                </div>
+                {% endif %}
                 
-                <button id="stopBtn" 
-                    class="relative z-10 w-20 h-20 bg-black text-white rounded-full font-medium text-sm shadow-lg flex items-center justify-center hover:bg-zinc-800 transition-colors">
-                    Cancel
-                </button>
-            </div>
-            
-            <div class="mt-8 text-center">
-                <p class="text-sm font-medium text-zinc-700">Updating location...</p>
-                <p class="text-xs text-zinc-400 mt-1">This may take a moment</p>
+                <div class="flex flex-col items-center justify-center">
+                    <div class="relative flex items-center justify-center mb-6">
+                        <div class="pulse-ring absolute w-24 h-24 bg-black rounded-full opacity-20"></div>
+                        <div class="pulse-ring absolute w-32 h-32 bg-black rounded-full opacity-10" style="animation-delay: 0.5s"></div>
+                        
+                        <button id="stopBtn" 
+                            class="relative z-10 w-20 h-20 bg-black text-white rounded-full font-medium text-sm shadow-lg flex items-center justify-center hover:bg-zinc-800 transition-colors">
+                            Stop
+                        </button>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-base font-semibold text-zinc-900">Updating location...</p>
+                        <p id="destinationDisplay" class="text-sm text-zinc-500 mt-1"></p>
+                    </div>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -76,17 +209,48 @@
     const searchBtn = document.getElementById('searchBtn');
     const stopBtn = document.getElementById('stopBtn');
     const destinationInput = document.getElementById('destinationInput');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const destinationDisplay = document.getElementById('destinationDisplay');
+    
+    let typingTimeout;
+
+    destinationInput.addEventListener('input', () => {
+        destinationInput.style.borderColor = '';
+        
+        typingIndicator.classList.add('active');
+        
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            typingIndicator.classList.remove('active');
+        }, 1000);
+    });
 
     searchBtn.addEventListener('click', async () => {
         const destination = destinationInput.value.trim();
         if (!destination) {
             destinationInput.style.borderColor = '#ef4444';
+            destinationInput.classList.add('shake');
+            setTimeout(() => destinationInput.classList.remove('shake'), 500);
             return;
         }
         destinationInput.style.borderColor = '';
         
-        searchState.classList.add('hidden');
-        pulsingState.classList.remove('hidden');
+        destinationDisplay.textContent = destination;
+        
+        searchState.style.opacity = '0';
+        searchState.style.transform = 'scale(0.95)';
+        
+        setTimeout(() => {
+            searchState.classList.add('hidden');
+            pulsingState.classList.remove('hidden');
+            pulsingState.style.opacity = '0';
+            pulsingState.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                pulsingState.style.opacity = '1';
+                pulsingState.style.transform = 'scale(1)';
+            }, 50);
+        }, 200);
         
         try {
             await fetch('/submit', {
@@ -105,14 +269,36 @@
             });
         } catch (e) { console.error(e); }
 
-        pulsingState.classList.add('hidden');
-        searchState.classList.remove('hidden');
-        destinationInput.value = '';
+        pulsingState.style.opacity = '0';
+        pulsingState.style.transform = 'scale(0.95)';
+        
+        setTimeout(() => {
+            pulsingState.classList.add('hidden');
+            searchState.classList.remove('hidden');
+            searchState.style.opacity = '0';
+            searchState.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                searchState.style.opacity = '1';
+                searchState.style.transform = 'scale(1)';
+            }, 50);
+            
+            destinationInput.value = '';
+        }, 200);
     });
 
-    destinationInput.addEventListener('input', () => {
-        destinationInput.style.borderColor = '';
-    });
+    searchState.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    pulsingState.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
 </script>
+<style>
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+.shake {
+    animation: shake 0.3s ease-in-out;
+}
+</style>
 {% endif %}
 {% endblock %}

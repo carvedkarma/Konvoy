@@ -647,7 +647,18 @@ def reset_password(token):
 @login_required
 def home():
     has_permission = current_user.has_permission('can_change_location')
-    return render_template('index.html', has_permission=has_permission)
+    default_vehicle = None
+    if current_user.uber_connected:
+        try:
+            cookies, headers, refresh_token = current_user.get_uber_credentials()
+            vehicles = vehicleDetails(cookies, headers, refresh_token)
+            for v in vehicles:
+                if v.get('isDefault'):
+                    default_vehicle = v
+                    break
+        except Exception as e:
+            print(f"Error fetching default vehicle: {e}")
+    return render_template('index.html', has_permission=has_permission, default_vehicle=default_vehicle)
 
 
 @app.route('/fetch-ride')
