@@ -66,17 +66,22 @@ def appLaunch(cookies, headers, refresh_token):
     headers['authorization'] = 'Bearer ' + refreshToken(
         cookies, headers, refresh_token)
 
-    # response = requests.post('https://cn-geo1.uber.com/rt/drivers/app-launch',
-    #                          cookies=cookies,
-    #                          headers=headers,
-    #                          json=json_data)
-    response = requests.get('https://pastebin.com/raw/SYMDNfFL')
-    print(response.json())
-    task_scopes = response.json()['driverTasks']['taskScopes']
+    try:
+        response = requests.post('https://cn-geo1.uber.com/rt/drivers/app-launch',
+                                 cookies=cookies,
+                                 headers=headers,
+                                 json=json_data)
+        data = response.json()
+    except Exception as e:
+        print(f"Error fetching app launch data: {e}")
+        return [0, None]
+    
+    task_scopes = data.get('driverTasks', {}).get('taskScopes', [])
     if len(task_scopes) == 0:
         print("No Ride Found")
-        return [0, response.json()]
-    else:
+        return [0, data]
+    
+    try:
         print("Ride Found")
         ride_type = task_scopes[0]['completionTask']['coalescedDataUnion'][
             'pickupCoalescedTaskData']['product']['name']
@@ -89,22 +94,40 @@ def appLaunch(cookies, headers, refresh_token):
             'pickupTaskData']['entity']['lastName']
         rating = task_scopes[0]['completionTask']['taskDataMap'][job_id][
             'pickupTaskData']['entity']['rating']
-        pickup_address = task_scopes[0]['nonBlockingTasks'][0][
-            'driverTaskDataUnion']['singleTaskData']['taskDataUnion'][
-                'locationTaskData']['anchorLocation']['fullAddress']
-        drop_off_address_title = task_scopes[1]['nonBlockingTasks'][4][
-            'driverTaskDataUnion']['singleTaskData']['taskDataUnion'][
-                'locationTaskData']['title']
-        drop_off_address_subtitle = task_scopes[1]['nonBlockingTasks'][4][
-            'driverTaskDataUnion']['singleTaskData']['taskDataUnion'][
-                'locationTaskData']['subtitle']
-        drop_off_address = drop_off_address_title + ' ' + drop_off_address_subtitle
+        
+        pickup_address = "Address unavailable"
+        try:
+            pickup_address = task_scopes[0]['nonBlockingTasks'][0][
+                'driverTaskDataUnion']['singleTaskData']['taskDataUnion'][
+                    'locationTaskData']['anchorLocation']['fullAddress']
+        except (KeyError, IndexError):
+            pass
+        
+        drop_off_address = "Destination unavailable"
+        try:
+            for scope in task_scopes:
+                for task in scope.get('nonBlockingTasks', []):
+                    task_data = task.get('driverTaskDataUnion', {}).get('singleTaskData', {}).get('taskDataUnion', {})
+                    if 'locationTaskData' in task_data:
+                        loc_data = task_data['locationTaskData']
+                        if 'title' in loc_data:
+                            title = loc_data.get('title', '')
+                            subtitle = loc_data.get('subtitle', '')
+                            if title:
+                                drop_off_address = f"{title} {subtitle}".strip()
+                                break
+        except (KeyError, IndexError):
+            pass
+        
         with_ride = 1
 
         return [
             ride_type, first_name, last_name, rating, pickup_address,
             drop_off_address
         ]
+    except (KeyError, IndexError) as e:
+        print(f"Error parsing ride data: {e}")
+        return [0, data]
 
 
 def driverLocation(address, cookies, headers, refresh_token):
