@@ -198,29 +198,49 @@ def appLaunch(cookies, headers, refresh_token):
         fare_distance = None
         ride_type_image = None
         
+        ride_type_images = {
+            'uberx': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png',
+            'uberxl': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberXL_v1.png',
+            'uber comfort': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberComfort_v1.png',
+            'uber black': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Black_v1.png',
+            'uber green': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Green_v1.png',
+            'uber pet': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png',
+        }
+        
+        ride_type_lower = ride_type.lower()
+        for key, img_url in ride_type_images.items():
+            if key in ride_type_lower or ride_type_lower in key:
+                ride_type_image = img_url
+                break
+        if not ride_type_image:
+            ride_type_image = ride_type_images.get('uberx')
+        
         try:
-            products_data = response.json()
-            tiers = products_data.get('data', {}).get('products', {}).get('tiers', [])
-            
-            for tier in tiers:
-                for product in tier.get('products', []):
-                    product_name = product.get('displayName', '').lower()
-                    if ride_type.lower() in product_name or product_name in ride_type.lower():
-                        fare_price = product.get('fare')
-                        eta_minutes = product.get('etaStringShort')
-                        fare_distance = product.get('distance')
-                        ride_type_image = product.get('productImageUrl')
-                        break
-                if fare_price:
-                    break
-            
-            if not fare_price and tiers:
-                first_product = tiers[0].get('products', [{}])[0] if tiers[0].get('products') else {}
-                fare_price = first_product.get('fare')
-                eta_minutes = first_product.get('etaStringShort')
-                fare_distance = first_product.get('distance')
-                ride_type_image = first_product.get('productImageUrl')
+            if response and response.status_code == 200:
+                products_data = response.json()
+                print(f"Products API response: {products_data}")
+                tiers = products_data.get('data', {}).get('products', {}).get('tiers', [])
                 
+                for tier in tiers:
+                    for product in tier.get('products', []):
+                        product_name = product.get('displayName', '').lower()
+                        if ride_type.lower() in product_name or product_name in ride_type.lower():
+                            fare_price = product.get('fare')
+                            eta_minutes = product.get('etaStringShort')
+                            fare_distance = product.get('distance')
+                            if product.get('productImageUrl'):
+                                ride_type_image = product.get('productImageUrl')
+                            break
+                    if fare_price:
+                        break
+                
+                if not fare_price and tiers:
+                    first_product = tiers[0].get('products', [{}])[0] if tiers[0].get('products') else {}
+                    fare_price = first_product.get('fare')
+                    eta_minutes = first_product.get('etaStringShort')
+                    fare_distance = first_product.get('distance')
+                    if first_product.get('productImageUrl'):
+                        ride_type_image = first_product.get('productImageUrl')
         except Exception as e:
             print(f"Error parsing product pricing: {e}")
 
