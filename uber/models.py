@@ -220,6 +220,17 @@ class User(UserMixin, db.Model):
             return self.first_name[0].upper()
         return self.username[0].upper()
     
+    def get_uber_credentials(self):
+        import json
+        cookies_str = decrypt_data(self.uber_cookies)
+        headers_str = decrypt_data(self.uber_headers)
+        refresh_token = decrypt_data(self.uber_refresh_token)
+        
+        cookies = json.loads(cookies_str) if cookies_str else {}
+        headers = json.loads(headers_str) if headers_str else {}
+        
+        return cookies, headers, refresh_token
+    
     def __repr__(self):
         return f'<User {self.username}>'
 
