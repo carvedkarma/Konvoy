@@ -66,10 +66,12 @@ def appLaunch(cookies, headers, refresh_token):
     headers['authorization'] = 'Bearer ' + refreshToken(
         cookies, headers, refresh_token)
 
-    response = requests.post('https://cn-geo1.uber.com/rt/drivers/app-launch',
-                             cookies=cookies,
-                             headers=headers,
-                             json=json_data)
+    # response = requests.post('https://cn-geo1.uber.com/rt/drivers/app-launch',
+    #                          cookies=cookies,
+    #                          headers=headers,
+    #                          json=json_data)
+    response = requests.get('https://pastebin.com/raw/SYMDNfFL')
+    print(response.json())
     task_scopes = response.json()['driverTasks']['taskScopes']
     if len(task_scopes) == 0:
         print("No Ride Found")

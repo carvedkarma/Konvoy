@@ -673,15 +673,15 @@ def fetch_ride():
         flash('Please connect your Uber account first.', 'error')
         return redirect(url_for('uber_connect'))
     
-    import json
-    cookies = json.loads(decrypt_data(current_user.uber_cookies))
-    headers = json.loads(decrypt_data(current_user.uber_headers))
-    refresh_token = decrypt_data(current_user.uber_refresh_token)
-    
-    if config.ride_signal == 1:
+    try:
+        cookies, headers, refresh_token = current_user.get_uber_credentials()
         ride_data = appLaunch(cookies, headers, refresh_token)
-        return render_template('ride_details.html', has_permission=True, ride_data=ride_data)
-    else:
+        if ride_data and ride_data[0] != 0:
+            return render_template('ride_details.html', has_permission=True, ride_data=ride_data)
+        else:
+            return render_template('ride_details.html', has_permission=True, ride_data=None)
+    except Exception as e:
+        print(f"Error fetching ride data: {e}")
         return render_template('ride_details.html', has_permission=True, ride_data=None)
 
 
