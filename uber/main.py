@@ -687,7 +687,7 @@ def fetch_ride():
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
         ride_data = appLaunch(cookies, headers, refresh_token)
-        if ride_data and ride_data[0] != 0:
+        if ride_data and isinstance(ride_data, dict):
             return render_template('ride_details.html', has_permission=True, ride_data=ride_data, default_vehicle=default_vehicle)
         else:
             return render_template('ride_details.html', has_permission=True, ride_data=None, default_vehicle=default_vehicle)
