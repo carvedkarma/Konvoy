@@ -52,38 +52,38 @@
     <!-- HAR Upload Method -->
     <div id="panel-har" class="glass-panel rounded-t-none rounded-xl premium-shadow overflow-hidden">
         <div class="p-6 border-b border-zinc-100">
-            <h2 class="text-sm font-semibold text-zinc-900 mb-4">Capture Credentials Using Chrome</h2>
+            <h2 class="text-sm font-semibold text-zinc-900 mb-4">Capture Credentials From Your Phone</h2>
             
             <div class="space-y-4">
                 <div class="flex items-start">
                     <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">1</div>
                     <div>
-                        <p class="text-sm font-medium text-zinc-900">Open Uber Driver Portal</p>
-                        <p class="text-xs text-zinc-500">Go to <a href="https://drivers.uber.com" target="_blank" class="text-blue-500 hover:underline">drivers.uber.com</a> in Chrome</p>
+                        <p class="text-sm font-medium text-zinc-900">Install HTTP Toolkit App</p>
+                        <p class="text-xs text-zinc-500">Download from <a href="https://play.google.com/store/apps/details?id=tech.httptoolkit.android" target="_blank" class="text-blue-500 hover:underline">Google Play Store</a> (Android) or <a href="https://apps.apple.com/app/http-toolkit/id1552419553" target="_blank" class="text-blue-500 hover:underline">App Store</a> (iPhone)</p>
                     </div>
                 </div>
                 
                 <div class="flex items-start">
                     <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">2</div>
                     <div>
-                        <p class="text-sm font-medium text-zinc-900">Open DevTools</p>
-                        <p class="text-xs text-zinc-500">Press <kbd class="px-1.5 py-0.5 bg-zinc-100 rounded text-[10px]">F12</kbd> or <kbd class="px-1.5 py-0.5 bg-zinc-100 rounded text-[10px]">Ctrl+Shift+I</kbd> (Mac: <kbd class="px-1.5 py-0.5 bg-zinc-100 rounded text-[10px]">Cmd+Option+I</kbd>)</p>
+                        <p class="text-sm font-medium text-zinc-900">Enable VPN in HTTP Toolkit</p>
+                        <p class="text-xs text-zinc-500">Open HTTP Toolkit and tap "Enable" to start capturing traffic</p>
                     </div>
                 </div>
                 
                 <div class="flex items-start">
                     <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">3</div>
                     <div>
-                        <p class="text-sm font-medium text-zinc-900">Go to Network Tab</p>
-                        <p class="text-xs text-zinc-500">Click the "Network" tab at the top of DevTools</p>
+                        <p class="text-sm font-medium text-zinc-900">Open Uber Driver App</p>
+                        <p class="text-xs text-zinc-500">Use the Uber Driver app normally - HTTP Toolkit will capture all requests</p>
                     </div>
                 </div>
                 
                 <div class="flex items-start">
                     <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">4</div>
                     <div>
-                        <p class="text-sm font-medium text-zinc-900">Log In & Navigate</p>
-                        <p class="text-xs text-zinc-500">Log into Uber and click around the dashboard (this captures requests)</p>
+                        <p class="text-sm font-medium text-zinc-900">Find Request to uber.com</p>
+                        <p class="text-xs text-zinc-500">In HTTP Toolkit, look for requests to cn-geo1.uber.com or api.uber.com</p>
                     </div>
                 </div>
                 
@@ -91,7 +91,7 @@
                     <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">5</div>
                     <div>
                         <p class="text-sm font-medium text-zinc-900">Export HAR File</p>
-                        <p class="text-xs text-zinc-500">Right-click in the Network panel → "Save all as HAR with content"</p>
+                        <p class="text-xs text-zinc-500">Tap the menu (3 dots) → "Export" → "Save as HAR"</p>
                     </div>
                 </div>
                 
@@ -99,7 +99,7 @@
                     <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">6</div>
                     <div>
                         <p class="text-sm font-medium text-zinc-900">Upload Below</p>
-                        <p class="text-xs text-zinc-500">Drop the .har file below and we'll extract everything automatically</p>
+                        <p class="text-xs text-zinc-500">Upload the .har file and we'll extract everything automatically</p>
                     </div>
                 </div>
             </div>
