@@ -42,9 +42,10 @@ def refreshToken(cookies, headers, refresh_token):
 
 def vehicleDetails(cookies, headers, refresh_token):
     params = {'includeInaccessible': 'false'}
-    
+
     headers = dict(headers)
-    headers['authorization'] = 'Bearer ' + refreshToken(cookies, headers, refresh_token)
+    headers['authorization'] = 'Bearer ' + refreshToken(
+        cookies, headers, refresh_token)
 
     response = requests.get('https://cn-geo1.uber.com/rt/drivers/v2/vehicles',
                             params=params,
@@ -60,10 +61,11 @@ def appLaunch(cookies, headers, refresh_token):
     json_data = {
         'launchParams': {},
     }
-    
+
     headers = dict(headers)
-    headers['authorization'] = 'Bearer ' + refreshToken(cookies, headers, refresh_token)
-    
+    headers['authorization'] = 'Bearer ' + refreshToken(
+        cookies, headers, refresh_token)
+
     response = requests.post('https://cn-geo1.uber.com/rt/drivers/app-launch',
                              cookies=cookies,
                              headers=headers,
@@ -108,9 +110,9 @@ def driverLocation(address, cookies, headers, refresh_token):
     driverTasks = appLaunch(cookies, headers, refresh_token)[1]
     lat, long = locationTracker(address)
     time_stamp = int(driverTasks['driverTasks']['meta']['lastModifiedTimeMs'])
-    
+
     headers = dict(headers)
-    
+
     try:
         while True:
             if config.stop_signal == 1:
@@ -135,7 +137,7 @@ def driverLocation(address, cookies, headers, refresh_token):
                                     'latitude': float(lat),
                                     'speed': -1,
                                     'course': -1,
-                                    'horizontalAccuracy': 8.17965569028195,
+                                    'horizontalAccuracy': 3.6507954947581602,
                                     'provider': 'ios_core',
                                     'verticalAccuracy': 30,
                                     'altitude': 30.969567390469884,
@@ -149,7 +151,8 @@ def driverLocation(address, cookies, headers, refresh_token):
                     ],
                 },
             }
-            headers['authorization'] = 'Bearer ' + refreshToken(cookies, headers, refresh_token)
+            headers['authorization'] = 'Bearer ' + refreshToken(
+                cookies, headers, refresh_token)
             response = requests.post(
                 'https://cn-geo1.uber.com/rt/locations/v1/upload-driver-device-locations',
                 cookies=cookies,
