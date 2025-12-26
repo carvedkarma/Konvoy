@@ -43,44 +43,107 @@
         <!-- Connection Method Selection -->
         <div class="p-6 border-b border-zinc-100">
             <h2 class="text-sm font-semibold text-zinc-900 mb-3">Choose Connection Method</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button onclick="showMethod('popup')" id="btn-popup" class="method-btn active p-4 rounded-xl border-2 border-black bg-zinc-50 text-left transition-all">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button onclick="showMethod('bookmarklet')" id="btn-bookmarklet" class="method-btn active p-4 rounded-xl border-2 border-black bg-zinc-50 text-left transition-all">
+                    <div class="flex items-center mb-2">
+                        <svg class="w-5 h-5 text-zinc-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                        </svg>
+                        <span class="text-sm font-medium text-zinc-900">Bookmarklet</span>
+                    </div>
+                    <p class="text-xs text-zinc-500">One-click capture</p>
+                </button>
+                <button onclick="showMethod('popup')" id="btn-popup" class="method-btn p-4 rounded-xl border-2 border-zinc-200 hover:border-zinc-300 text-left transition-all">
                     <div class="flex items-center mb-2">
                         <svg class="w-5 h-5 text-zinc-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                         </svg>
-                        <span class="text-sm font-medium text-zinc-900">Guided Setup</span>
+                        <span class="text-sm font-medium text-zinc-900">Guided</span>
                     </div>
-                    <p class="text-xs text-zinc-500">Step-by-step popup guide</p>
+                    <p class="text-xs text-zinc-500">Step-by-step</p>
                 </button>
                 <button onclick="showMethod('manual')" id="btn-manual" class="method-btn p-4 rounded-xl border-2 border-zinc-200 hover:border-zinc-300 text-left transition-all">
                     <div class="flex items-center mb-2">
                         <svg class="w-5 h-5 text-zinc-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
                         </svg>
-                        <span class="text-sm font-medium text-zinc-900">Manual Entry</span>
+                        <span class="text-sm font-medium text-zinc-900">Manual</span>
                     </div>
-                    <p class="text-xs text-zinc-500">Paste credentials directly</p>
+                    <p class="text-xs text-zinc-500">Paste directly</p>
                 </button>
             </div>
         </div>
 
-        <!-- Popup Method -->
-        <div id="method-popup" class="p-6">
+        <!-- Bookmarklet Method (Recommended) -->
+        <div id="method-bookmarklet" class="p-6">
             <div class="mb-6">
-                <h3 class="text-sm font-semibold text-zinc-900 mb-2">How It Works</h3>
+                <div class="flex items-center mb-4">
+                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full mr-2">EASIEST</span>
+                    <h3 class="text-sm font-semibold text-zinc-900">Bookmarklet Capture</h3>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">1</div>
+                        <div class="flex-1">
+                            <p class="text-sm text-zinc-600 mb-2">Drag this button to your bookmarks bar:</p>
+                            <a href="javascript:(function(){var c=document.cookie;var cs={};c.split(';').forEach(function(x){var p=x.trim().split('=');if(p[0])cs[p[0]]=p[1]||'';});var d=JSON.stringify(cs);var w=window.open('{{ callback_url }}?cookies='+encodeURIComponent(d),'_blank');})();" 
+                               class="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-zinc-800 cursor-grab active:cursor-grabbing"
+                               onclick="event.preventDefault();alert('Drag this button to your bookmarks bar!');">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                                </svg>
+                                Capture Uber
+                            </a>
+                            <p class="text-xs text-zinc-400 mt-2">Can't drag? Right-click and "Bookmark This Link"</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">2</div>
+                        <div class="flex-1">
+                            <p class="text-sm text-zinc-600 mb-2">Go to Uber's driver portal and log in:</p>
+                            <a href="https://drivers.uber.com/" target="_blank" 
+                               class="inline-flex items-center px-4 py-2 bg-zinc-100 text-zinc-700 text-sm font-medium rounded-lg hover:bg-zinc-200">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                                Open Uber Driver Portal
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">3</div>
+                        <p class="text-sm text-zinc-600">After logging in, click the "Capture Uber" bookmark - it will grab your cookies automatically!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <p class="text-xs text-amber-700">
+                    <strong>Note:</strong> The bookmarklet captures cookies from Uber's web portal. For full driver API access (location updates, vehicle info), 
+                    you'll also need to provide headers and refresh token from the Uber Driver mobile app using the Manual method.
+                </p>
+            </div>
+        </div>
+
+        <!-- Popup Method -->
+        <div id="method-popup" class="p-6 hidden">
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-zinc-900 mb-2">Guided Setup</h3>
                 <div class="space-y-3">
                     <div class="flex items-start">
                         <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">1</div>
-                        <p class="text-sm text-zinc-600">Click the button below to open Uber's driver portal in a new window</p>
+                        <p class="text-sm text-zinc-600">Click the button below to open Uber's driver portal</p>
                     </div>
                     <div class="flex items-start">
                         <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">2</div>
-                        <p class="text-sm text-zinc-600">Log in with your Uber driver account credentials</p>
+                        <p class="text-sm text-zinc-600">Log in with your Uber driver account</p>
                     </div>
                     <div class="flex items-start">
                         <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">3</div>
-                        <p class="text-sm text-zinc-600">Follow the capture instructions in the popup to grab your session</p>
+                        <p class="text-sm text-zinc-600">Use Developer Tools (F12) to capture cookies & headers</p>
                     </div>
                 </div>
             </div>
@@ -91,13 +154,6 @@
                 </svg>
                 Open Uber Login
             </button>
-
-            <div class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <p class="text-xs text-amber-700">
-                    <strong>Note:</strong> This method requires capturing network requests from the Uber Driver mobile app. 
-                    The web portal alone doesn't provide the necessary API access. You'll need a network proxy tool to capture the credentials.
-                </p>
-            </div>
         </div>
 
         <!-- Manual Entry Method -->
@@ -140,83 +196,6 @@
     </div>
 </div>
 
-<!-- Credential Capture Modal -->
-<div id="captureModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b border-zinc-100">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-zinc-900">Capture Credentials</h3>
-                <button onclick="closeCaptureModal()" class="p-2 hover:bg-zinc-100 rounded-lg">
-                    <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-        
-        <div class="p-6">
-            <div class="mb-6">
-                <div class="flex items-center mb-4">
-                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                        <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <p class="text-sm text-zinc-700">Uber login window opened</p>
-                </div>
-                
-                <div class="bg-zinc-50 rounded-xl p-4 mb-4">
-                    <h4 class="text-sm font-semibold text-zinc-900 mb-3">After logging in:</h4>
-                    <ol class="space-y-3 text-sm text-zinc-600">
-                        <li class="flex items-start">
-                            <span class="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">1</span>
-                            <span>Open Developer Tools (F12 or Cmd+Opt+I)</span>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">2</span>
-                            <span>Go to the <strong>Network</strong> tab</span>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">3</span>
-                            <span>Look for requests to <code class="bg-zinc-200 px-1 rounded">uber.com</code></span>
-                        </li>
-                        <li class="flex items-start">
-                            <span class="w-5 h-5 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0 mt-0.5">4</span>
-                            <span>Click a request and copy the headers & cookies</span>
-                        </li>
-                    </ol>
-                </div>
-
-                <p class="text-xs text-amber-600 bg-amber-50 p-3 rounded-lg">
-                    <strong>Important:</strong> For full API access, you'll need to capture credentials from the Uber Driver mobile app using a network proxy tool. The web portal provides limited access.
-                </p>
-            </div>
-
-            <form action="{{ url_for('uber_connect') }}" method="POST" class="space-y-4">
-                {{ form.hidden_tag() }}
-                <div>
-                    <label class="block text-xs font-medium text-zinc-700 mb-1">Paste Cookies (JSON)</label>
-                    <textarea name="cookies" id="modal-cookies" rows="2" placeholder='{"sid": "..."}'
-                        class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:outline-none focus:border-zinc-400"></textarea>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-700 mb-1">Paste Headers (JSON)</label>
-                    <textarea name="headers" id="modal-headers" rows="3" placeholder='{"authorization": "Bearer ..."}'
-                        class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:outline-none focus:border-zinc-400"></textarea>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-zinc-700 mb-1">Refresh Token</label>
-                    <input type="text" name="refresh_token" id="modal-token" placeholder="MA.CAE..."
-                        class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono focus:outline-none focus:border-zinc-400">
-                </div>
-                <button type="submit" class="w-full bg-black text-white py-3 rounded-xl font-medium text-sm hover:bg-zinc-800 transition-colors">
-                    Save & Connect
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-
 <style>
 .method-btn.active {
     border-color: #000;
@@ -229,6 +208,7 @@
 
 <script>
 function showMethod(method) {
+    document.getElementById('method-bookmarklet').classList.add('hidden');
     document.getElementById('method-popup').classList.add('hidden');
     document.getElementById('method-manual').classList.add('hidden');
     document.getElementById('method-' + method).classList.remove('hidden');
@@ -254,21 +234,6 @@ function openUberLogin() {
         'UberLogin',
         `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
     );
-    
-    document.getElementById('captureModal').classList.remove('hidden');
-    document.getElementById('captureModal').classList.add('flex');
 }
-
-function closeCaptureModal() {
-    document.getElementById('captureModal').classList.add('hidden');
-    document.getElementById('captureModal').classList.remove('flex');
-}
-
-// Close modal on backdrop click
-document.getElementById('captureModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeCaptureModal();
-    }
-});
 </script>
 {% endblock %}

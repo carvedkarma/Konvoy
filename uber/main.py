@@ -454,7 +454,8 @@ def uber_connect():
         
         if not cookies_json or not headers_json or not refresh_token:
             flash('All fields are required.', 'error')
-            return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form)
+            callback_url = url_for('uber_callback', _external=True)
+            return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form, callback_url=callback_url)
         
         try:
             import json
@@ -462,7 +463,8 @@ def uber_connect():
             json.loads(headers_json)
         except json.JSONDecodeError:
             flash('Invalid JSON format for cookies or headers.', 'error')
-            return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form)
+            callback_url = url_for('uber_callback', _external=True)
+            return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form, callback_url=callback_url)
         
         current_user.uber_cookies = encrypt_data(cookies_json)
         current_user.uber_headers = encrypt_data(headers_json)
@@ -472,7 +474,48 @@ def uber_connect():
         flash('Uber account connected successfully!', 'success')
         return redirect(url_for('root'))
     
-    return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form)
+    callback_url = url_for('uber_callback', _external=True)
+    return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form, callback_url=callback_url)
+
+
+@app.route('/uber-callback', methods=['GET', 'POST'])
+@login_required
+def uber_callback():
+    """Callback page for bookmarklet - receives cookies and displays confirmation form"""
+    form = UberConnectForm()
+    disconnect_form = UberDisconnectForm()
+    
+    if request.method == 'POST':
+        cookies_json = request.form.get('cookies', '').strip()
+        headers_json = request.form.get('headers', '').strip()
+        refresh_token = request.form.get('refresh_token', '').strip()
+        
+        if cookies_json:
+            try:
+                import json
+                json.loads(cookies_json)
+                if headers_json:
+                    json.loads(headers_json)
+            except json.JSONDecodeError:
+                flash('Invalid JSON format.', 'error')
+                return redirect(url_for('uber_connect'))
+            
+            current_user.uber_cookies = encrypt_data(cookies_json)
+            if headers_json:
+                current_user.uber_headers = encrypt_data(headers_json)
+            if refresh_token:
+                current_user.uber_refresh_token = encrypt_data(refresh_token)
+            current_user.uber_connected = True
+            db.session.commit()
+            flash('Uber cookies captured successfully!', 'success')
+            return redirect(url_for('root'))
+    
+    cookies_from_url = request.args.get('cookies', '')
+    
+    return render_template('uber_callback.html', 
+                          form=form, 
+                          cookies=cookies_from_url,
+                          disconnect_form=disconnect_form)
 
 
 @app.route('/uber-disconnect', methods=['POST'])
