@@ -166,3 +166,27 @@ def driverLocation(address, cookies, headers, refresh_token):
     except:
         print("Location Issue!!!")
     return
+
+
+def driverInfo(cookies, headers, refresh_token):
+    headers = dict(headers)
+    headers['authorization'] = 'Bearer ' + refreshToken(
+        cookies, headers, refresh_token)
+
+    params = {
+        'localeCode': 'en',
+    }
+
+    json_data = {}
+
+    response = requests.post('https://account.uber.com/api/getUserInfo',
+                             params=params,
+                             cookies=cookies,
+                             headers=headers,
+                             json=json_data)
+    name = response.json(
+    )['data']['userInfo']['name']['firstname'] + ' ' + response.json(
+    )['data']['userInfo']['name']['lastname']
+    photo = response.json()['data']['userInfo']['photo']['photoURL']
+
+    return [name, photo]

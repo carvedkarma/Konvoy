@@ -112,7 +112,7 @@
     {% if messages %}
     <div class="max-w-6xl mx-auto px-4 mt-4">
         {% for category, message in messages %}
-        <div class="mb-2 p-3 rounded-lg text-sm {% if category == 'error' %}bg-red-50 text-red-600{% elif category == 'success' %}bg-green-50 text-green-600{% else %}bg-blue-50 text-blue-600{% endif %}">
+        <div class="mb-2 p-3 rounded-lg text-sm {% if category == 'error' %}bg-red-50 text-red-600{% elif category == 'success' %}bg-zinc-100 text-zinc-700{% else %}bg-blue-50 text-blue-600{% endif %}">
             {{ message }}
         </div>
         {% endfor %}

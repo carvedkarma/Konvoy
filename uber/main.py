@@ -104,14 +104,22 @@ stored_destination = None
 def root():
     if current_user.is_authenticated:
         vehicles = []
+        driver_info = None
         if current_user.uber_connected:
             try:
                 cookies, headers, refresh_token = current_user.get_uber_credentials()
                 vehicles = vehicleDetails(cookies, headers, refresh_token)
+                from objects.uberDev import driverInfo
+                driver_data = driverInfo(cookies, headers, refresh_token)
+                driver_info = {
+                    'name': driver_data[0],
+                    'photo': driver_data[1]
+                }
             except Exception as e:
-                print(f"Error fetching vehicles: {e}")
+                print(f"Error fetching driver data: {e}")
                 vehicles = []
-        return render_template('home.html', vehicles=vehicles)
+                driver_info = None
+        return render_template('home.html', vehicles=vehicles, driver_info=driver_info)
     return redirect(url_for('login'))
 
 

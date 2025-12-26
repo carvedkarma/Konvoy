@@ -19,8 +19,8 @@
     <div class="glass-panel rounded-xl p-6 premium-shadow mb-4">
         <div class="flex items-center justify-between">
             <div class="flex items-center">
-                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                    <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <div class="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-zinc-600" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                     </svg>
                 </div>
@@ -119,9 +119,9 @@
             <div id="harStatus" class="hidden mt-4 p-4 rounded-xl"></div>
             
             <div id="harResults" class="hidden mt-4 space-y-3">
-                <div class="p-3 bg-green-50 border border-green-200 rounded-xl">
-                    <p class="text-xs font-medium text-green-800">Credentials Found!</p>
-                    <p class="text-xs text-green-600 mt-1" id="harResultsInfo"></p>
+                <div class="p-3 bg-zinc-100 border border-zinc-300 rounded-xl">
+                    <p class="text-xs font-medium text-zinc-800">Credentials Found!</p>
+                    <p class="text-xs text-zinc-600 mt-1" id="harResultsInfo"></p>
                 </div>
                 <form action="{{ url_for('uber_connect') }}" method="POST" id="harForm">
                     {{ form.hidden_tag() }}
@@ -307,7 +307,7 @@ function showHarStatus(message, type) {
     el.className = 'mt-4 p-4 rounded-xl text-xs ' + 
         (type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 
          type === 'info' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 
-         'bg-green-50 text-green-700 border border-green-200');
+         'bg-zinc-100 text-zinc-700 border border-zinc-300');
     el.classList.remove('hidden');
     document.getElementById('harResults').classList.add('hidden');
 }
@@ -359,7 +359,7 @@ function parseRawCookies() {
 function showStatus(message, type) {
     const el = document.getElementById('statusMessage');
     el.textContent = message;
-    el.className = 'p-3 rounded-xl text-xs ' + (type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200');
+    el.className = 'p-3 rounded-xl text-xs ' + (type === 'success' ? 'bg-zinc-100 text-zinc-700 border border-zinc-300' : 'bg-red-50 text-red-700 border border-red-200');
     el.classList.remove('hidden');
     setTimeout(() => el.classList.add('hidden'), 3000);
 }
