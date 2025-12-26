@@ -237,7 +237,7 @@ def edit_user(user_id):
         return redirect(url_for('root'))
     
     user = User.query.get_or_404(user_id)
-    all_roles = Role.query.filter_by(is_system=False).all()
+    all_roles = Role.query.all()
     
     if request.method == 'POST':
         first_name = request.form.get('first_name', '').strip()
@@ -265,6 +265,30 @@ def edit_user(user_id):
         new_password = request.form.get('new_password', '').strip()
         if new_password:
             user.set_password(new_password)
+        
+        role_ids = request.form.getlist('role_ids')
+        new_roles = []
+        for role_id in role_ids:
+            try:
+                role = Role.query.get(int(role_id))
+                if role:
+                    new_roles.append(role)
+            except (ValueError, TypeError):
+                pass
+        
+        if not new_roles:
+            default_role = Role.query.filter_by(name='user').first()
+            if default_role:
+                new_roles = [default_role]
+        
+        user.roles = new_roles
+        user.role_id = None
+        if new_roles:
+            primary = user.get_primary_role()
+            if primary:
+                user.role = primary.name
+        else:
+            user.role = 'user'
         
         db.session.commit()
         flash(f'User {user.username} updated successfully.', 'success')

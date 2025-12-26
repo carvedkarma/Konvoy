@@ -22,9 +22,13 @@
             </div>
             <div>
                 <span class="text-sm font-medium text-zinc-900">{{ user.get_display_name() }}</span>
-                <div class="flex items-center space-x-2 mt-1">
-                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full border {{ user.get_role_badge_classes() }}">{{ user.get_role_display() }}</span>
-                    <span class="text-xs text-zinc-400">@{{ user.username }}</span>
+                <div class="flex items-center flex-wrap gap-1 mt-1">
+                    {% for role in user.roles %}
+                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full border {{ role.get_badge_classes() }}">{{ role.display_name }}</span>
+                    {% else %}
+                    <span class="px-2 py-0.5 text-[10px] font-medium rounded-full border bg-zinc-100 text-zinc-500 border-zinc-200">No role</span>
+                    {% endfor %}
+                    <span class="text-xs text-zinc-400 ml-1">@{{ user.username }}</span>
                 </div>
             </div>
         </div>
@@ -60,6 +64,23 @@
                 <input type="password" name="new_password" placeholder="Leave blank to keep current" 
                     class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:border-zinc-400">
                 <p class="text-xs text-zinc-400 mt-1">Only fill if you want to reset the password</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-zinc-500 mb-2">Assigned Roles</label>
+                <div class="grid grid-cols-2 gap-2">
+                    {% for role in roles %}
+                    <label class="flex items-center p-2 bg-zinc-50 border border-zinc-200 rounded-lg cursor-pointer hover:bg-zinc-100 transition-colors">
+                        <input type="checkbox" name="role_ids" value="{{ role.id }}" 
+                               {% if role in user.roles %}checked{% endif %}
+                               class="w-4 h-4 rounded border-zinc-300 text-zinc-800 focus:ring-zinc-500 mr-2">
+                        <div class="flex items-center">
+                            <span class="px-2 py-0.5 text-[10px] font-medium rounded-full border {{ role.get_badge_classes() }} mr-1">{{ role.display_name }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+                <p class="text-xs text-zinc-400 mt-1">Select one or more roles for this user</p>
             </div>
 
             <div class="p-3 bg-zinc-50 rounded-lg">
