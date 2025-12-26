@@ -108,7 +108,17 @@ def root():
         if current_user.uber_connected:
             try:
                 cookies, headers, refresh_token = current_user.get_uber_credentials()
+            except Exception as e:
+                print(f"Error getting credentials: {e}")
+                return render_template('home.html', vehicles=vehicles, driver_info=driver_info)
+            
+            try:
                 vehicles = vehicleDetails(cookies, headers, refresh_token)
+            except Exception as e:
+                print(f"Error fetching vehicles: {e}")
+                vehicles = []
+            
+            try:
                 from objects.uberDev import driverInfo
                 driver_data = driverInfo(cookies, headers, refresh_token)
                 driver_info = {
@@ -116,8 +126,7 @@ def root():
                     'photo': driver_data[1]
                 }
             except Exception as e:
-                print(f"Error fetching driver data: {e}")
-                vehicles = []
+                print(f"Error fetching driver info: {e}")
                 driver_info = None
         return render_template('home.html', vehicles=vehicles, driver_info=driver_info)
     return redirect(url_for('login'))
