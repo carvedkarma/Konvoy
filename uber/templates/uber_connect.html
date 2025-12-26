@@ -40,200 +40,249 @@
     {% endif %}
 
     <div class="glass-panel rounded-xl premium-shadow overflow-hidden">
-        <!-- Connection Method Selection -->
+        <!-- Instructions Section -->
         <div class="p-6 border-b border-zinc-100">
-            <h2 class="text-sm font-semibold text-zinc-900 mb-3">Choose Connection Method</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <button onclick="showMethod('bookmarklet')" id="btn-bookmarklet" class="method-btn active p-4 rounded-xl border-2 border-black bg-zinc-50 text-left transition-all">
-                    <div class="flex items-center mb-2">
-                        <svg class="w-5 h-5 text-zinc-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                        </svg>
-                        <span class="text-sm font-medium text-zinc-900">Bookmarklet</span>
+            <h2 class="text-sm font-semibold text-zinc-900 mb-4">How to Get Your Credentials</h2>
+            
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">1</div>
+                    <div>
+                        <p class="text-sm font-medium text-zinc-900">Install HTTP Toolkit (Free)</p>
+                        <p class="text-xs text-zinc-500 mb-2">Download from <a href="https://httptoolkit.com" target="_blank" class="text-blue-500 hover:underline">httptoolkit.com</a> - works on Windows, Mac, Linux</p>
                     </div>
-                    <p class="text-xs text-zinc-500">One-click capture</p>
-                </button>
-                <button onclick="showMethod('popup')" id="btn-popup" class="method-btn p-4 rounded-xl border-2 border-zinc-200 hover:border-zinc-300 text-left transition-all">
-                    <div class="flex items-center mb-2">
-                        <svg class="w-5 h-5 text-zinc-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                        <span class="text-sm font-medium text-zinc-900">Guided</span>
-                    </div>
-                    <p class="text-xs text-zinc-500">Step-by-step</p>
-                </button>
-                <button onclick="showMethod('manual')" id="btn-manual" class="method-btn p-4 rounded-xl border-2 border-zinc-200 hover:border-zinc-300 text-left transition-all">
-                    <div class="flex items-center mb-2">
-                        <svg class="w-5 h-5 text-zinc-700 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                        </svg>
-                        <span class="text-sm font-medium text-zinc-900">Manual</span>
-                    </div>
-                    <p class="text-xs text-zinc-500">Paste directly</p>
-                </button>
-            </div>
-        </div>
-
-        <!-- Bookmarklet Method (Recommended) -->
-        <div id="method-bookmarklet" class="p-6">
-            <div class="mb-6">
-                <div class="flex items-center mb-4">
-                    <span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full mr-2">EASIEST</span>
-                    <h3 class="text-sm font-semibold text-zinc-900">Bookmarklet Capture</h3>
                 </div>
                 
-                <div class="space-y-4">
-                    <div class="flex items-start">
-                        <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">1</div>
-                        <div class="flex-1">
-                            <p class="text-sm text-zinc-600 mb-2">Drag this button to your bookmarks bar:</p>
-                            <a href="javascript:(function(){var c=document.cookie;var cs={};c.split(';').forEach(function(x){var p=x.trim().split('=');if(p[0])cs[p[0]]=p[1]||'';});var d=JSON.stringify(cs);var w=window.open('{{ callback_url }}?cookies='+encodeURIComponent(d),'_blank');})();" 
-                               class="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-zinc-800 cursor-grab active:cursor-grabbing"
-                               onclick="event.preventDefault();alert('Drag this button to your bookmarks bar!');">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                                </svg>
-                                Capture Uber
-                            </a>
-                            <p class="text-xs text-zinc-400 mt-2">Can't drag? Right-click and "Bookmark This Link"</p>
-                        </div>
+                <div class="flex items-start">
+                    <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">2</div>
+                    <div>
+                        <p class="text-sm font-medium text-zinc-900">Connect Your Phone</p>
+                        <p class="text-xs text-zinc-500">Open HTTP Toolkit, click "Android device via ADB" or scan QR code</p>
                     </div>
-                    
-                    <div class="flex items-start">
-                        <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">2</div>
-                        <div class="flex-1">
-                            <p class="text-sm text-zinc-600 mb-2">Go to Uber's driver portal and log in:</p>
-                            <a href="https://drivers.uber.com/" target="_blank" 
-                               class="inline-flex items-center px-4 py-2 bg-zinc-100 text-zinc-700 text-sm font-medium rounded-lg hover:bg-zinc-200">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                </svg>
-                                Open Uber Driver Portal
-                            </a>
-                        </div>
+                </div>
+                
+                <div class="flex items-start">
+                    <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">3</div>
+                    <div>
+                        <p class="text-sm font-medium text-zinc-900">Open Uber Driver App</p>
+                        <p class="text-xs text-zinc-500">Use the app normally - HTTP Toolkit will capture all requests</p>
                     </div>
-                    
-                    <div class="flex items-start">
-                        <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">3</div>
-                        <p class="text-sm text-zinc-600">After logging in, click the "Capture Uber" bookmark - it will grab your cookies automatically!</p>
+                </div>
+                
+                <div class="flex items-start">
+                    <div class="w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">4</div>
+                    <div>
+                        <p class="text-sm font-medium text-zinc-900">Find a Request to cn-geo1.uber.com</p>
+                        <p class="text-xs text-zinc-500">Click on it and copy the headers/cookies from the Request panel</p>
                     </div>
                 </div>
             </div>
 
-            <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <p class="text-xs text-amber-700">
-                    <strong>Note:</strong> The bookmarklet captures cookies from Uber's web portal. For full driver API access (location updates, vehicle info), 
-                    you'll also need to provide headers and refresh token from the Uber Driver mobile app using the Manual method.
+            <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                <p class="text-xs text-blue-700">
+                    <strong>Tip:</strong> You can paste raw headers directly - we'll automatically convert them to JSON format!
                 </p>
             </div>
         </div>
 
-        <!-- Popup Method -->
-        <div id="method-popup" class="p-6 hidden">
-            <div class="mb-6">
-                <h3 class="text-sm font-semibold text-zinc-900 mb-2">Guided Setup</h3>
-                <div class="space-y-3">
-                    <div class="flex items-start">
-                        <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">1</div>
-                        <p class="text-sm text-zinc-600">Click the button below to open Uber's driver portal</p>
-                    </div>
-                    <div class="flex items-start">
-                        <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">2</div>
-                        <p class="text-sm text-zinc-600">Log in with your Uber driver account</p>
-                    </div>
-                    <div class="flex items-start">
-                        <div class="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0">3</div>
-                        <p class="text-sm text-zinc-600">Use Developer Tools (F12) to capture cookies & headers</p>
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="openUberLogin()" class="w-full bg-black text-white py-3 rounded-xl font-medium text-sm hover:bg-zinc-800 transition-colors flex items-center justify-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                </svg>
-                Open Uber Login
-            </button>
-        </div>
-
-        <!-- Manual Entry Method -->
-        <div id="method-manual" class="p-6 hidden">
-            <div class="mb-6 p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
-                <h4 class="text-xs font-semibold text-zinc-700 mb-2">How to Get Credentials</h4>
-                <ol class="text-xs text-zinc-600 space-y-1 list-decimal list-inside">
-                    <li>Open the Uber Driver app on your phone</li>
-                    <li>Use a proxy tool (Charles, mitmproxy, HTTP Toolkit) to capture traffic</li>
-                    <li>Find any request to <code class="bg-zinc-200 px-1 rounded">cn-geo1.uber.com</code></li>
-                    <li>Copy the cookies, headers, and find the refresh token</li>
-                </ol>
-            </div>
-
-            <form action="{{ url_for('uber_connect') }}" method="POST" class="space-y-4">
+        <!-- Input Form -->
+        <div class="p-6">
+            <form action="{{ url_for('uber_connect') }}" method="POST" class="space-y-4" id="connectForm">
                 {{ form.hidden_tag() }}
+                
                 <div>
-                    <label class="block text-xs font-medium text-zinc-700 mb-1.5">Cookies (JSON format)</label>
-                    <textarea name="cookies" rows="3" placeholder='{"sid": "...", "udi-id": "..."}'
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-medium text-zinc-700">Headers</label>
+                        <button type="button" onclick="parseRawHeaders()" class="text-[10px] text-blue-500 hover:text-blue-600">Parse Raw Headers</button>
+                    </div>
+                    <textarea name="headers" id="headersInput" rows="6" 
+                        placeholder="Paste raw headers or JSON format:
+
+authorization: Bearer eyJ...
+x-uber-device-id: abc123
+Host: cn-geo1.uber.com
+
+OR
+
+{&quot;authorization&quot;: &quot;Bearer eyJ...&quot;}"
                         class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-mono focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400"></textarea>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-medium text-zinc-700 mb-1.5">Headers (JSON format)</label>
-                    <textarea name="headers" rows="5" placeholder='{"authorization": "Bearer ...", "x-uber-device-id": "..."}'
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-medium text-zinc-700">Cookies</label>
+                        <button type="button" onclick="parseRawCookies()" class="text-[10px] text-blue-500 hover:text-blue-600">Parse Raw Cookies</button>
+                    </div>
+                    <textarea name="cookies" id="cookiesInput" rows="4" 
+                        placeholder="Paste raw cookies or JSON format:
+
+sid=abc123; udi-id=xyz789; session=...
+
+OR
+
+{&quot;sid&quot;: &quot;abc123&quot;, &quot;udi-id&quot;: &quot;xyz789&quot;}"
                         class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-mono focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400"></textarea>
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-zinc-700 mb-1.5">Refresh Token</label>
-                    <input type="text" name="refresh_token" placeholder="MA.CAE..."
+                    <input type="text" name="refresh_token" id="refreshTokenInput" placeholder="MA.CAE... (find in token refresh requests)"
                         class="w-full px-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-mono focus:outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400">
+                    <p class="text-[10px] text-zinc-400 mt-1">Look for requests to /oauth2/token - the refresh token starts with "MA."</p>
                 </div>
 
-                <button type="submit" class="w-full bg-black text-white py-3 rounded-xl font-medium text-sm hover:bg-zinc-800 transition-colors">
-                    Connect Account
-                </button>
+                <div id="statusMessage" class="hidden p-3 rounded-xl text-xs"></div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="testCredentials()" class="flex-1 bg-zinc-100 text-zinc-700 py-3 rounded-xl font-medium text-sm hover:bg-zinc-200 transition-colors">
+                        Test Connection
+                    </button>
+                    <button type="submit" class="flex-1 bg-black text-white py-3 rounded-xl font-medium text-sm hover:bg-zinc-800 transition-colors">
+                        Save & Connect
+                    </button>
+                </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Alternative Tools -->
+    <div class="mt-6 p-4 bg-zinc-50 rounded-xl">
+        <h3 class="text-xs font-semibold text-zinc-700 mb-2">Alternative Proxy Tools</h3>
+        <div class="flex flex-wrap gap-2">
+            <a href="https://www.charlesproxy.com/" target="_blank" class="px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-zinc-600 hover:border-zinc-300">Charles Proxy</a>
+            <a href="https://mitmproxy.org/" target="_blank" class="px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-zinc-600 hover:border-zinc-300">mitmproxy</a>
+            <a href="https://proxyman.io/" target="_blank" class="px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-zinc-600 hover:border-zinc-300">Proxyman (Mac)</a>
+            <a href="https://portswigger.net/burp" target="_blank" class="px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-zinc-600 hover:border-zinc-300">Burp Suite</a>
         </div>
     </div>
 </div>
 
-<style>
-.method-btn.active {
-    border-color: #000;
-    background-color: rgb(250 250 250);
-}
-.method-btn:not(.active) {
-    border-color: rgb(228 228 231);
-}
-</style>
-
 <script>
-function showMethod(method) {
-    document.getElementById('method-bookmarklet').classList.add('hidden');
-    document.getElementById('method-popup').classList.add('hidden');
-    document.getElementById('method-manual').classList.add('hidden');
-    document.getElementById('method-' + method).classList.remove('hidden');
+function parseRawHeaders() {
+    const input = document.getElementById('headersInput');
+    const value = input.value.trim();
     
-    document.querySelectorAll('.method-btn').forEach(btn => {
-        btn.classList.remove('active');
-        btn.classList.remove('border-black');
-        btn.classList.add('border-zinc-200');
-    });
-    document.getElementById('btn-' + method).classList.add('active');
-    document.getElementById('btn-' + method).classList.add('border-black');
-    document.getElementById('btn-' + method).classList.remove('border-zinc-200');
+    if (!value) return;
+    
+    // Check if already JSON
+    try {
+        JSON.parse(value);
+        return; // Already valid JSON
+    } catch (e) {}
+    
+    // Parse raw headers format: "Header-Name: value"
+    const headers = {};
+    const lines = value.split('\n');
+    
+    for (const line of lines) {
+        const colonIndex = line.indexOf(':');
+        if (colonIndex > 0) {
+            const key = line.substring(0, colonIndex).trim().toLowerCase();
+            const val = line.substring(colonIndex + 1).trim();
+            if (key && val) {
+                headers[key] = val;
+            }
+        }
+    }
+    
+    if (Object.keys(headers).length > 0) {
+        input.value = JSON.stringify(headers, null, 2);
+        showStatus('Headers parsed successfully!', 'success');
+    } else {
+        showStatus('Could not parse headers. Check format.', 'error');
+    }
 }
 
-function openUberLogin() {
-    const width = 500;
-    const height = 700;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
+function parseRawCookies() {
+    const input = document.getElementById('cookiesInput');
+    const value = input.value.trim();
     
-    window.open(
-        'https://drivers.uber.com/',
-        'UberLogin',
-        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-    );
+    if (!value) return;
+    
+    // Check if already JSON
+    try {
+        JSON.parse(value);
+        return; // Already valid JSON
+    } catch (e) {}
+    
+    // Parse raw cookie format: "name=value; name2=value2"
+    const cookies = {};
+    const parts = value.split(';');
+    
+    for (const part of parts) {
+        const eqIndex = part.indexOf('=');
+        if (eqIndex > 0) {
+            const key = part.substring(0, eqIndex).trim();
+            const val = part.substring(eqIndex + 1).trim();
+            if (key) {
+                cookies[key] = val;
+            }
+        }
+    }
+    
+    if (Object.keys(cookies).length > 0) {
+        input.value = JSON.stringify(cookies, null, 2);
+        showStatus('Cookies parsed successfully!', 'success');
+    } else {
+        showStatus('Could not parse cookies. Check format.', 'error');
+    }
+}
+
+function showStatus(message, type) {
+    const el = document.getElementById('statusMessage');
+    el.textContent = message;
+    el.className = 'p-3 rounded-xl text-xs ' + (type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200');
+    el.classList.remove('hidden');
+    
+    setTimeout(() => {
+        el.classList.add('hidden');
+    }, 3000);
+}
+
+async function testCredentials() {
+    const headers = document.getElementById('headersInput').value.trim();
+    const cookies = document.getElementById('cookiesInput').value.trim();
+    const refreshToken = document.getElementById('refreshTokenInput').value.trim();
+    
+    if (!headers || !cookies || !refreshToken) {
+        showStatus('Please fill in all fields first.', 'error');
+        return;
+    }
+    
+    // Validate JSON format
+    try {
+        JSON.parse(headers);
+        JSON.parse(cookies);
+    } catch (e) {
+        showStatus('Invalid JSON format. Click "Parse" buttons to convert.', 'error');
+        return;
+    }
+    
+    showStatus('Testing connection... This may take a moment.', 'success');
+    
+    try {
+        const response = await fetch('/api/test-uber-credentials', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                headers: headers,
+                cookies: cookies,
+                refresh_token: refreshToken
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus('Connection successful! You can now save.', 'success');
+        } else {
+            showStatus('Connection failed: ' + (data.error || 'Invalid credentials'), 'error');
+        }
+    } catch (e) {
+        showStatus('Test failed: ' + e.message, 'error');
+    }
 }
 </script>
 {% endblock %}

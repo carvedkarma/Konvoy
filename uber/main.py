@@ -518,6 +518,37 @@ def uber_callback():
                           disconnect_form=disconnect_form)
 
 
+@app.route('/api/test-uber-credentials', methods=['POST'])
+@login_required
+def test_uber_credentials():
+    """Test if the provided Uber credentials are valid"""
+    try:
+        data = request.get_json()
+        headers_json = data.get('headers', '')
+        cookies_json = data.get('cookies', '')
+        refresh_token = data.get('refresh_token', '')
+        
+        if not all([headers_json, cookies_json, refresh_token]):
+            return jsonify({'success': False, 'error': 'All fields required'})
+        
+        headers = json.loads(headers_json)
+        cookies = json.loads(cookies_json)
+        
+        from objects.uberDev import refreshToken
+        try:
+            new_token = refreshToken(cookies, headers, refresh_token)
+            if new_token:
+                return jsonify({'success': True, 'message': 'Credentials valid'})
+            else:
+                return jsonify({'success': False, 'error': 'Could not refresh token'})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)})
+    except json.JSONDecodeError:
+        return jsonify({'success': False, 'error': 'Invalid JSON format'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/uber-disconnect', methods=['POST'])
 @login_required
 def uber_disconnect():
