@@ -224,32 +224,33 @@ def appLaunch(cookies, headers, refresh_token):
         try:
             if response and response.status_code == 200:
                 products_data = response.json()
-                print(f"Products API response: {products_data}")
                 tiers = products_data.get('data', {}).get('products',
                                                           {}).get('tiers', [])
 
                 for tier in tiers:
                     for product in tier.get('products', []):
                         product_name = product.get('displayName', '').lower()
-                        if ride_type.lower(
-                        ) in product_name or product_name in ride_type.lower():
-                            fare_price = product.get('fare')
-                            eta_minutes = product.get('etaStringShort')
-                            fare_distance = product.get('distance')
+                        if ride_type.lower() in product_name or product_name in ride_type.lower():
+                            fares_list = product.get('fares', [])
+                            if fares_list:
+                                fare_price = fares_list[0].get('fare')
+                            estimated_seconds = product.get('estimatedTripTime')
+                            if estimated_seconds:
+                                eta_minutes = round(estimated_seconds / 60)
                             if product.get('productImageUrl'):
-                                ride_type_image = product.get(
-                                    'productImageUrl')
+                                ride_type_image = product.get('productImageUrl')
                             break
                     if fare_price:
                         break
 
                 if not fare_price and tiers:
-                    first_product = tiers[0].get(
-                        'products',
-                        [{}])[0] if tiers[0].get('products') else {}
-                    fare_price = first_product.get('fare')
-                    eta_minutes = first_product.get('etaStringShort')
-                    fare_distance = first_product.get('distance')
+                    first_product = tiers[0].get('products', [{}])[0] if tiers[0].get('products') else {}
+                    fares_list = first_product.get('fares', [])
+                    if fares_list:
+                        fare_price = fares_list[0].get('fare')
+                    estimated_seconds = first_product.get('estimatedTripTime')
+                    if estimated_seconds:
+                        eta_minutes = round(estimated_seconds / 60)
                     if first_product.get('productImageUrl'):
                         ride_type_image = first_product.get('productImageUrl')
         except Exception as e:
