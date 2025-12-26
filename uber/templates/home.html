@@ -110,9 +110,9 @@
                 <p class="text-xs text-zinc-400 mb-3">Your Vehicles</p>
                 <div class="grid grid-cols-2 gap-3">
                     {% for vehicle in vehicles %}
-                    <div class="relative p-3 rounded-lg border-2 {% if vehicle.isDefault %}border-black bg-zinc-50{% else %}border-zinc-200 bg-zinc-50{% endif %}">
+                    <div class="relative p-3 rounded-lg border-2 {% if vehicle.isDefault %}border-green-400 bg-green-50{% else %}border-zinc-200 bg-zinc-50{% endif %}">
                         {% if vehicle.isDefault %}
-                        <span class="absolute top-2 right-2 px-1.5 py-0.5 bg-black text-white text-[9px] font-bold rounded">DEFAULT</span>
+                        <span class="absolute top-2 right-2 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded">DEFAULT</span>
                         {% endif %}
                         {% if vehicle.imageUrl %}
                         <img src="{{ vehicle.imageUrl }}" alt="{{ vehicle.make }} {{ vehicle.model }}" class="w-full h-20 object-contain mb-2">

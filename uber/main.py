@@ -144,7 +144,6 @@ def login():
             user.last_login = datetime.utcnow()
             db.session.commit()
             login_user(user)
-            flash('Welcome back to Konvoy!', 'success')
             next_page = request.args.get('next')
             return redirect(next_page if next_page else url_for('root'))
         else:
