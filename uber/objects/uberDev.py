@@ -93,34 +93,36 @@ def appLaunch(cookies, headers, refresh_token):
             'pickupTaskData']['entity']['rating']
         
         pickup_address = "Address unavailable"
-        try:
-            pickup_address = task_scopes[0]['nonBlockingTasks'][0][
-                'driverTaskDataUnion']['singleTaskData']['taskDataUnion'][
-                    'locationTaskData']['anchorLocation']['fullAddress']
-        except (KeyError, IndexError):
-            pass
-        
         drop_off_address = "Destination unavailable"
+        
         try:
-            for scope in task_scopes:
-                for task in scope.get('nonBlockingTasks', []):
-                    task_data = task.get('driverTaskDataUnion', {}).get('singleTaskData', {}).get('taskDataUnion', {})
-                    if 'locationTaskData' in task_data:
-                        loc_data = task_data['locationTaskData']
-                        if 'title' in loc_data:
-                            title = loc_data.get('title', '')
-                            subtitle = loc_data.get('subtitle', '')
-                            if title:
-                                drop_off_address = f"{title} {subtitle}".strip()
-                                break
+            location_tasks = []
+            for task in task_scopes[0].get('nonBlockingTasks', []):
+                task_data = task.get('driverTaskDataUnion', {}).get('singleTaskData', {}).get('taskDataUnion', {})
+                if 'locationTaskData' in task_data:
+                    location_tasks.append(task_data['locationTaskData'])
+            
+            if len(location_tasks) >= 1:
+                loc = location_tasks[0]
+                title = loc.get('title', '')
+                subtitle = loc.get('subtitle', '')
+                if title:
+                    pickup_address = f"{title}, {subtitle}".strip(', ')
+            
+            if len(location_tasks) >= 2:
+                loc = location_tasks[1]
+                title = loc.get('title', '')
+                subtitle = loc.get('subtitle', '')
+                if title:
+                    drop_off_address = f"{title}, {subtitle}".strip(', ')
         except (KeyError, IndexError):
             pass
         
+        full_name = f"{first_name} {last_name}".strip()
         with_ride = 1
 
         return [
-            ride_type, first_name, last_name, rating, pickup_address,
-            drop_off_address
+            ride_type, full_name, rating, pickup_address, drop_off_address
         ]
     except (KeyError, IndexError) as e:
         print(f"Error parsing ride data: {e}")
