@@ -162,7 +162,7 @@ def driverLocation(address, cookies, headers, refresh_token):
             time_stamp += 4000
             print(response.json())
 
-            time.sleep(4)
+            time.sleep(2)
     except:
         print("Location Issue!!!")
     return
