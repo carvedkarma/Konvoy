@@ -3,7 +3,7 @@ import time
 import json
 import math
 
-from source.cred import loc_headers
+from source.cred import loc_headers, fare_cookies, fare_headers
 import config
 
 with_ride = 0
@@ -180,8 +180,8 @@ def appLaunch(cookies, headers, refresh_token):
             }
 
             response = requests.post('https://m.uber.com/go/graphql',
-                                     cookies=cookies,
-                                     headers=headers,
+                                     cookies=fare_cookies,
+                                     headers=fare_headers,
                                      json=json_data)
 
             if pickup_coords and dropoff_coords and all(pickup_coords) and all(
@@ -197,16 +197,22 @@ def appLaunch(cookies, headers, refresh_token):
         eta_minutes = None
         fare_distance = None
         ride_type_image = None
-        
+
         ride_type_images = {
-            'uberx': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png',
-            'uberxl': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberXL_v1.png',
-            'uber comfort': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberComfort_v1.png',
-            'uber black': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Black_v1.png',
-            'uber green': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Green_v1.png',
-            'uber pet': 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png',
+            'uberx':
+            'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png',
+            'uberxl':
+            'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberXL_v1.png',
+            'uber comfort':
+            'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberComfort_v1.png',
+            'uber black':
+            'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Black_v1.png',
+            'uber green':
+            'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Green_v1.png',
+            'uber pet':
+            'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png',
         }
-        
+
         ride_type_lower = ride_type.lower()
         for key, img_url in ride_type_images.items():
             if key in ride_type_lower or ride_type_lower in key:
@@ -214,28 +220,33 @@ def appLaunch(cookies, headers, refresh_token):
                 break
         if not ride_type_image:
             ride_type_image = ride_type_images.get('uberx')
-        
+
         try:
             if response and response.status_code == 200:
                 products_data = response.json()
                 print(f"Products API response: {products_data}")
-                tiers = products_data.get('data', {}).get('products', {}).get('tiers', [])
-                
+                tiers = products_data.get('data', {}).get('products',
+                                                          {}).get('tiers', [])
+
                 for tier in tiers:
                     for product in tier.get('products', []):
                         product_name = product.get('displayName', '').lower()
-                        if ride_type.lower() in product_name or product_name in ride_type.lower():
+                        if ride_type.lower(
+                        ) in product_name or product_name in ride_type.lower():
                             fare_price = product.get('fare')
                             eta_minutes = product.get('etaStringShort')
                             fare_distance = product.get('distance')
                             if product.get('productImageUrl'):
-                                ride_type_image = product.get('productImageUrl')
+                                ride_type_image = product.get(
+                                    'productImageUrl')
                             break
                     if fare_price:
                         break
-                
+
                 if not fare_price and tiers:
-                    first_product = tiers[0].get('products', [{}])[0] if tiers[0].get('products') else {}
+                    first_product = tiers[0].get(
+                        'products',
+                        [{}])[0] if tiers[0].get('products') else {}
                     fare_price = first_product.get('fare')
                     eta_minutes = first_product.get('etaStringShort')
                     fare_distance = first_product.get('distance')
