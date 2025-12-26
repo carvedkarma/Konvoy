@@ -103,7 +103,15 @@ stored_destination = None
 @app.route('/')
 def root():
     if current_user.is_authenticated:
-        return render_template('home.html')
+        vehicles = []
+        if current_user.uber_connected:
+            try:
+                cookies, headers, refresh_token = current_user.get_uber_credentials()
+                vehicles = vehicleDetails(cookies, headers, refresh_token)
+            except Exception as e:
+                print(f"Error fetching vehicles: {e}")
+                vehicles = []
+        return render_template('home.html', vehicles=vehicles)
     return redirect(url_for('login'))
 
 

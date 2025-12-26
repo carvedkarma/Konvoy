@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
-    <div class="w-full max-w-sm">
+    <div class="w-full max-w-2xl">
         <div class="text-center mb-6">
             <h1 class="text-2xl font-bold text-zinc-900">Welcome back, {{ current_user.get_display_name() }}</h1>
             <span class="inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full border {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
@@ -66,6 +66,35 @@
                     <p class="text-xs text-amber-700">Link your driver account</p>
                 </div>
             </a>
+            {% endif %}
+
+            {% if vehicles %}
+            <div class="pt-3 border-t border-zinc-100">
+                <p class="text-xs text-zinc-400 mb-3">Your Vehicles</p>
+                <div class="grid grid-cols-2 gap-3">
+                    {% for vehicle in vehicles %}
+                    <div class="relative p-3 rounded-lg border-2 {% if vehicle.isDefault %}border-green-400 bg-green-50{% else %}border-zinc-200 bg-zinc-50{% endif %}">
+                        {% if vehicle.isDefault %}
+                        <span class="absolute top-2 right-2 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded">DEFAULT</span>
+                        {% endif %}
+                        {% if vehicle.imageUrl %}
+                        <img src="{{ vehicle.imageUrl }}" alt="{{ vehicle.make }} {{ vehicle.model }}" class="w-full h-20 object-contain mb-2">
+                        {% else %}
+                        <div class="w-full h-20 bg-zinc-200 rounded flex items-center justify-center mb-2">
+                            <svg class="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                        <p class="text-sm font-semibold text-zinc-900">{{ vehicle.make }} {{ vehicle.model }}</p>
+                        <p class="text-xs text-zinc-500">{{ vehicle.year }} · {{ vehicle.licensePlate }}</p>
+                        {% if 'uber_green_eligible' in vehicle.traits|map(attribute='name')|list %}
+                        <span class="inline-block mt-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-[9px] font-medium rounded">Uber Green</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
             {% endif %}
 
             {% if current_user.is_owner() %}
