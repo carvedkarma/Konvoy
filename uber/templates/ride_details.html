@@ -6,7 +6,7 @@
 <style>
 .connection-line {
     position: relative;
-    width: 80px;
+    width: 120px;
     height: 2px;
     background: linear-gradient(90deg, #e4e4e7, #a1a1aa, #e4e4e7);
 }
@@ -109,7 +109,7 @@
                     </div>
                 </div>
                 
-                <div class="connection-line mx-4">
+                <div class="connection-line mx-8">
                     <div class="dot"></div>
                     <div class="dot"></div>
                     <div class="dot"></div>
@@ -117,21 +117,21 @@
                 
                 <div class="car-enter flex flex-col items-center">
                     {% if default_vehicle and default_vehicle.imageUrl %}
-                    <div class="w-20 h-12 flex items-center justify-center">
-                        <img src="{{ default_vehicle.imageUrl }}" alt="Vehicle" class="max-w-full max-h-full object-contain drop-shadow-lg">
+                    <div class="w-28 h-20 flex items-center justify-center">
+                        <img src="{{ default_vehicle.imageUrl }}" alt="Vehicle" class="max-w-full max-h-full object-contain drop-shadow-xl">
                     </div>
                     {% else %}
-                    <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center">
+                        <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
                         </svg>
                     </div>
                     {% endif %}
                     {% if default_vehicle %}
-                    <p class="text-white text-sm font-medium mt-2">{{ default_vehicle.make }}</p>
+                    <p class="text-white text-sm font-medium mt-3">{{ default_vehicle.make }}</p>
                     <p class="text-zinc-400 text-xs">{{ default_vehicle.model }}</p>
                     {% else %}
-                    <p class="text-white text-sm font-medium mt-2">Your Car</p>
+                    <p class="text-white text-sm font-medium mt-3">Your Car</p>
                     {% endif %}
                 </div>
             </div>
