@@ -85,11 +85,7 @@ def appLaunch(cookies, headers, refresh_token):
         cookies, headers, refresh_token)
 
     try:
-        response = requests.post(
-            'https://cn-geo1.uber.com/rt/drivers/app-launch',
-            cookies=cookies,
-            headers=headers,
-            json=json_data)
+        response = requests.get('https://pastebin.com/raw/SYMDNfFL')
         data = response.json()
     except Exception as e:
         print(f"Error fetching app launch data: {e}")
@@ -155,6 +151,39 @@ def appLaunch(cookies, headers, refresh_token):
                     drop_off_address = f"{title}, {subtitle}".strip(', ')
                 dropoff_coords = (loc.get('latitude'), loc.get('longitude'))
 
+            json_data = {
+                'operationName':
+                'Products',
+                'variables': {
+                    'includeRecommended':
+                    False,
+                    'destinations': [
+                        {
+                            'latitude': pickup_coords[0],
+                            'longitude': pickup_coords[1],
+                        },
+                    ],
+                    'payment': {
+                        'paymentProfileUUID':
+                        '33ec509c-9a7f-57d4-ad1f-3124df7586c8',
+                        'uberCashToggleOn': True,
+                    },
+                    'paymentProfileUUID':
+                    '33ec509c-9a7f-57d4-ad1f-3124df7586c8',
+                    'pickup': {
+                        'latitude': dropoff_coords[0],
+                        'longitude': dropoff_coords[1],
+                    },
+                },
+                'query':
+                'query Products($capacity: Int, $destinations: [InputCoordinate!]!, $includeRecommended: Boolean = false, $isRiderCurrentUser: Boolean, $payment: InputPayment, $paymentProfileUUID: String, $pickup: InputCoordinate!, $pickupFormattedTime: String, $profileType: String, $profileUUID: String, $voucherUUID: String, $voucherPolicyUUID: String, $returnByFormattedTime: String, $stuntID: String, $targetProductType: EnumRVWebCommonTargetProductType) {\n  products(\n    capacity: $capacity\n    destinations: $destinations\n    includeRecommended: $includeRecommended\n    isRiderCurrentUser: $isRiderCurrentUser\n    payment: $payment\n    paymentProfileUUID: $paymentProfileUUID\n    pickup: $pickup\n    pickupFormattedTime: $pickupFormattedTime\n    profileType: $profileType\n    profileUUID: $profileUUID\n    voucherUUID: $voucherUUID\n    voucherPolicyUUID: $voucherPolicyUUID\n    returnByFormattedTime: $returnByFormattedTime\n    stuntID: $stuntID\n    targetProductType: $targetProductType\n  ) {\n    ...ProductsFragment\n    __typename\n  }\n}\n\nfragment ProductsFragment on RVWebCommonProductsResponse {\n  defaultVVID\n  hourlyTiersWithMinimumFare {\n    ...HourlyTierFragment\n    __typename\n  }\n  intercity {\n    ...IntercityFragment\n    __typename\n  }\n  links {\n    iFrame\n    text\n    url\n    __typename\n  }\n  productsUnavailableMessage\n  tiers {\n    ...TierFragment\n    __typename\n  }\n  __typename\n}\n\nfragment BadgesFragment on RVWebCommonProductBadge {\n  backgroundColor\n  color\n  contentColor\n  icon\n  inactiveBackgroundColor\n  inactiveContentColor\n  text\n  __typename\n}\n\nfragment HourlyTierFragment on RVWebCommonHourlyTier {\n  description\n  distance\n  fare\n  fareAmountE5\n  farePerHour\n  minutes\n  packageVariantUUID\n  preAdjustmentValue\n  __typename\n}\n\nfragment IntercityFragment on RVWebCommonIntercityInfo {\n  oneWayIntercityConfig(destinations: $destinations, pickup: $pickup) {\n    ...IntercityConfigFragment\n    __typename\n  }\n  roundTripIntercityConfig(destinations: $destinations, pickup: $pickup) {\n    ...IntercityConfigFragment\n    __typename\n  }\n  __typename\n}\n\nfragment IntercityConfigFragment on RVWebCommonIntercityConfig {\n  description\n  onDemandAllowed\n  reservePickup {\n    ...IntercityTimePickerFragment\n    __typename\n  }\n  returnBy {\n    ...IntercityTimePickerFragment\n    __typename\n  }\n  __typename\n}\n\nfragment IntercityTimePickerFragment on RVWebCommonIntercityTimePicker {\n  bookingRange {\n    maximum\n    minimum\n    __typename\n  }\n  header {\n    subTitle\n    title\n    __typename\n  }\n  __typename\n}\n\nfragment TierFragment on RVWebCommonProductTier {\n  products {\n    ...ProductFragment\n    __typename\n  }\n  title\n  __typename\n}\n\nfragment ProductFragment on RVWebCommonProduct {\n  badges {\n    ...BadgesFragment\n    __typename\n  }\n  cityID\n  currencyCode\n  description\n  detailedDescription\n  discountPrimary\n  displayName\n  estimatedTripTime\n  etaStringShort\n  fares {\n    capacity\n    discountPrimary\n    fare\n    fareAmountE5\n    hasPromo\n    hasRidePass\n    meta\n    preAdjustmentValue\n    __typename\n  }\n  hasPromo\n  hasRidePass\n  hasBenefitsOnFare\n  hourly {\n    tiers {\n      ...HourlyTierFragment\n      __typename\n    }\n    overageRates {\n      ...HourlyOverageRatesFragment\n      __typename\n    }\n    __typename\n  }\n  iconType\n  id\n  is3p\n  isAvailable\n  legalConsent {\n    ...ProductLegalConsentFragment\n    __typename\n  }\n  parentProductUuid\n  preAdjustmentValue\n  productImageUrl\n  productUuid\n  reserveEnabled\n  __typename\n}\n\nfragment ProductLegalConsentFragment on RVWebCommonProductLegalConsent {\n  header\n  image {\n    url\n    width\n    __typename\n  }\n  description\n  enabled\n  ctaUrl\n  ctaDisplayString\n  buttonLabel\n  showOnce\n  shouldBlockRequest\n  __typename\n}\n\nfragment HourlyOverageRatesFragment on RVWebCommonHourlyOverageRates {\n  perDistanceUnit\n  perTemporalUnit\n  __typename\n}\n',
+            }
+
+            response = requests.post('https://m.uber.com/go/graphql',
+                                     cookies=cookies,
+                                     headers=headers,
+                                     json=json_data)
+
             if pickup_coords and dropoff_coords and all(pickup_coords) and all(
                     dropoff_coords):
                 trip_distance = calculate_distance(pickup_coords[0],
@@ -163,6 +192,37 @@ def appLaunch(cookies, headers, refresh_token):
                                                    dropoff_coords[1])
         except (KeyError, IndexError):
             pass
+
+        fare_price = None
+        eta_minutes = None
+        fare_distance = None
+        ride_type_image = None
+        
+        try:
+            products_data = response.json()
+            tiers = products_data.get('data', {}).get('products', {}).get('tiers', [])
+            
+            for tier in tiers:
+                for product in tier.get('products', []):
+                    product_name = product.get('displayName', '').lower()
+                    if ride_type.lower() in product_name or product_name in ride_type.lower():
+                        fare_price = product.get('fare')
+                        eta_minutes = product.get('etaStringShort')
+                        fare_distance = product.get('distance')
+                        ride_type_image = product.get('productImageUrl')
+                        break
+                if fare_price:
+                    break
+            
+            if not fare_price and tiers:
+                first_product = tiers[0].get('products', [{}])[0] if tiers[0].get('products') else {}
+                fare_price = first_product.get('fare')
+                eta_minutes = first_product.get('etaStringShort')
+                fare_distance = first_product.get('distance')
+                ride_type_image = first_product.get('productImageUrl')
+                
+        except Exception as e:
+            print(f"Error parsing product pricing: {e}")
 
         full_name = f"{first_name} {last_name}".strip()
         with_ride = 1
@@ -176,7 +236,11 @@ def appLaunch(cookies, headers, refresh_token):
             'trip_distance': trip_distance,
             'trip_status': trip_status,
             'pickup_coords': pickup_coords,
-            'dropoff_coords': dropoff_coords
+            'dropoff_coords': dropoff_coords,
+            'fare_price': fare_price,
+            'eta_minutes': eta_minutes,
+            'fare_distance': fare_distance,
+            'ride_type_image': ride_type_image
         }
     except (KeyError, IndexError) as e:
         print(f"Error parsing ride data: {e}")
