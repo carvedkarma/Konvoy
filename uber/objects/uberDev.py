@@ -226,10 +226,12 @@ def appLaunch(cookies, headers, refresh_token):
                 products_data = response.json()
                 tiers = products_data.get('data', {}).get('products',
                                                           {}).get('tiers', [])
-
+                
+                print(f"Looking for ride_type: '{ride_type}'")
                 for tier in tiers:
                     for product in tier.get('products', []):
                         product_name = product.get('displayName', '').lower()
+                        print(f"Checking product: '{product_name}' - fares: {product.get('fares', [{}])[0].get('fare') if product.get('fares') else 'N/A'}")
                         if ride_type.lower() in product_name or product_name in ride_type.lower():
                             fares_list = product.get('fares', [])
                             if fares_list:
