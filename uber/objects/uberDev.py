@@ -159,8 +159,8 @@ def appLaunch(cookies, headers, refresh_token):
                     False,
                     'destinations': [
                         {
-                            'latitude': pickup_coords[0],
-                            'longitude': pickup_coords[1],
+                            'latitude': dropoff_coords[0],
+                            'longitude': dropoff_coords[1],
                         },
                     ],
                     'payment': {
@@ -171,8 +171,8 @@ def appLaunch(cookies, headers, refresh_token):
                     'paymentProfileUUID':
                     '33ec509c-9a7f-57d4-ad1f-3124df7586c8',
                     'pickup': {
-                        'latitude': dropoff_coords[0],
-                        'longitude': dropoff_coords[1],
+                        'latitude': pickup_coords[0],
+                        'longitude': pickup_coords[1],
                     },
                 },
                 'query':
