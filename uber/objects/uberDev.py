@@ -12,15 +12,17 @@ with_ride = 0
 def calculate_distance(lat1, lon1, lat2, lon2):
     """Calculate distance between two coordinates in kilometers using Haversine formula"""
     R = 6371  # Earth's radius in km
-    
+
     lat1_rad = math.radians(lat1)
     lat2_rad = math.radians(lat2)
     delta_lat = math.radians(lat2 - lat1)
     delta_lon = math.radians(lon2 - lon1)
-    
-    a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    
+
+    a = math.sin(
+        delta_lat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(
+            delta_lon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
     return round(R * c, 1)
 
 
@@ -83,17 +85,21 @@ def appLaunch(cookies, headers, refresh_token):
         cookies, headers, refresh_token)
 
     try:
-        response = requests.get('https://pastebin.com/raw/SYMDNfFL')
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/drivers/app-launch',
+            cookies=cookies,
+            headers=headers,
+            json=json_data)
         data = response.json()
     except Exception as e:
         print(f"Error fetching app launch data: {e}")
         return [0, None]
-    
+
     task_scopes = data.get('driverTasks', {}).get('taskScopes', [])
     if len(task_scopes) == 0:
         print("No Ride Found")
         return [0, data]
-    
+
     try:
         print("Ride Found")
         ride_type = task_scopes[0]['completionTask']['coalescedDataUnion'][
@@ -107,28 +113,32 @@ def appLaunch(cookies, headers, refresh_token):
             'pickupTaskData']['entity']['lastName']
         rating = task_scopes[0]['completionTask']['taskDataMap'][job_id][
             'pickupTaskData']['entity']['rating']
-        
+
         pickup_address = "Address unavailable"
         drop_off_address = "Destination unavailable"
         trip_distance = None
         pickup_coords = None
         dropoff_coords = None
         trip_status = "Unknown"
-        
+
         try:
-            trip_status = task_scopes[0]['completionTask']['coalescedDataUnion'][
-                'pickupCoalescedTaskData']['info']['status']
+            trip_status = task_scopes[0]['completionTask'][
+                'coalescedDataUnion']['pickupCoalescedTaskData']['info'][
+                    'status']
         except (KeyError, IndexError):
             pass
-        
+
         try:
             all_location_tasks = []
             for scope in task_scopes:
                 for task in scope.get('nonBlockingTasks', []):
-                    task_data = task.get('driverTaskDataUnion', {}).get('singleTaskData', {}).get('taskDataUnion', {})
+                    task_data = task.get('driverTaskDataUnion',
+                                         {}).get('singleTaskData',
+                                                 {}).get('taskDataUnion', {})
                     if 'locationTaskData' in task_data:
-                        all_location_tasks.append(task_data['locationTaskData'])
-            
+                        all_location_tasks.append(
+                            task_data['locationTaskData'])
+
             if len(all_location_tasks) >= 1:
                 loc = all_location_tasks[0]
                 title = loc.get('title', '')
@@ -136,7 +146,7 @@ def appLaunch(cookies, headers, refresh_token):
                 if title:
                     pickup_address = f"{title}, {subtitle}".strip(', ')
                 pickup_coords = (loc.get('latitude'), loc.get('longitude'))
-            
+
             if len(all_location_tasks) >= 2:
                 loc = all_location_tasks[1]
                 title = loc.get('title', '')
@@ -144,15 +154,16 @@ def appLaunch(cookies, headers, refresh_token):
                 if title:
                     drop_off_address = f"{title}, {subtitle}".strip(', ')
                 dropoff_coords = (loc.get('latitude'), loc.get('longitude'))
-            
-            if pickup_coords and dropoff_coords and all(pickup_coords) and all(dropoff_coords):
-                trip_distance = calculate_distance(
-                    pickup_coords[0], pickup_coords[1],
-                    dropoff_coords[0], dropoff_coords[1]
-                )
+
+            if pickup_coords and dropoff_coords and all(pickup_coords) and all(
+                    dropoff_coords):
+                trip_distance = calculate_distance(pickup_coords[0],
+                                                   pickup_coords[1],
+                                                   dropoff_coords[0],
+                                                   dropoff_coords[1])
         except (KeyError, IndexError):
             pass
-        
+
         full_name = f"{first_name} {last_name}".strip()
         with_ride = 1
 
