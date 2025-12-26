@@ -96,21 +96,22 @@ def appLaunch(cookies, headers, refresh_token):
         drop_off_address = "Destination unavailable"
         
         try:
-            location_tasks = []
-            for task in task_scopes[0].get('nonBlockingTasks', []):
-                task_data = task.get('driverTaskDataUnion', {}).get('singleTaskData', {}).get('taskDataUnion', {})
-                if 'locationTaskData' in task_data:
-                    location_tasks.append(task_data['locationTaskData'])
+            all_location_tasks = []
+            for scope in task_scopes:
+                for task in scope.get('nonBlockingTasks', []):
+                    task_data = task.get('driverTaskDataUnion', {}).get('singleTaskData', {}).get('taskDataUnion', {})
+                    if 'locationTaskData' in task_data:
+                        all_location_tasks.append(task_data['locationTaskData'])
             
-            if len(location_tasks) >= 1:
-                loc = location_tasks[0]
+            if len(all_location_tasks) >= 1:
+                loc = all_location_tasks[0]
                 title = loc.get('title', '')
                 subtitle = loc.get('subtitle', '')
                 if title:
                     pickup_address = f"{title}, {subtitle}".strip(', ')
             
-            if len(location_tasks) >= 2:
-                loc = location_tasks[1]
+            if len(all_location_tasks) >= 2:
+                loc = all_location_tasks[1]
                 title = loc.get('title', '')
                 subtitle = loc.get('subtitle', '')
                 if title:
