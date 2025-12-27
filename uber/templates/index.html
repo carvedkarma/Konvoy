@@ -252,6 +252,23 @@ fetch('/api/location-data')
         `;
     });
 
+let locationLoopActive = false;
+
+async function stopLocationLoop() {
+    if (locationLoopActive) {
+        try {
+            await fetch('/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+        } catch (e) { console.error(e); }
+        locationLoopActive = false;
+    }
+}
+
+window.addEventListener('beforeunload', stopLocationLoop);
+window.addEventListener('pagehide', stopLocationLoop);
+
 function initLocationHandlers() {
     const searchState = document.getElementById('searchState');
     const pulsingState = document.getElementById('pulsingState');
@@ -271,6 +288,7 @@ function initLocationHandlers() {
         
         searchState.classList.add('hidden');
         pulsingState.classList.remove('hidden');
+        locationLoopActive = true;
         
         try {
             await fetch('/submit', {
@@ -282,6 +300,7 @@ function initLocationHandlers() {
     });
 
     stopBtn.addEventListener('click', async () => {
+        locationLoopActive = false;
         try {
             await fetch('/stop', {
                 method: 'POST',
@@ -301,6 +320,23 @@ function initLocationHandlers() {
 </script>
 {% elif has_permission %}
 <script>
+    let locationLoopActive = false;
+
+    async function stopLocationLoop() {
+        if (locationLoopActive) {
+            try {
+                await fetch('/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+            } catch (e) { console.error(e); }
+            locationLoopActive = false;
+        }
+    }
+
+    window.addEventListener('beforeunload', stopLocationLoop);
+    window.addEventListener('pagehide', stopLocationLoop);
+
     const searchState = document.getElementById('searchState');
     const pulsingState = document.getElementById('pulsingState');
     const searchBtn = document.getElementById('searchBtn');
@@ -319,6 +355,7 @@ function initLocationHandlers() {
         
         searchState.classList.add('hidden');
         pulsingState.classList.remove('hidden');
+        locationLoopActive = true;
         
         try {
             await fetch('/submit', {
@@ -330,6 +367,7 @@ function initLocationHandlers() {
     });
 
     stopBtn.addEventListener('click', async () => {
+        locationLoopActive = false;
         try {
             await fetch('/stop', {
                 method: 'POST',
