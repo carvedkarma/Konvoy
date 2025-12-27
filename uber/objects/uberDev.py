@@ -181,9 +181,6 @@ def appLaunch(cookies, headers, refresh_token):
                                      cookies=fare_cookies,
                                      headers=fare_headers,
                                      json=json_data)
-            # save json in a file
-            with open('fare.json', 'w') as f:
-                json.dump(response.json(), f, indent=4)
             if pickup_coords and dropoff_coords and all(pickup_coords) and all(
                     dropoff_coords):
                 trip_distance = calculate_distance(pickup_coords[0],
@@ -234,7 +231,20 @@ def appLaunch(cookies, headers, refresh_token):
                             fares_list = product.get('fares', [])
                             if fares_list:
                                 pre_adj = fares_list[0].get('preAdjustmentValue')
-                                fare_price = pre_adj if pre_adj else fares_list[0].get('fare')
+                                raw_fare = pre_adj if pre_adj else fares_list[0].get('fare')
+                                if raw_fare:
+                                    fare_num = float(''.join(c for c in raw_fare if c.isdigit() or c == '.'))
+                                    fare_after_cut = fare_num * 0.73
+                                    currency = ''.join(c for c in raw_fare if not c.isdigit() and c != '.')
+                                    fare_price = f"~{currency}{fare_after_cut:.2f}"
+                                meta_str = fares_list[0].get('meta', '{}')
+                                try:
+                                    meta_data = json.loads(meta_str)
+                                    unmod_dist = meta_data.get('upfrontFare', {}).get('unmodifiedDistance')
+                                    if unmod_dist:
+                                        trip_distance = round(unmod_dist / 1000, 1)
+                                except:
+                                    pass
                             estimated_seconds = product.get('estimatedTripTime')
                             eta_short = product.get('etaStringShort', '')
                             eta_short_secs = 0
@@ -257,7 +267,20 @@ def appLaunch(cookies, headers, refresh_token):
                     fares_list = first_product.get('fares', [])
                     if fares_list:
                         pre_adj = fares_list[0].get('preAdjustmentValue')
-                        fare_price = pre_adj if pre_adj else fares_list[0].get('fare')
+                        raw_fare = pre_adj if pre_adj else fares_list[0].get('fare')
+                        if raw_fare:
+                            fare_num = float(''.join(c for c in raw_fare if c.isdigit() or c == '.'))
+                            fare_after_cut = fare_num * 0.73
+                            currency = ''.join(c for c in raw_fare if not c.isdigit() and c != '.')
+                            fare_price = f"~{currency}{fare_after_cut:.2f}"
+                        meta_str = fares_list[0].get('meta', '{}')
+                        try:
+                            meta_data = json.loads(meta_str)
+                            unmod_dist = meta_data.get('upfrontFare', {}).get('unmodifiedDistance')
+                            if unmod_dist:
+                                trip_distance = round(unmod_dist / 1000, 1)
+                        except:
+                            pass
                     estimated_seconds = first_product.get('estimatedTripTime')
                     eta_short = first_product.get('etaStringShort', '')
                     eta_short_secs = 0
