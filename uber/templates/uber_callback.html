@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Konvoy | Uber Captured{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-8">
+    <div class="glass-panel rounded-2xl p-8 premium-shadow text-center">
+        <div class="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-zinc-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+        
+        <h1 class="text-xl font-bold text-zinc-900 mb-2">Cookies Captured!</h1>
+        <p class="text-sm text-zinc-500 mb-6">Your Uber session cookies have been captured. Review and save them below.</p>
+        
+        <form action="{{ url_for('uber_callback') }}" method="POST" class="text-left space-y-4">
+            {{ form.hidden_tag() }}
+            
+            <div>
+                <label class="block text-xs font-medium text-zinc-700 mb-1">Captured Cookies</label>
+                <textarea name="cookies" rows="4" 
+                    class="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-mono focus:outline-none focus:border-zinc-400">{{ cookies }}</textarea>
+            </div>
+            
+            <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <p class="text-xs text-amber-700 mb-3">
+                    <strong>Optional:</strong> For full API access (location, vehicles), also add headers and refresh token from the mobile app:
+                </p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-600 mb-1">Headers (JSON)</label>
+                        <textarea name="headers" rows="3" placeholder='{"authorization": "Bearer ...", ...}'
+                            class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-xs font-mono focus:outline-none focus:border-amber-400"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-600 mb-1">Refresh Token</label>
+                        <input type="text" name="refresh_token" placeholder="MA.CAE..."
+                            class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-xs font-mono focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="w-full bg-black text-white py-3 rounded-xl font-medium text-sm hover:bg-zinc-800 transition-colors">
+                Save & Connect
+            </button>
+            
+            <a href="{{ url_for('uber_connect') }}" class="block text-center text-sm text-zinc-500 hover:text-zinc-700">
+                Cancel
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}
