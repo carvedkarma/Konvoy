@@ -68,10 +68,41 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
+.user-card-popup {
+    animation: fadeIn 0.15s ease-out;
+    backdrop-filter: blur(12px);
+}
+.user-card-popup::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 20px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    transform: rotate(45deg);
+    border-left: 1px solid rgba(0,0,0,0.08);
+    border-top: 1px solid rgba(0,0,0,0.08);
+}
 </style>
 {% endblock %}
 
 {% block content %}
+<div id="user-card" class="user-card-popup hidden fixed z-50 bg-white rounded-xl shadow-xl border border-zinc-100 p-4 min-w-[200px]">
+    <div class="flex items-center mb-3">
+        <div id="card-avatar" class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3"></div>
+        <div>
+            <div id="card-name" class="font-semibold text-zinc-900 text-sm"></div>
+            <div id="card-username" class="text-xs text-zinc-500"></div>
+        </div>
+    </div>
+    <div id="card-roles" class="flex flex-wrap gap-1 mb-2"></div>
+    <div id="card-status" class="flex items-center text-xs text-zinc-500">
+        <div class="w-2 h-2 bg-green-500 rounded-full mr-1.5"></div>
+        <span>Online</span>
+    </div>
+</div>
+
 <div class="min-h-[80vh] px-4 py-6">
     <div class="max-w-6xl mx-auto">
         
@@ -208,10 +239,13 @@ function renderMessage(msg, prepend = false) {
     const isMentioned = msg.mentioned_user === currentUsername;
     const gradient = getRoleGradient(msg.roles);
     
+    const rolesJson = JSON.stringify(msg.roles || []).replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const messageHtml = `
         <div class="message-enter flex ${isOwn ? 'justify-end' : 'justify-start'} ${isMentioned ? 'mention-highlight rounded-lg p-2 -mx-2' : ''}" data-message-id="${msg.id}">
             <div class="flex items-center gap-2 ${isOwn ? 'flex-row-reverse' : ''}">
-                <div class="w-7 h-7 rounded-full bg-gradient-to-r ${gradient} flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                <div class="avatar-click w-7 h-7 rounded-full bg-gradient-to-r ${gradient} flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-zinc-300 transition-all"
+                     onclick="showUserCard(event, ${msg.user_id}, '${escapeHtml(msg.username || '')}', '${escapeHtml(msg.user_name)}', '${escapeHtml(msg.user_initials)}', JSON.parse(this.dataset.roles))"
+                     data-roles="${rolesJson}">
                     ${escapeHtml(msg.user_initials)}
                 </div>
                 <div class="${isOwn ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-800'} px-3 py-2 rounded-2xl ${isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm'} text-sm">
@@ -246,6 +280,48 @@ function mentionUser(username) {
     }
     input.focus();
 }
+
+let userDataCache = {};
+
+function showUserCard(event, userId, username, displayName, initials, roles) {
+    event.stopPropagation();
+    const card = document.getElementById('user-card');
+    const avatar = document.getElementById('card-avatar');
+    const nameEl = document.getElementById('card-name');
+    const usernameEl = document.getElementById('card-username');
+    const rolesEl = document.getElementById('card-roles');
+    const statusEl = document.getElementById('card-status');
+    
+    const gradient = getRoleGradient(roles);
+    avatar.className = `w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3 bg-gradient-to-r ${gradient}`;
+    avatar.textContent = initials;
+    nameEl.textContent = displayName;
+    usernameEl.textContent = '@' + username;
+    
+    const isOnline = Object.keys(online_users_data).includes(String(userId));
+    statusEl.innerHTML = isOnline 
+        ? '<div class="w-2 h-2 bg-green-500 rounded-full mr-1.5"></div><span>Online</span>'
+        : '<div class="w-2 h-2 bg-zinc-300 rounded-full mr-1.5"></div><span>Offline</span>';
+    
+    rolesEl.innerHTML = roles.map(r => {
+        const colors = roleColors[r.color] || roleColors['gray'];
+        return `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium text-white bg-gradient-to-r ${colors[0]} ${colors[1]}">${escapeHtml(r.name)}</span>`;
+    }).join('');
+    
+    const rect = event.target.getBoundingClientRect();
+    card.style.left = `${rect.left}px`;
+    card.style.top = `${rect.bottom + 8}px`;
+    card.classList.remove('hidden');
+}
+
+let online_users_data = {};
+
+document.addEventListener('click', function(e) {
+    const card = document.getElementById('user-card');
+    if (!card.contains(e.target) && !e.target.closest('.avatar-click')) {
+        card.classList.add('hidden');
+    }
+});
 
 const messageInput = document.getElementById('message-input');
 messageInput.addEventListener('input', function() {
@@ -307,6 +383,8 @@ socket.on('connect', function() {
 });
 
 socket.on('online_users', function(users) {
+    online_users_data = {};
+    users.forEach(u => { online_users_data[u.id] = u; });
     renderOnlineUsers(users);
 });
 
