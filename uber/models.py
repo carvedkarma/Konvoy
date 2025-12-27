@@ -86,6 +86,7 @@ class User(UserMixin, db.Model):
     
     uber_cookies_encrypted = db.Column(db.Text, nullable=True)
     uber_headers_encrypted = db.Column(db.Text, nullable=True)
+    uber_refresh_token_encrypted = db.Column(db.Text, nullable=True)
     uber_connected_at = db.Column(db.DateTime, nullable=True)
     
     ROLE_USER = 'user'
@@ -132,14 +133,16 @@ class User(UserMixin, db.Model):
             return 'blue'
         return 'gray'
     
-    def set_uber_credentials(self, cookies, headers):
+    def set_uber_credentials(self, cookies, headers, refresh_token=None):
         self.uber_cookies_encrypted = encrypt_data(json.dumps(cookies)) if cookies else None
         self.uber_headers_encrypted = encrypt_data(json.dumps(headers)) if headers else None
+        self.uber_refresh_token_encrypted = encrypt_data(refresh_token) if refresh_token else None
         self.uber_connected_at = datetime.utcnow()
     
     def get_uber_credentials(self):
         cookies = None
         headers = None
+        refresh_token = None
         
         if self.uber_cookies_encrypted:
             decrypted = decrypt_data(self.uber_cookies_encrypted)
@@ -151,7 +154,10 @@ class User(UserMixin, db.Model):
             if decrypted:
                 headers = json.loads(decrypted)
         
-        return cookies, headers
+        if self.uber_refresh_token_encrypted:
+            refresh_token = decrypt_data(self.uber_refresh_token_encrypted)
+        
+        return cookies, headers, refresh_token
     
     def has_uber_credentials(self):
         return self.uber_cookies_encrypted is not None and self.uber_headers_encrypted is not None
@@ -159,6 +165,7 @@ class User(UserMixin, db.Model):
     def clear_uber_credentials(self):
         self.uber_cookies_encrypted = None
         self.uber_headers_encrypted = None
+        self.uber_refresh_token_encrypted = None
         self.uber_connected_at = None
     
     def __repr__(self):

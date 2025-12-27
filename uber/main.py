@@ -278,7 +278,7 @@ def fetch_ride():
 @app.route('/submit', methods=['POST'])
 @login_required
 def submit():
-    cookies, headers = current_user.get_uber_credentials()
+    cookies, headers, refresh_token = current_user.get_uber_credentials()
     if not cookies or not headers:
         return jsonify(status="error", message="No Uber credentials")
     
@@ -371,7 +371,7 @@ def uber_disconnect():
 @app.route('/api/home-data')
 @login_required
 def home_data():
-    cookies, headers = current_user.get_uber_credentials()
+    cookies, headers, refresh_token = current_user.get_uber_credentials()
     
     data = {
         'connected': current_user.has_uber_credentials(),
@@ -407,7 +407,7 @@ def home_data():
 @app.route('/api/fetch-ride-data')
 @login_required
 def fetch_ride_data():
-    cookies, headers = current_user.get_uber_credentials()
+    cookies, headers, refresh_token = current_user.get_uber_credentials()
     
     if not cookies or not headers:
         return jsonify({'ride': None, 'error': 'No Uber credentials'})
