@@ -18,7 +18,7 @@ Preferred communication style: Simple, everyday language.
 ### Database Layer
 - **PostgreSQL** database accessed via SQLAlchemy ORM
 - Uses Flask-SQLAlchemy with a custom DeclarativeBase for model definitions
-- Tables: `users` (authentication), `roles` (custom permissions), `user_roles` (many-to-many association)
+- Tables: `users` (authentication), `roles` (custom permissions), `user_roles` (many-to-many association), `chat_messages` (real-time chat)
 - Connection pooling configured with `pool_recycle` and `pool_pre_ping` for reliability
 
 ### Authentication System
@@ -79,6 +79,17 @@ Preferred communication style: Simple, everyday language.
 - **User Feedback**: Status messages cycle during loading ("Connecting to Uber...", "Authenticating session...", etc.)
 - **Security**: All dynamic content properly escaped using `escapeHtml()` function to prevent XSS attacks
 
+### Real-Time Chat Lobby
+- **Flask-SocketIO** with eventlet async mode for real-time communication
+- **ChatMessage model**: Stores messages with user relationships, reply-to references, and timestamps
+- **Online Users Display**: Shows connected users in horizontal boxes with role-based gradient colors
+- **Features**:
+  - Real-time messaging with instant updates
+  - @mention system with user search dropdown
+  - Reply-to-message functionality with visual threading
+  - XSS protection via `|tojson` filter and `escapeHtml()` function
+- **Events**: `connect`, `disconnect`, `send_message`, `get_online_users`
+
 ### Configuration Management
 - Environment variables for sensitive data (Flask secret key, database URL, owner credentials)
 - Global state stored in `config.py` for ride/stop signals and destination tracking
@@ -105,7 +116,8 @@ uber/
 │   ├── admin.html       # User management
 │   ├── roles.html       # Role & permission management
 │   ├── profile.html     # User profile & Uber connection status
-│   └── uber_connect.html # Uber account connection page
+│   ├── uber_connect.html # Uber account connection page
+│   └── chat_lobby.html  # Real-time chat with online users
 └── static/
     └── images/          # Static assets
 ```
@@ -133,3 +145,4 @@ uber/
 - psycopg2-binary (PostgreSQL adapter)
 - Gunicorn (production server)
 - cryptography (Fernet encryption for Uber credentials)
+- Flask-SocketIO, eventlet (real-time chat)
