@@ -840,8 +840,11 @@ def stop():
 @app.route('/api/flight-arrivals')
 @login_required
 def api_flight_arrivals():
+    from datetime import datetime
+    
     try:
-        response = flightArrivals()
+        terminal = request.args.get('terminal', None)
+        response = flightArrivals(terminal)
         
         if response is None:
             print("Flight API returned None - request failed")
@@ -853,8 +856,7 @@ def api_flight_arrivals():
                 'message': 'API unavailable'
             })
         
-        print(f"Flight API Status: {response.status_code}")
-        print(f"Flight API Response (first 500 chars): {response.text[:500]}")
+        print(f"Flight API Status: {response.status_code}, Terminal: {terminal}")
         
         try:
             data = response.json()
@@ -862,15 +864,17 @@ def api_flight_arrivals():
             print("Response is not JSON")
             data = {}
         
-        print(f"Flight API Response keys: {data.keys() if isinstance(data, dict) else type(data)}")
-        
         hourly_data = parseFlightsByHour(data)
-        total_flights = sum(h['count'] for h in hourly_data)
+        
+        current_hour = datetime.now().hour
+        filtered_hours = [h for h in hourly_data if h['hour'] >= current_hour]
+        total_flights = sum(h['count'] for h in filtered_hours)
         
         return jsonify({
             'success': True,
-            'hourly_flights': hourly_data,
-            'total_flights': total_flights
+            'hourly_flights': filtered_hours,
+            'total_flights': total_flights,
+            'current_hour': current_hour
         })
     except Exception as e:
         print(f"Error fetching flight data: {e}")

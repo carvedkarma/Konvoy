@@ -472,12 +472,16 @@ def driverInfo(cookies, headers, refresh_token):
     return [name, photo]
 
 
-def flightArrivals():
+def flightArrivals(terminal=None):
     from bs4 import BeautifulSoup
     
     try:
+        url = 'https://www.airport-perth.com/arrivals.php'
+        if terminal and terminal in ['1', '2', '3', '4']:
+            url = f'https://www.airport-perth.com/arrivals-terminal-{terminal}'
+        
         response = requests.get(
-            'https://www.airport-perth.com/arrivals.php',
+            url,
             headers={
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',

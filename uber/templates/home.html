@@ -243,15 +243,16 @@
                 </div>
                 
                 <div class="p-4">
-                    <div id="flightGrid" class="grid grid-cols-6 gap-1.5">
-                        {% for hour in range(24) %}
-                        <div class="flight-hour bg-zinc-50 rounded-lg p-2 text-center hover:bg-zinc-100 transition-colors" data-hour="{{ hour }}">
-                            <p class="text-zinc-400 text-[10px] font-medium">{{ '%02d' % hour }}:00</p>
-                            <p class="text-zinc-900 font-bold text-sm flight-count">-</p>
-                        </div>
-                        {% endfor %}
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-zinc-500 text-xs">Remaining flights today</p>
+                        <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Terminals</option>
+                            <option value="1">Terminal 1</option>
+                            <option value="2">Terminal 2</option>
+                        </select>
                     </div>
-                    <p class="text-zinc-400 text-xs text-center mt-3">Flights per hour (24h schedule)</p>
+                    <div id="flightGrid" class="grid grid-cols-6 gap-1.5"></div>
+                    <p id="flightFooter" class="text-zinc-400 text-xs text-center mt-3">Loading...</p>
                 </div>
             </div>
         </div>
@@ -518,15 +519,16 @@ fetch('/api/home-data')
                         </div>
                     </div>
                     <div class="p-4">
-                        <div id="flightGrid" class="grid grid-cols-6 gap-1.5">
-                            ${Array.from({length: 24}, (_, h) => `
-                            <div class="flight-hour bg-zinc-50 rounded-lg p-2 text-center hover:bg-zinc-100 transition-colors" data-hour="${h}">
-                                <p class="text-zinc-400 text-[10px] font-medium">${String(h).padStart(2,'0')}:00</p>
-                                <p class="text-zinc-900 font-bold text-sm flight-count">-</p>
-                            </div>
-                            `).join('')}
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-zinc-500 text-xs">Remaining flights today</p>
+                            <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Terminals</option>
+                                <option value="1">Terminal 1</option>
+                                <option value="2">Terminal 2</option>
+                            </select>
                         </div>
-                        <p class="text-zinc-400 text-xs text-center mt-3">Flights per hour (24h schedule)</p>
+                        <div id="flightGrid" class="grid grid-cols-6 gap-1.5"></div>
+                        <p id="flightFooter" class="text-zinc-400 text-xs text-center mt-3">Loading...</p>
                     </div>
                 </div>
             </div>
@@ -535,6 +537,13 @@ fetch('/api/home-data')
         loadingEl.classList.add('hidden');
         contentEl.classList.remove('hidden');
         loadFlightData();
+        
+        const terminalSelect = document.getElementById('terminalSelect');
+        if (terminalSelect) {
+            terminalSelect.addEventListener('change', function() {
+                loadFlightData(this.value);
+            });
+        }
     })
     .catch(error => {
         console.error('Error loading home data:', error);
@@ -545,64 +554,105 @@ fetch('/api/home-data')
         `;
     });
 
-function loadFlightData() {
-    fetch('/api/flight-arrivals')
+function loadFlightData(terminal = '') {
+    const url = terminal ? `/api/flight-arrivals?terminal=${terminal}` : '/api/flight-arrivals';
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                data.hourly_flights.forEach(hourData => {
-                    const hourEl = document.querySelector(`.flight-hour[data-hour="${hourData.hour}"]`);
-                    if (hourEl) {
-                        const countEl = hourEl.querySelector('.flight-count');
-                        countEl.textContent = hourData.count;
-                        if (hourData.count > 5) {
-                            hourEl.classList.remove('bg-zinc-50');
-                            hourEl.classList.add('bg-blue-50');
-                            countEl.classList.add('text-blue-600');
-                        } else if (hourData.count > 0) {
-                            hourEl.classList.remove('bg-zinc-50');
-                            hourEl.classList.add('bg-emerald-50');
-                            countEl.classList.add('text-emerald-600');
-                        }
-                    }
-                });
+                const grid = document.getElementById('flightGrid');
+                const footer = document.getElementById('flightFooter');
+                
+                grid.innerHTML = '';
+                
+                if (data.hourly_flights.length === 0) {
+                    grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-4">No more flights today</p>';
+                    footer.textContent = 'All flights have departed';
+                } else {
+                    data.hourly_flights.forEach(hourData => {
+                        const bgClass = hourData.count > 5 ? 'bg-blue-50' : (hourData.count > 0 ? 'bg-emerald-50' : 'bg-zinc-50');
+                        const textClass = hourData.count > 5 ? 'text-blue-600' : (hourData.count > 0 ? 'text-emerald-600' : 'text-zinc-900');
+                        
+                        grid.innerHTML += `
+                            <div class="flight-hour ${bgClass} rounded-lg p-2 text-center hover:bg-zinc-100 transition-colors" data-hour="${hourData.hour}">
+                                <p class="text-zinc-400 text-[10px] font-medium">${String(hourData.hour).padStart(2,'0')}:00</p>
+                                <p class="${textClass} font-bold text-sm flight-count">${hourData.count}</p>
+                            </div>
+                        `;
+                    });
+                    footer.textContent = `${data.hourly_flights.length} hours remaining today`;
+                }
+                
                 const totalEl = document.querySelector('#flightTotal p:last-child');
                 if (totalEl) totalEl.textContent = data.total_flights;
             }
         })
-        .catch(error => console.error('Error loading flight data:', error));
+        .catch(error => {
+            console.error('Error loading flight data:', error);
+            document.getElementById('flightFooter').textContent = 'Error loading flight data';
+        });
+}
+
+const terminalSelect = document.getElementById('terminalSelect');
+if (terminalSelect) {
+    terminalSelect.addEventListener('change', function() {
+        loadFlightData(this.value);
+    });
 }
 </script>
 {% else %}
 <script>
-function loadFlightData() {
-    fetch('/api/flight-arrivals')
+function loadFlightData(terminal = '') {
+    const url = terminal ? `/api/flight-arrivals?terminal=${terminal}` : '/api/flight-arrivals';
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                data.hourly_flights.forEach(hourData => {
-                    const hourEl = document.querySelector(`.flight-hour[data-hour="${hourData.hour}"]`);
-                    if (hourEl) {
-                        const countEl = hourEl.querySelector('.flight-count');
-                        countEl.textContent = hourData.count;
-                        if (hourData.count > 5) {
-                            hourEl.classList.remove('bg-zinc-50');
-                            hourEl.classList.add('bg-blue-50');
-                            countEl.classList.add('text-blue-600');
-                        } else if (hourData.count > 0) {
-                            hourEl.classList.remove('bg-zinc-50');
-                            hourEl.classList.add('bg-emerald-50');
-                            countEl.classList.add('text-emerald-600');
-                        }
-                    }
-                });
+                const grid = document.getElementById('flightGrid');
+                const footer = document.getElementById('flightFooter');
+                
+                grid.innerHTML = '';
+                
+                if (data.hourly_flights.length === 0) {
+                    grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-4">No more flights today</p>';
+                    footer.textContent = 'All flights have departed';
+                } else {
+                    data.hourly_flights.forEach(hourData => {
+                        const bgClass = hourData.count > 5 ? 'bg-blue-50' : (hourData.count > 0 ? 'bg-emerald-50' : 'bg-zinc-50');
+                        const textClass = hourData.count > 5 ? 'text-blue-600' : (hourData.count > 0 ? 'text-emerald-600' : 'text-zinc-900');
+                        
+                        grid.innerHTML += `
+                            <div class="flight-hour ${bgClass} rounded-lg p-2 text-center hover:bg-zinc-100 transition-colors" data-hour="${hourData.hour}">
+                                <p class="text-zinc-400 text-[10px] font-medium">${String(hourData.hour).padStart(2,'0')}:00</p>
+                                <p class="${textClass} font-bold text-sm flight-count">${hourData.count}</p>
+                            </div>
+                        `;
+                    });
+                    footer.textContent = `${data.hourly_flights.length} hours remaining today`;
+                }
+                
                 const totalEl = document.querySelector('#flightTotal p:last-child');
                 if (totalEl) totalEl.textContent = data.total_flights;
             }
         })
-        .catch(error => console.error('Error loading flight data:', error));
+        .catch(error => {
+            console.error('Error loading flight data:', error);
+            document.getElementById('flightFooter').textContent = 'Error loading flight data';
+        });
 }
-document.addEventListener('DOMContentLoaded', loadFlightData);
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadFlightData();
+    
+    const terminalSelect = document.getElementById('terminalSelect');
+    if (terminalSelect) {
+        terminalSelect.addEventListener('change', function() {
+            loadFlightData(this.value);
+        });
+    }
+});
 </script>
 {% endif %}
 {% endblock %}
