@@ -229,8 +229,14 @@
                                 <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
                             </svg>
                             <span class="text-white font-semibold text-sm">Flight Center</span>
+                            <span id="flightTotal" class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">--</span>
                         </div>
-                        <a href="{{ url_for('flight_center') }}" class="text-xs text-zinc-400 hover:text-white">View All</a>
+                        <div class="flex items-center gap-2">
+                            <select id="terminalSelect" class="text-xs bg-white/10 border-0 rounded px-2 py-1 text-white focus:ring-1 focus:ring-white/20">
+                                <option value="" class="text-zinc-900">All</option>
+                            </select>
+                            <a href="{{ url_for('flight_center') }}" class="text-xs text-zinc-400 hover:text-white">View All</a>
+                        </div>
                     </div>
                 </div>
                 <div class="p-3">
@@ -489,8 +495,14 @@ fetch('/api/home-data')
                                     <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
                                 </svg>
                                 <span class="text-white font-semibold text-sm">Flight Center</span>
+                                <span id="flightTotal" class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">--</span>
                             </div>
-                            <a href="/flight-center" class="text-xs text-zinc-400 hover:text-white">View All</a>
+                            <div class="flex items-center gap-2">
+                                <select id="terminalSelect" class="text-xs bg-white/10 border-0 rounded px-2 py-1 text-white focus:ring-1 focus:ring-white/20">
+                                    <option value="" class="text-zinc-900">All</option>
+                                </select>
+                                <a href="/flight-center" class="text-xs text-zinc-400 hover:text-white">View All</a>
+                            </div>
                         </div>
                     </div>
                     <div class="p-3">
@@ -504,6 +516,10 @@ fetch('/api/home-data')
         loadingEl.classList.add('hidden');
         contentEl.classList.remove('hidden');
         loadFlightData();
+        
+        document.getElementById('terminalSelect').addEventListener('change', function() {
+            loadFlightData(this.value);
+        });
     })
     .catch(error => {
         console.error('Error loading home data:', error);
@@ -526,67 +542,98 @@ function getHourClass(count) {
     return 'bg-amber-50';
 }
 
-function loadFlightData() {
-    fetch('/api/flight-details')
-        .then(response => response.json())
-        .then(data => {
-            const grid = document.getElementById('flightGrid');
-            const footer = document.getElementById('flightFooter');
-            
-            if (!data.success || !data.flights_by_terminal) {
-                grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
-                footer.textContent = '';
-                return;
-            }
-            
-            const allFlights = [];
-            Object.values(data.flights_by_terminal).forEach(flights => {
+let flightCache = null;
+
+function loadFlightData(terminal = '') {
+    const render = () => {
+        const grid = document.getElementById('flightGrid');
+        const footer = document.getElementById('flightFooter');
+        const totalEl = document.getElementById('flightTotal');
+        const terminalSelect = document.getElementById('terminalSelect');
+        
+        if (!flightCache || !flightCache.flights_by_terminal) {
+            grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+            footer.textContent = '';
+            if (totalEl) totalEl.textContent = '0';
+            return;
+        }
+        
+        if (terminalSelect && terminalSelect.options.length <= 1) {
+            Object.keys(flightCache.flights_by_terminal).sort().forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = `T${t}`;
+                opt.className = 'text-zinc-900';
+                terminalSelect.appendChild(opt);
+            });
+        }
+        
+        const allFlights = [];
+        if (terminal) {
+            const flights = flightCache.flights_by_terminal[terminal] || [];
+            flights.forEach(f => allFlights.push(f));
+        } else {
+            Object.values(flightCache.flights_by_terminal).forEach(flights => {
                 flights.forEach(f => allFlights.push(f));
             });
-            
-            const hourlyData = {};
-            allFlights.forEach(flight => {
-                const hour = parseInt(flight.time.split(':')[0]);
-                if (!hourlyData[hour]) hourlyData[hour] = { count: 0, airlines: [] };
-                hourlyData[hour].count++;
-                const airline = flight.flight.substring(0, 2);
-                if (!hourlyData[hour].airlines.includes(airline)) {
-                    hourlyData[hour].airlines.push(airline);
-                }
-            });
-            
-            grid.innerHTML = '';
-            const hours = Object.keys(hourlyData).map(Number).sort((a, b) => a - b);
-            
-            if (hours.length === 0) {
-                grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights today</p>';
-                footer.textContent = '';
-                return;
+        }
+        
+        if (totalEl) totalEl.textContent = allFlights.length;
+        
+        const hourlyData = {};
+        allFlights.forEach(flight => {
+            const hour = parseInt(flight.time.split(':')[0]);
+            if (!hourlyData[hour]) hourlyData[hour] = { count: 0, airlines: [] };
+            hourlyData[hour].count++;
+            const airline = flight.flight.substring(0, 2);
+            if (!hourlyData[hour].airlines.includes(airline)) {
+                hourlyData[hour].airlines.push(airline);
             }
-            
-            hours.forEach(hour => {
-                const info = hourlyData[hour];
-                const icons = info.airlines.slice(0, Math.min(3, info.count)).map(a => 
-                    `<div class="w-4 h-4 rounded text-[6px] font-bold text-white flex items-center justify-center" style="background:${airlineColors[a] || '#18181b'}">${a}</div>`
-                ).join('');
-                
-                grid.innerHTML += `
-                    <div class="${getHourClass(info.count)} rounded-lg p-2">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-[10px] text-zinc-500">${String(hour).padStart(2,'0')}:00</span>
-                            <span class="text-sm font-bold text-zinc-900">${info.count}</span>
-                        </div>
-                        <div class="flex gap-0.5">${icons}</div>
-                    </div>
-                `;
-            });
-            
-            footer.textContent = `${allFlights.length} flights remaining`;
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('flightFooter').textContent = 'Error loading';
         });
+        
+        grid.innerHTML = '';
+        const hours = Object.keys(hourlyData).map(Number).sort((a, b) => a - b);
+        
+        if (hours.length === 0) {
+            grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+            footer.textContent = '';
+            return;
+        }
+        
+        hours.forEach(hour => {
+            const info = hourlyData[hour];
+            const icons = info.airlines.slice(0, Math.min(3, info.count)).map(a => 
+                `<div class="w-4 h-4 rounded text-[6px] font-bold text-white flex items-center justify-center" style="background:${airlineColors[a] || '#18181b'}">${a}</div>`
+            ).join('');
+            
+            grid.innerHTML += `
+                <div class="${getHourClass(info.count)} rounded-lg p-2">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] text-zinc-500">${String(hour).padStart(2,'0')}:00</span>
+                        <span class="text-sm font-bold text-zinc-900">${info.count}</span>
+                    </div>
+                    <div class="flex gap-0.5">${icons}</div>
+                </div>
+            `;
+        });
+        
+        footer.textContent = `${hours.length} hours remaining`;
+    };
+    
+    if (flightCache) {
+        render();
+    } else {
+        fetch('/api/flight-details')
+            .then(response => response.json())
+            .then(data => {
+                flightCache = data;
+                render();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('flightFooter').textContent = 'Error loading';
+            });
+    }
 }
 </script>
 {% else %}
@@ -603,71 +650,109 @@ function getHourClass(count) {
     return 'bg-amber-50';
 }
 
-function loadFlightData() {
-    fetch('/api/flight-details')
-        .then(response => response.json())
-        .then(data => {
-            const grid = document.getElementById('flightGrid');
-            const footer = document.getElementById('flightFooter');
-            
-            if (!data.success || !data.flights_by_terminal) {
-                grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
-                footer.textContent = '';
-                return;
-            }
-            
-            const allFlights = [];
-            Object.values(data.flights_by_terminal).forEach(flights => {
+let flightCache = null;
+
+function loadFlightData(terminal = '') {
+    const render = () => {
+        const grid = document.getElementById('flightGrid');
+        const footer = document.getElementById('flightFooter');
+        const totalEl = document.getElementById('flightTotal');
+        const terminalSelect = document.getElementById('terminalSelect');
+        
+        if (!flightCache || !flightCache.flights_by_terminal) {
+            grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+            footer.textContent = '';
+            if (totalEl) totalEl.textContent = '0';
+            return;
+        }
+        
+        if (terminalSelect && terminalSelect.options.length <= 1) {
+            Object.keys(flightCache.flights_by_terminal).sort().forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = `T${t}`;
+                opt.className = 'text-zinc-900';
+                terminalSelect.appendChild(opt);
+            });
+        }
+        
+        const allFlights = [];
+        if (terminal) {
+            const flights = flightCache.flights_by_terminal[terminal] || [];
+            flights.forEach(f => allFlights.push(f));
+        } else {
+            Object.values(flightCache.flights_by_terminal).forEach(flights => {
                 flights.forEach(f => allFlights.push(f));
             });
-            
-            const hourlyData = {};
-            allFlights.forEach(flight => {
-                const hour = parseInt(flight.time.split(':')[0]);
-                if (!hourlyData[hour]) hourlyData[hour] = { count: 0, airlines: [] };
-                hourlyData[hour].count++;
-                const airline = flight.flight.substring(0, 2);
-                if (!hourlyData[hour].airlines.includes(airline)) {
-                    hourlyData[hour].airlines.push(airline);
-                }
-            });
-            
-            grid.innerHTML = '';
-            const hours = Object.keys(hourlyData).map(Number).sort((a, b) => a - b);
-            
-            if (hours.length === 0) {
-                grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights today</p>';
-                footer.textContent = '';
-                return;
+        }
+        
+        if (totalEl) totalEl.textContent = allFlights.length;
+        
+        const hourlyData = {};
+        allFlights.forEach(flight => {
+            const hour = parseInt(flight.time.split(':')[0]);
+            if (!hourlyData[hour]) hourlyData[hour] = { count: 0, airlines: [] };
+            hourlyData[hour].count++;
+            const airline = flight.flight.substring(0, 2);
+            if (!hourlyData[hour].airlines.includes(airline)) {
+                hourlyData[hour].airlines.push(airline);
             }
-            
-            hours.forEach(hour => {
-                const info = hourlyData[hour];
-                const icons = info.airlines.slice(0, Math.min(3, info.count)).map(a => 
-                    `<div class="w-4 h-4 rounded text-[6px] font-bold text-white flex items-center justify-center" style="background:${airlineColors[a] || '#18181b'}">${a}</div>`
-                ).join('');
-                
-                grid.innerHTML += `
-                    <div class="${getHourClass(info.count)} rounded-lg p-2">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-[10px] text-zinc-500">${String(hour).padStart(2,'0')}:00</span>
-                            <span class="text-sm font-bold text-zinc-900">${info.count}</span>
-                        </div>
-                        <div class="flex gap-0.5">${icons}</div>
-                    </div>
-                `;
-            });
-            
-            footer.textContent = `${allFlights.length} flights remaining`;
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('flightFooter').textContent = 'Error loading';
         });
+        
+        grid.innerHTML = '';
+        const hours = Object.keys(hourlyData).map(Number).sort((a, b) => a - b);
+        
+        if (hours.length === 0) {
+            grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+            footer.textContent = '';
+            return;
+        }
+        
+        hours.forEach(hour => {
+            const info = hourlyData[hour];
+            const icons = info.airlines.slice(0, Math.min(3, info.count)).map(a => 
+                `<div class="w-4 h-4 rounded text-[6px] font-bold text-white flex items-center justify-center" style="background:${airlineColors[a] || '#18181b'}">${a}</div>`
+            ).join('');
+            
+            grid.innerHTML += `
+                <div class="${getHourClass(info.count)} rounded-lg p-2">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] text-zinc-500">${String(hour).padStart(2,'0')}:00</span>
+                        <span class="text-sm font-bold text-zinc-900">${info.count}</span>
+                    </div>
+                    <div class="flex gap-0.5">${icons}</div>
+                </div>
+            `;
+        });
+        
+        footer.textContent = `${hours.length} hours remaining`;
+    };
+    
+    if (flightCache) {
+        render();
+    } else {
+        fetch('/api/flight-details')
+            .then(response => response.json())
+            .then(data => {
+                flightCache = data;
+                render();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('flightFooter').textContent = 'Error loading';
+            });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     loadFlightData();
+    
+    const terminalSelect = document.getElementById('terminalSelect');
+    if (terminalSelect) {
+        terminalSelect.addEventListener('change', function() {
+            loadFlightData(this.value);
+        });
+    }
 });
 </script>
 {% endif %}
