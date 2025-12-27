@@ -18,7 +18,7 @@ Preferred communication style: Simple, everyday language.
 ### Database Layer
 - **PostgreSQL** database accessed via SQLAlchemy ORM
 - Uses Flask-SQLAlchemy with a custom DeclarativeBase for model definitions
-- Tables: `users` (authentication), `roles` (custom permissions), `user_roles` (many-to-many association)
+- Tables: `users` (authentication), `roles` (custom permissions)
 - Connection pooling configured with `pool_recycle` and `pool_pre_ping` for reliability
 
 ### Authentication System
@@ -31,8 +31,6 @@ Preferred communication style: Simple, everyday language.
 ### Role & Permission System
 - **System Roles**: User, Moderator, Owner (built-in)
 - **Custom Roles**: Created by owners with specific permissions
-- **Multi-Role Support**: Users can have multiple roles assigned via `user_roles` association table
-- **Permission Aggregation**: Permissions are combined from all assigned roles (if any role grants a permission, user has it)
 - **Permissions**:
   - `can_change_location`: Access to location change feature
   - `can_fetch_ride`: Access to fetch ride feature
@@ -40,28 +38,13 @@ Preferred communication style: Simple, everyday language.
   - `can_manage_users`: Ability to manage user accounts
   - `can_manage_roles`: Ability to create/delete custom roles
 - **Owner**: Full control including role management page
-- **Locked UI States**: Users see all features but without permission see lock icons and locked panels
 
 ### Uber API Integration
 - Custom API client in `objects/uberDev.py` interacts with Uber's internal endpoints
-- **Per-user credentials**: Each user can connect their own Uber driver account
-- Credentials (cookies, headers, refresh tokens) are encrypted with Fernet using PBKDF2HMAC key derivation
+- Uses stored cookies and headers for authentication (stored in `source/cred.py`)
 - Features include: vehicle details, driver location tracking, token refresh
 - Location geocoding via OpenStreetMap's Nominatim API
 - Ride signal system to detect active rides
-- **Fare Pricing API**: GraphQL integration with Uber's pricing endpoint (`m.uber.com/go/graphql`)
-  - Uses `fare_cookies` and `fare_headers` from `source/cred.py` for authentication
-  - Fetches fare estimates by ride type (UberX, Comfort, etc.)
-  - Displays estimated driver earnings (73% of fare after Uber's cut)
-  - Shows trip distance from API (`unmodifiedDistance`) and ETA calculation
-
-### Uber Account Connection
-- Users can connect their Uber driver accounts via `/uber-connect`
-- Credentials are captured from Uber mobile app API requests and stored encrypted
-- CSRF-protected forms prevent unauthorized credential changes
-- Users can disconnect their accounts from profile settings
-- All Uber API functions accept per-user credentials as parameters
-- **Owner Credential Management**: Owners can view/edit/disconnect any user's Uber credentials via `/admin/uber-credentials/<user_id>`
 
 ### Frontend Architecture
 - Server-side rendered templates using Jinja2
@@ -72,12 +55,6 @@ Preferred communication style: Simple, everyday language.
   - Dark/light contrast themes
   - Responsive mobile-first design
 - Pages: login, register, home hub, location change, ride details, admin panel
-- **Async Loading**: Pages load instantly with skeleton animations, then fetch data via API endpoints:
-  - Home page (`/`): Shows skeleton loading for driver profile and vehicles
-  - Location page (`/change-location`): Shows skeleton loading for default vehicle
-  - Fetch Ride page (`/fetch-ride`): Shows spinner with rotating status messages
-- **User Feedback**: Status messages cycle during loading ("Connecting to Uber...", "Authenticating session...", etc.)
-- **Security**: All dynamic content properly escaped using `escapeHtml()` function to prevent XSS attacks
 
 ### Configuration Management
 - Environment variables for sensitive data (Flask secret key, database URL, owner credentials)
@@ -103,9 +80,7 @@ uber/
 │   ├── index.html       # Location change interface
 │   ├── ride_details.html # Ride info display
 │   ├── admin.html       # User management
-│   ├── roles.html       # Role & permission management
-│   ├── profile.html     # User profile & Uber connection status
-│   └── uber_connect.html # Uber account connection page
+│   └── roles.html       # Role & permission management
 └── static/
     └── images/          # Static assets
 ```
@@ -132,4 +107,3 @@ uber/
 - Werkzeug (password hashing)
 - psycopg2-binary (PostgreSQL adapter)
 - Gunicorn (production server)
-- cryptography (Fernet encryption for Uber credentials)
