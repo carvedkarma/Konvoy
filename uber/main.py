@@ -621,6 +621,7 @@ def uber_connect():
         current_user.uber_refresh_token = encrypt_data(refresh_token)
         current_user.uber_connected = True
         db.session.commit()
+        cache.invalidate_cache(current_user.id)
         flash('Uber account connected successfully!', 'success')
         return redirect(url_for('root'))
     
@@ -657,6 +658,7 @@ def uber_callback():
                 current_user.uber_refresh_token = encrypt_data(refresh_token)
             current_user.uber_connected = True
             db.session.commit()
+            cache.invalidate_cache(current_user.id)
             flash('Uber cookies captured successfully!', 'success')
             return redirect(url_for('root'))
     
@@ -709,6 +711,7 @@ def uber_disconnect():
         current_user.uber_refresh_token = None
         current_user.uber_connected = False
         db.session.commit()
+        cache.invalidate_cache(current_user.id)
         flash('Uber account disconnected.', 'success')
     return redirect(url_for('profile'))
 
