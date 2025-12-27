@@ -4,23 +4,21 @@
 
 {% block extra_styles %}
 <style>
-    .terminal-badge-1 { background: #ef4444; }
-    .terminal-badge-2 { background: #3b82f6; }
-    .terminal-badge-3 { background: #22c55e; }
-    .terminal-badge-4 { background: #f59e0b; }
-    .flight-row:hover { background-color: rgba(0,0,0,0.02); }
-    .status-landed { color: #22c55e; }
-    .status-enroute { color: #3b82f6; }
-    .status-delayed { color: #ef4444; }
-    .airline-badge {
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
+    .hour-card { transition: all 0.2s ease; }
+    .hour-card:hover { transform: translateY(-2px); }
+    .hour-low { background: linear-gradient(135deg, #f4f4f5 0%, #e4e4e7 100%); }
+    .hour-medium { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+    .hour-high { background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%); }
+    .hour-busy { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+    .airline-dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-size: 7px;
         font-weight: 700;
-        font-size: 9px;
         color: white;
     }
     .skeleton-pulse {
@@ -51,10 +49,11 @@
                         <p class="text-zinc-400 text-xs">Perth Airport Arrivals</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <select id="terminalFilter" class="text-xs bg-white/10 border-0 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-white/20">
-                        <option value="" class="text-zinc-900">All Terminals</option>
-                    </select>
+                <div class="flex items-center gap-3">
+                    <div class="text-right">
+                        <p class="text-zinc-400 text-[10px]">PERTH TIME</p>
+                        <p id="currentTime" class="text-white font-bold">--:--</p>
+                    </div>
                     <button onclick="refreshFlights()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -64,33 +63,16 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-4 divide-x divide-zinc-100 border-b border-zinc-100">
-            <div class="p-3 text-center">
-                <p class="text-zinc-400 text-[10px] font-medium uppercase">Flights</p>
-                <p id="totalFlights" class="text-lg font-bold text-zinc-900">--</p>
-            </div>
-            <div class="p-3 text-center">
-                <p class="text-zinc-400 text-[10px] font-medium uppercase">Perth Time</p>
-                <p id="currentTime" class="text-lg font-bold text-zinc-900">--:--</p>
-            </div>
-            <div class="p-3 text-center">
-                <p class="text-zinc-400 text-[10px] font-medium uppercase">Next</p>
-                <p id="nextArrival" class="text-lg font-bold text-zinc-900">--:--</p>
-            </div>
-            <div class="p-3 text-center">
-                <p class="text-zinc-400 text-[10px] font-medium uppercase">Terminals</p>
-                <p id="activeTerminals" class="text-lg font-bold text-zinc-900">--</p>
-            </div>
+        <div id="loadingSkeleton" class="p-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div class="skeleton-pulse h-24 rounded-xl"></div>
+            <div class="skeleton-pulse h-24 rounded-xl"></div>
+            <div class="skeleton-pulse h-24 rounded-xl"></div>
+            <div class="skeleton-pulse h-24 rounded-xl"></div>
+            <div class="skeleton-pulse h-24 rounded-xl"></div>
+            <div class="skeleton-pulse h-24 rounded-xl"></div>
         </div>
 
-        <div id="loadingSkeleton" class="p-4 space-y-2">
-            <div class="skeleton-pulse h-10 w-full rounded-lg"></div>
-            <div class="skeleton-pulse h-10 w-full rounded-lg"></div>
-            <div class="skeleton-pulse h-10 w-full rounded-lg"></div>
-            <div class="skeleton-pulse h-10 w-full rounded-lg"></div>
-        </div>
-
-        <div id="flightsContainer" class="hidden"></div>
+        <div id="hoursContainer" class="hidden p-4 grid grid-cols-2 md:grid-cols-3 gap-3"></div>
 
         <div id="noFlights" class="hidden text-center py-10">
             <svg class="w-12 h-12 mx-auto text-zinc-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,35 +87,21 @@
 {% block extra_scripts %}
 <script>
 const airlineColors = {
-    'QF': '#e31837', 'VA': '#e4002b', 'JQ': '#ff6d00', 'TT': '#00a651',
-    'SQ': '#f4c300', 'EK': '#d71921', 'CX': '#006564', 'MH': '#0033a0',
-    'NZ': '#000000', 'TR': '#b8203b', 'AK': '#e31937', 'GA': '#00467f',
-    'PR': '#0033a0', 'CZ': '#0066b3', 'MU': '#004a93', 'CA': '#d4001e',
-    '3K': '#16338a', 'FD': '#ed1c24', 'AA': '#0078d2', 'UA': '#002244',
-    'DL': '#e31837', 'AS': '#00205b'
+    'QF': '#e31837', 'VA': '#e4002b', 'JQ': '#ff6d00', 'SQ': '#f4c300',
+    'EK': '#d71921', 'CX': '#006564', 'MH': '#0033a0', 'NZ': '#000000',
+    'TR': '#b8203b', 'AK': '#e31937', 'GA': '#00467f', 'PR': '#0033a0',
+    'CZ': '#0066b3', 'AA': '#0078d2', 'UA': '#002244', 'DL': '#e31837'
 };
 
 function getAirlineColor(code) {
     return airlineColors[code.substring(0, 2)] || '#18181b';
 }
 
-function getStatusClass(status) {
-    const s = status.toLowerCase();
-    if (s.includes('landed')) return 'status-landed';
-    if (s.includes('en route') || s.includes('enroute')) return 'status-enroute';
-    if (s.includes('delayed')) return 'status-delayed';
-    return 'text-zinc-500';
-}
-
-function getTerminalBadgeClass(t) {
-    return { '1': 'terminal-badge-1', '2': 'terminal-badge-2', '3': 'terminal-badge-3', '4': 'terminal-badge-4' }[t] || 'bg-zinc-500';
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+function getHourClass(count) {
+    if (count === 0) return 'hour-low';
+    if (count <= 3) return 'hour-medium';
+    if (count <= 6) return 'hour-high';
+    return 'hour-busy';
 }
 
 function updateCurrentTime() {
@@ -144,77 +112,82 @@ function updateCurrentTime() {
         perthTime.getMinutes().toString().padStart(2, '0');
 }
 
-function loadFlights(terminal = '') {
-    const url = terminal ? `/api/flight-details?terminal=${terminal}` : '/api/flight-details';
-    
+function loadFlights() {
     document.getElementById('loadingSkeleton').classList.remove('hidden');
-    document.getElementById('flightsContainer').classList.add('hidden');
+    document.getElementById('hoursContainer').classList.add('hidden');
     document.getElementById('noFlights').classList.add('hidden');
     
-    fetch(url)
+    fetch('/api/flight-details')
         .then(response => response.json())
         .then(data => {
             document.getElementById('loadingSkeleton').classList.add('hidden');
             
-            if (!data.success || !data.flights_by_terminal || Object.keys(data.flights_by_terminal).length === 0) {
+            if (!data.success || !data.flights_by_terminal) {
                 document.getElementById('noFlights').classList.remove('hidden');
                 return;
             }
             
-            const terminalSelect = document.getElementById('terminalFilter');
-            if (terminalSelect.options.length <= 1 && data.terminals) {
-                data.terminals.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t;
-                    opt.textContent = `T${t}`;
-                    opt.className = 'text-zinc-900';
-                    terminalSelect.appendChild(opt);
-                });
-            }
+            const allFlights = [];
+            Object.values(data.flights_by_terminal).forEach(flights => {
+                flights.forEach(f => allFlights.push(f));
+            });
             
-            document.getElementById('totalFlights').textContent = data.total_flights || 0;
-            document.getElementById('activeTerminals').textContent = data.terminals ? data.terminals.length : 0;
-            if (data.next_arrival) document.getElementById('nextArrival').textContent = data.next_arrival;
+            const hourlyData = {};
+            allFlights.forEach(flight => {
+                const hour = parseInt(flight.time.split(':')[0]);
+                if (!hourlyData[hour]) {
+                    hourlyData[hour] = { count: 0, airlines: [] };
+                }
+                hourlyData[hour].count++;
+                const airline = flight.flight.substring(0, 2);
+                if (!hourlyData[hour].airlines.includes(airline)) {
+                    hourlyData[hour].airlines.push(airline);
+                }
+            });
             
-            const container = document.getElementById('flightsContainer');
+            const container = document.getElementById('hoursContainer');
             container.innerHTML = '';
             
-            const allFlights = [];
-            Object.entries(data.flights_by_terminal).forEach(([term, flights]) => {
-                flights.forEach(f => allFlights.push({...f, terminal: term}));
-            });
-            allFlights.sort((a, b) => a.time.localeCompare(b.time));
+            const hours = Object.keys(hourlyData).map(Number).sort((a, b) => a - b);
             
-            let html = '<div class="divide-y divide-zinc-100">';
+            if (hours.length === 0) {
+                document.getElementById('noFlights').classList.remove('hidden');
+                return;
+            }
             
-            allFlights.forEach(flight => {
-                const statusText = flight.status.replace('[+]', '').replace('- On-time', '').replace('On-time', '').trim();
-                html += `
-                    <div class="flight-row flex items-center px-4 py-3 gap-3 transition-colors">
-                        <div class="w-12 text-center">
-                            <span class="text-sm font-bold text-zinc-900">${escapeHtml(flight.time)}</span>
-                        </div>
-                        <div class="airline-badge" style="background-color: ${getAirlineColor(flight.flight)}">
-                            ${escapeHtml(flight.flight.substring(0, 2))}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2">
-                                <span class="font-semibold text-sm text-zinc-900">${escapeHtml(flight.flight)}</span>
-                                <span class="text-zinc-400 text-xs truncate">${escapeHtml(flight.origin)}</span>
+            hours.forEach(hour => {
+                const info = hourlyData[hour];
+                const displayAirlines = info.airlines.slice(0, Math.min(4, info.count));
+                
+                let airlinesHtml = displayAirlines.map(a => 
+                    `<div class="airline-dot" style="background-color: ${getAirlineColor(a)}">${a}</div>`
+                ).join('');
+                
+                if (info.count > displayAirlines.length) {
+                    airlinesHtml += `<div class="airline-dot bg-zinc-400">+${info.count - displayAirlines.length}</div>`;
+                }
+                
+                const cardHtml = `
+                    <div class="hour-card ${getHourClass(info.count)} rounded-xl p-4 cursor-default">
+                        <div class="flex items-start justify-between mb-2">
+                            <div>
+                                <p class="text-xs text-zinc-500 font-medium">${hour.toString().padStart(2, '0')}:00</p>
+                                <p class="text-2xl font-bold text-zinc-900">${info.count}</p>
+                                <p class="text-[10px] text-zinc-500">flight${info.count !== 1 ? 's' : ''}</p>
                             </div>
+                            <svg class="w-5 h-5 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                            </svg>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs ${getStatusClass(flight.status)}">${escapeHtml(statusText)}</span>
-                            <span class="w-5 h-5 rounded text-[10px] font-bold text-white flex items-center justify-center ${getTerminalBadgeClass(flight.terminal)}">
-                                ${escapeHtml(flight.terminal)}
-                            </span>
+                        <div class="flex gap-1 flex-wrap">
+                            ${airlinesHtml}
                         </div>
                     </div>
                 `;
+                
+                container.innerHTML += cardHtml;
             });
             
-            html += '</div>';
-            container.innerHTML = html;
             container.classList.remove('hidden');
         })
         .catch(error => {
@@ -225,12 +198,8 @@ function loadFlights(terminal = '') {
 }
 
 function refreshFlights() {
-    loadFlights(document.getElementById('terminalFilter').value);
+    loadFlights();
 }
-
-document.getElementById('terminalFilter').addEventListener('change', function() {
-    loadFlights(this.value);
-});
 
 updateCurrentTime();
 setInterval(updateCurrentTime, 30000);
