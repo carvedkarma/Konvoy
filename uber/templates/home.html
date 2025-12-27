@@ -221,39 +221,21 @@
         </div>
         
         <div id="flightCenter" class="mt-6">
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-                <div class="bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-4">
+            <div class="glass-panel rounded-xl premium-shadow overflow-hidden">
+                <div class="bg-black px-4 py-3">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-white font-bold text-base">Flight Center</h3>
-                                <p class="text-blue-100 text-xs">Perth Airport Arrivals</p>
-                            </div>
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                            </svg>
+                            <span class="text-white font-semibold text-sm">Flight Center</span>
                         </div>
-                        <div id="flightTotal" class="text-right">
-                            <p class="text-white/80 text-xs">Total Flights</p>
-                            <p class="text-white font-bold text-lg">--</p>
-                        </div>
+                        <a href="{{ url_for('flight_center') }}" class="text-xs text-zinc-400 hover:text-white">View All</a>
                     </div>
                 </div>
-                
-                <div class="p-4">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-zinc-500 text-xs">Remaining flights today</p>
-                        <div class="flex items-center gap-2">
-                            <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
-                                <option value="">All Terminals</option>
-                            </select>
-                            <a href="{{ url_for('flight_center') }}" class="text-xs text-blue-600 hover:text-blue-800 font-medium">View All</a>
-                        </div>
-                    </div>
-                    <div id="flightGrid" class="grid grid-cols-6 gap-1.5"></div>
-                    <p id="flightFooter" class="text-zinc-400 text-xs text-center mt-3">Loading...</p>
+                <div class="p-3">
+                    <div id="flightGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>
+                    <p id="flightFooter" class="text-zinc-400 text-[10px] text-center mt-2">Loading...</p>
                 </div>
             </div>
         </div>
@@ -499,38 +481,21 @@ fetch('/api/home-data')
             </div>
             
             <div id="flightCenter" class="mt-6">
-                <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-                    <div class="bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-4">
+                <div class="glass-panel rounded-xl premium-shadow overflow-hidden">
+                    <div class="bg-black px-4 py-3">
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-white font-bold text-base">Flight Center</h3>
-                                    <p class="text-blue-100 text-xs">Perth Airport Arrivals</p>
-                                </div>
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                                </svg>
+                                <span class="text-white font-semibold text-sm">Flight Center</span>
                             </div>
-                            <div id="flightTotal" class="text-right">
-                                <p class="text-white/80 text-xs">Total Flights</p>
-                                <p class="text-white font-bold text-lg">--</p>
-                            </div>
+                            <a href="/flight-center" class="text-xs text-zinc-400 hover:text-white">View All</a>
                         </div>
                     </div>
-                    <div class="p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <p class="text-zinc-500 text-xs">Remaining flights today</p>
-                            <div class="flex items-center gap-2">
-                                <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
-                                    <option value="">All Terminals</option>
-                                </select>
-                                <a href="/flight-center" class="text-xs text-blue-600 hover:text-blue-800 font-medium">View All</a>
-                            </div>
-                        </div>
-                        <div id="flightGrid" class="grid grid-cols-6 gap-1.5"></div>
-                        <p id="flightFooter" class="text-zinc-400 text-xs text-center mt-3">Loading...</p>
+                    <div class="p-3">
+                        <div id="flightGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>
+                        <p id="flightFooter" class="text-zinc-400 text-[10px] text-center mt-2">Loading...</p>
                     </div>
                 </div>
             </div>
@@ -539,13 +504,6 @@ fetch('/api/home-data')
         loadingEl.classList.add('hidden');
         contentEl.classList.remove('hidden');
         loadFlightData();
-        
-        const terminalSelect = document.getElementById('terminalSelect');
-        if (terminalSelect) {
-            terminalSelect.addEventListener('change', function() {
-                loadFlightData(this.value);
-            });
-        }
     })
     .catch(error => {
         console.error('Error loading home data:', error);
@@ -556,124 +514,160 @@ fetch('/api/home-data')
         `;
     });
 
-function loadFlightData(terminal = '') {
-    const url = terminal ? `/api/flight-arrivals?terminal=${terminal}` : '/api/flight-arrivals';
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const grid = document.getElementById('flightGrid');
-                const footer = document.getElementById('flightFooter');
-                const terminalSelect = document.getElementById('terminalSelect');
-                
-                if (terminalSelect && data.terminals && terminalSelect.options.length <= 1) {
-                    data.terminals.forEach(t => {
-                        const opt = document.createElement('option');
-                        opt.value = t;
-                        opt.textContent = `Terminal ${t}`;
-                        terminalSelect.appendChild(opt);
-                    });
-                }
-                
-                grid.innerHTML = '';
-                
-                if (data.hourly_flights.length === 0) {
-                    grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-4">No more flights today</p>';
-                    footer.textContent = 'All flights have departed';
-                } else {
-                    data.hourly_flights.forEach(hourData => {
-                        const bgClass = hourData.count > 5 ? 'bg-blue-50' : (hourData.count > 0 ? 'bg-emerald-50' : 'bg-zinc-50');
-                        const textClass = hourData.count > 5 ? 'text-blue-600' : (hourData.count > 0 ? 'text-emerald-600' : 'text-zinc-900');
-                        
-                        grid.innerHTML += `
-                            <div class="flight-hour ${bgClass} rounded-lg p-2 text-center hover:bg-zinc-100 transition-colors" data-hour="${hourData.hour}">
-                                <p class="text-zinc-400 text-[10px] font-medium">${String(hourData.hour).padStart(2,'0')}:00</p>
-                                <p class="${textClass} font-bold text-sm flight-count">${hourData.count}</p>
-                            </div>
-                        `;
-                    });
-                    footer.textContent = `${data.hourly_flights.length} hours remaining today`;
-                }
-                
-                const totalEl = document.querySelector('#flightTotal p:last-child');
-                if (totalEl) totalEl.textContent = data.total_flights;
-            }
-        })
-        .catch(error => {
-            console.error('Error loading flight data:', error);
-            document.getElementById('flightFooter').textContent = 'Error loading flight data';
-        });
+const airlineColors = {
+    'QF': '#e31837', 'VA': '#e4002b', 'JQ': '#ff6d00', 'SQ': '#f4c300',
+    'EK': '#d71921', 'MH': '#0033a0', 'NZ': '#000000', 'CZ': '#0066b3'
+};
+
+function getHourClass(count) {
+    if (count === 0) return 'bg-zinc-100';
+    if (count <= 3) return 'bg-blue-50';
+    if (count <= 6) return 'bg-emerald-50';
+    return 'bg-amber-50';
 }
 
-const terminalSelect = document.getElementById('terminalSelect');
-if (terminalSelect) {
-    terminalSelect.addEventListener('change', function() {
-        loadFlightData(this.value);
-    });
+function loadFlightData() {
+    fetch('/api/flight-details')
+        .then(response => response.json())
+        .then(data => {
+            const grid = document.getElementById('flightGrid');
+            const footer = document.getElementById('flightFooter');
+            
+            if (!data.success || !data.flights_by_terminal) {
+                grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+                footer.textContent = '';
+                return;
+            }
+            
+            const allFlights = [];
+            Object.values(data.flights_by_terminal).forEach(flights => {
+                flights.forEach(f => allFlights.push(f));
+            });
+            
+            const hourlyData = {};
+            allFlights.forEach(flight => {
+                const hour = parseInt(flight.time.split(':')[0]);
+                if (!hourlyData[hour]) hourlyData[hour] = { count: 0, airlines: [] };
+                hourlyData[hour].count++;
+                const airline = flight.flight.substring(0, 2);
+                if (!hourlyData[hour].airlines.includes(airline)) {
+                    hourlyData[hour].airlines.push(airline);
+                }
+            });
+            
+            grid.innerHTML = '';
+            const hours = Object.keys(hourlyData).map(Number).sort((a, b) => a - b);
+            
+            if (hours.length === 0) {
+                grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights today</p>';
+                footer.textContent = '';
+                return;
+            }
+            
+            hours.forEach(hour => {
+                const info = hourlyData[hour];
+                const icons = info.airlines.slice(0, Math.min(3, info.count)).map(a => 
+                    `<div class="w-4 h-4 rounded text-[6px] font-bold text-white flex items-center justify-center" style="background:${airlineColors[a] || '#18181b'}">${a}</div>`
+                ).join('');
+                
+                grid.innerHTML += `
+                    <div class="${getHourClass(info.count)} rounded-lg p-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] text-zinc-500">${String(hour).padStart(2,'0')}:00</span>
+                            <span class="text-sm font-bold text-zinc-900">${info.count}</span>
+                        </div>
+                        <div class="flex gap-0.5">${icons}</div>
+                    </div>
+                `;
+            });
+            
+            footer.textContent = `${allFlights.length} flights remaining`;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('flightFooter').textContent = 'Error loading';
+        });
 }
 </script>
 {% else %}
 <script>
-function loadFlightData(terminal = '') {
-    const url = terminal ? `/api/flight-arrivals?terminal=${terminal}` : '/api/flight-arrivals';
-    
-    fetch(url)
+const airlineColors = {
+    'QF': '#e31837', 'VA': '#e4002b', 'JQ': '#ff6d00', 'SQ': '#f4c300',
+    'EK': '#d71921', 'MH': '#0033a0', 'NZ': '#000000', 'CZ': '#0066b3'
+};
+
+function getHourClass(count) {
+    if (count === 0) return 'bg-zinc-100';
+    if (count <= 3) return 'bg-blue-50';
+    if (count <= 6) return 'bg-emerald-50';
+    return 'bg-amber-50';
+}
+
+function loadFlightData() {
+    fetch('/api/flight-details')
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                const grid = document.getElementById('flightGrid');
-                const footer = document.getElementById('flightFooter');
-                const terminalSelect = document.getElementById('terminalSelect');
-                
-                if (terminalSelect && data.terminals && terminalSelect.options.length <= 1) {
-                    data.terminals.forEach(t => {
-                        const opt = document.createElement('option');
-                        opt.value = t;
-                        opt.textContent = `Terminal ${t}`;
-                        terminalSelect.appendChild(opt);
-                    });
-                }
-                
-                grid.innerHTML = '';
-                
-                if (data.hourly_flights.length === 0) {
-                    grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-4">No more flights today</p>';
-                    footer.textContent = 'All flights have departed';
-                } else {
-                    data.hourly_flights.forEach(hourData => {
-                        const bgClass = hourData.count > 5 ? 'bg-blue-50' : (hourData.count > 0 ? 'bg-emerald-50' : 'bg-zinc-50');
-                        const textClass = hourData.count > 5 ? 'text-blue-600' : (hourData.count > 0 ? 'text-emerald-600' : 'text-zinc-900');
-                        
-                        grid.innerHTML += `
-                            <div class="flight-hour ${bgClass} rounded-lg p-2 text-center hover:bg-zinc-100 transition-colors" data-hour="${hourData.hour}">
-                                <p class="text-zinc-400 text-[10px] font-medium">${String(hourData.hour).padStart(2,'0')}:00</p>
-                                <p class="${textClass} font-bold text-sm flight-count">${hourData.count}</p>
-                            </div>
-                        `;
-                    });
-                    footer.textContent = `${data.hourly_flights.length} hours remaining today`;
-                }
-                
-                const totalEl = document.querySelector('#flightTotal p:last-child');
-                if (totalEl) totalEl.textContent = data.total_flights;
+            const grid = document.getElementById('flightGrid');
+            const footer = document.getElementById('flightFooter');
+            
+            if (!data.success || !data.flights_by_terminal) {
+                grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+                footer.textContent = '';
+                return;
             }
+            
+            const allFlights = [];
+            Object.values(data.flights_by_terminal).forEach(flights => {
+                flights.forEach(f => allFlights.push(f));
+            });
+            
+            const hourlyData = {};
+            allFlights.forEach(flight => {
+                const hour = parseInt(flight.time.split(':')[0]);
+                if (!hourlyData[hour]) hourlyData[hour] = { count: 0, airlines: [] };
+                hourlyData[hour].count++;
+                const airline = flight.flight.substring(0, 2);
+                if (!hourlyData[hour].airlines.includes(airline)) {
+                    hourlyData[hour].airlines.push(airline);
+                }
+            });
+            
+            grid.innerHTML = '';
+            const hours = Object.keys(hourlyData).map(Number).sort((a, b) => a - b);
+            
+            if (hours.length === 0) {
+                grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights today</p>';
+                footer.textContent = '';
+                return;
+            }
+            
+            hours.forEach(hour => {
+                const info = hourlyData[hour];
+                const icons = info.airlines.slice(0, Math.min(3, info.count)).map(a => 
+                    `<div class="w-4 h-4 rounded text-[6px] font-bold text-white flex items-center justify-center" style="background:${airlineColors[a] || '#18181b'}">${a}</div>`
+                ).join('');
+                
+                grid.innerHTML += `
+                    <div class="${getHourClass(info.count)} rounded-lg p-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] text-zinc-500">${String(hour).padStart(2,'0')}:00</span>
+                            <span class="text-sm font-bold text-zinc-900">${info.count}</span>
+                        </div>
+                        <div class="flex gap-0.5">${icons}</div>
+                    </div>
+                `;
+            });
+            
+            footer.textContent = `${allFlights.length} flights remaining`;
         })
         .catch(error => {
-            console.error('Error loading flight data:', error);
-            document.getElementById('flightFooter').textContent = 'Error loading flight data';
+            console.error('Error:', error);
+            document.getElementById('flightFooter').textContent = 'Error loading';
         });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     loadFlightData();
-    
-    const terminalSelect = document.getElementById('terminalSelect');
-    if (terminalSelect) {
-        terminalSelect.addEventListener('change', function() {
-            loadFlightData(this.value);
-        });
-    }
 });
 </script>
 {% endif %}
