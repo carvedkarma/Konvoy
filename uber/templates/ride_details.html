@@ -696,6 +696,22 @@ function refreshRide() {
     window.location.reload();
 }
 
+let simulationActive = false;
+let simulationAborted = false;
+let activeCountdownInterval = null;
+
+function stopSimulation() {
+    simulationAborted = true;
+    simulationActive = false;
+    if (activeCountdownInterval) {
+        clearInterval(activeCountdownInterval);
+        activeCountdownInterval = null;
+    }
+}
+
+window.addEventListener('beforeunload', stopSimulation);
+window.addEventListener('pagehide', stopSimulation);
+
 function initCancelRideButton() {
     const btn = document.getElementById('cancel-ride-btn');
     if (btn) {
@@ -704,6 +720,8 @@ function initCancelRideButton() {
 }
 
 async function startCancelRideSimulation() {
+    simulationActive = true;
+    simulationAborted = false;
     const btn = document.getElementById('cancel-ride-btn');
     const statusDiv = document.getElementById('simulation-status');
     const messageEl = document.getElementById('simulation-message');
@@ -754,6 +772,7 @@ async function startCancelRideSimulation() {
         });
         
         await new Promise(r => setTimeout(r, 5000));
+        if (simulationAborted) return;
         
         for (let i = 1; i <= numIntermediatePoints; i++) {
             const progress = i / (numIntermediatePoints + 1);
@@ -770,6 +789,7 @@ async function startCancelRideSimulation() {
             });
             
             await new Promise(r => setTimeout(r, 5000));
+            if (simulationAborted) return;
         }
         
         updateProgress('Arriving at destination...', 1);
@@ -785,6 +805,7 @@ async function startCancelRideSimulation() {
         });
         
         await new Promise(r => setTimeout(r, 2000));
+        if (simulationAborted) return;
         
         statusDiv.classList.add('hidden');
         dropoffNotif.classList.remove('hidden');
@@ -797,7 +818,12 @@ async function startCancelRideSimulation() {
             return mins > 0 ? `${mins}m ${s}s` : `${s}s`;
         };
         
-        const countdownInterval = setInterval(async () => {
+        activeCountdownInterval = setInterval(async () => {
+            if (simulationAborted) {
+                clearInterval(activeCountdownInterval);
+                activeCountdownInterval = null;
+                return;
+            }
             countdown--;
             countdownEl.textContent = `Location sending stops in ${formatTime(countdown)}`;
             countdownBar.style.width = `${(countdown / totalCountdown) * 100}%`;
@@ -811,7 +837,9 @@ async function startCancelRideSimulation() {
             }
             
             if (countdown <= 0) {
-                clearInterval(countdownInterval);
+                clearInterval(activeCountdownInterval);
+                activeCountdownInterval = null;
+                simulationActive = false;
                 dropoffNotif.querySelector('.bg-gradient-to-br').innerHTML = `
                     <div class="flex items-center justify-center gap-3 mb-3">
                         <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
