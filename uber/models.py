@@ -235,6 +235,37 @@ class User(UserMixin, db.Model):
         return f'<User {self.username}>'
 
 
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    reply_to_id = db.Column(db.Integer, db.ForeignKey('chat_messages.id'), nullable=True)
+    mentioned_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', foreign_keys=[user_id], backref='messages')
+    mentioned_user = db.relationship('User', foreign_keys=[mentioned_user_id])
+    reply_to = db.relationship('ChatMessage', remote_side=[id], backref='replies')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'user_name': self.user.get_display_name(),
+            'user_initials': self.user.get_initials(),
+            'username': self.user.username,
+            'roles': [{'name': r.display_name, 'color': r.color} for r in self.user.roles],
+            'message': self.message,
+            'reply_to_id': self.reply_to_id,
+            'reply_to_user': self.reply_to.user.get_display_name() if self.reply_to else None,
+            'reply_to_message': self.reply_to.message[:50] + '...' if self.reply_to and len(self.reply_to.message) > 50 else (self.reply_to.message if self.reply_to else None),
+            'mentioned_user': self.mentioned_user.username if self.mentioned_user else None,
+            'created_at': self.created_at.isoformat()
+        }
+
+
 def create_default_roles():
     default_roles = [
         {

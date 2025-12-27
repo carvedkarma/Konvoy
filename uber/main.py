@@ -1,13 +1,15 @@
 import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime, timedelta
 from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour
 import config
 import cache
-from models import db, User, Role, create_default_roles, encrypt_data, decrypt_data
+from models import db, User, Role, ChatMessage, create_default_roles, encrypt_data, decrypt_data
 from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm, UberConnectForm, UberDisconnectForm, EmptyForm
 import secrets
+import json
 
 app = Flask(__name__)
 
@@ -52,6 +54,9 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 
 db.init_app(app)
+
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+online_users = {}
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -1066,5 +1071,89 @@ def api_flight_arrivals():
         })
 
 
+@app.route('/chat-lobby')
+@login_required
+def chat_lobby():
+    return render_template('chat_lobby.html')
+
+
+@app.route('/api/chat-messages')
+@login_required
+def get_chat_messages():
+    messages = ChatMessage.query.order_by(ChatMessage.created_at.desc()).limit(100).all()
+    return jsonify({
+        'success': True,
+        'messages': [m.to_dict() for m in reversed(messages)]
+    })
+
+
+@app.route('/api/chat-users')
+@login_required
+def get_chat_users():
+    users = User.query.all()
+    return jsonify({
+        'success': True,
+        'users': [{'id': u.id, 'username': u.username, 'display_name': u.get_display_name()} for u in users]
+    })
+
+
+@socketio.on('connect')
+def handle_connect():
+    if current_user.is_authenticated:
+        user_data = {
+            'id': current_user.id,
+            'username': current_user.username,
+            'display_name': current_user.get_display_name(),
+            'initials': current_user.get_initials(),
+            'roles': [{'name': r.display_name, 'color': r.color} for r in current_user.roles]
+        }
+        online_users[current_user.id] = user_data
+        emit('user_joined', user_data, broadcast=True)
+        emit('online_users', list(online_users.values()))
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    if current_user.is_authenticated and current_user.id in online_users:
+        user_data = online_users.pop(current_user.id, None)
+        if user_data:
+            emit('user_left', {'id': current_user.id}, broadcast=True)
+
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    if not current_user.is_authenticated:
+        return
+    
+    message_text = data.get('message', '').strip()
+    reply_to_id = data.get('reply_to_id')
+    mentioned_username = data.get('mentioned_user')
+    
+    if not message_text:
+        return
+    
+    mentioned_user_id = None
+    if mentioned_username:
+        mentioned_user = User.query.filter_by(username=mentioned_username).first()
+        if mentioned_user:
+            mentioned_user_id = mentioned_user.id
+    
+    chat_msg = ChatMessage(
+        user_id=current_user.id,
+        message=message_text,
+        reply_to_id=reply_to_id if reply_to_id else None,
+        mentioned_user_id=mentioned_user_id
+    )
+    db.session.add(chat_msg)
+    db.session.commit()
+    
+    emit('new_message', chat_msg.to_dict(), broadcast=True)
+
+
+@socketio.on('get_online_users')
+def handle_get_online_users():
+    emit('online_users', list(online_users.values()))
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000)

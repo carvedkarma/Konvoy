@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}Konvoy | Chat Lobby{% endblock %}
+
+{% block extra_styles %}
+<style>
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-online {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+.message-enter {
+    animation: fadeIn 0.3s ease-out;
+}
+.online-pulse {
+    animation: pulse-online 2s infinite;
+}
+.user-card {
+    transition: all 0.2s ease;
+}
+.user-card:hover {
+    transform: translateY(-2px);
+}
+.chat-container {
+    height: calc(100vh - 200px);
+    min-height: 400px;
+}
+.messages-area {
+    height: calc(100% - 80px);
+    overflow-y: auto;
+}
+.messages-area::-webkit-scrollbar {
+    width: 6px;
+}
+.messages-area::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+}
+.messages-area::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+.mention-highlight {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15));
+    border-left: 3px solid #3b82f6;
+}
+.reply-preview {
+    border-left: 2px solid #9ca3af;
+    padding-left: 8px;
+    margin-bottom: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] px-4 py-6">
+    <div class="max-w-6xl mx-auto">
+        
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center">
+                <a href="{{ url_for('root') }}" class="mr-4 p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 transition-colors">
+                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-xl font-bold text-zinc-900">Chat Lobby</h1>
+                    <p class="text-xs text-zinc-500">Real-time team communication</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full online-pulse"></div>
+                <span id="online-count" class="text-sm text-zinc-600">0 online</span>
+            </div>
+        </div>
+
+        <div id="online-users" class="flex flex-wrap gap-2 mb-4 p-3 glass-panel rounded-xl">
+            <div class="text-xs text-zinc-400 w-full mb-1">Online Users</div>
+        </div>
+
+        <div class="glass-panel rounded-xl premium-shadow chat-container flex flex-col">
+            
+            <div id="messages" class="messages-area p-4 space-y-3">
+                <div class="flex items-center justify-center py-8">
+                    <div class="text-center">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <p class="text-sm text-zinc-500">Loading messages...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="reply-preview" class="hidden px-4 py-2 bg-zinc-50 border-t border-zinc-100">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center text-xs text-zinc-500">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        Replying to <span id="reply-to-name" class="font-medium ml-1"></span>
+                    </div>
+                    <button onclick="cancelReply()" class="text-zinc-400 hover:text-zinc-600">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-zinc-100">
+                <form id="message-form" class="flex items-center space-x-3">
+                    <div class="flex-1 relative">
+                        <input type="text" id="message-input" placeholder="Type a message... Use @username to mention" 
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
+                            autocomplete="off">
+                        <div id="mention-dropdown" class="hidden absolute bottom-full left-0 right-0 mb-1 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-40 overflow-y-auto z-10">
+                        </div>
+                    </div>
+                    <button type="submit" class="px-5 py-3 bg-black text-white rounded-xl font-medium text-sm hover:bg-zinc-800 transition-colors flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+                        </svg>
+                        Send
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
+<script>
+const socket = io();
+const currentUserId = {{ current_user.id|tojson }};
+const currentUsername = {{ current_user.username|tojson }};
+let replyToId = null;
+let allUsers = [];
+
+const roleColors = {
+    'yellow': ['from-amber-400', 'to-yellow-500'],
+    'blue': ['from-blue-400', 'to-blue-600'],
+    'gray': ['from-zinc-400', 'to-zinc-500'],
+    'red': ['from-red-400', 'to-red-600'],
+    'green': ['from-emerald-400', 'to-green-600'],
+    'purple': ['from-purple-400', 'to-purple-600'],
+    'pink': ['from-pink-400', 'to-pink-600'],
+    'orange': ['from-orange-400', 'to-orange-600']
+};
+
+function getRoleGradient(roles) {
+    if (!roles || roles.length === 0) return 'from-zinc-400 to-zinc-500';
+    if (roles.length === 1) {
+        const color = roles[0].color || 'gray';
+        const colors = roleColors[color] || roleColors['gray'];
+        return `${colors[0]} ${colors[1]}`;
+    }
+    const firstColor = roleColors[roles[0].color] || roleColors['gray'];
+    const lastColor = roleColors[roles[roles.length - 1].color] || roleColors['gray'];
+    return `${firstColor[0]} ${lastColor[1]}`;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatTime(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderOnlineUsers(users) {
+    const container = document.getElementById('online-users');
+    const countEl = document.getElementById('online-count');
+    countEl.textContent = `${users.length} online`;
+    
+    let html = '<div class="text-xs text-zinc-400 w-full mb-1">Online Users</div>';
+    
+    users.forEach(user => {
+        const gradient = getRoleGradient(user.roles);
+        const roleNames = user.roles.map(r => r.name).join(', ') || 'User';
+        html += `
+            <div class="user-card flex items-center px-3 py-2 rounded-lg bg-gradient-to-r ${gradient} cursor-pointer"
+                 onclick="mentionUser('${escapeHtml(user.username)}')" title="Click to mention">
+                <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white text-xs font-bold mr-2">
+                    ${escapeHtml(user.initials)}
+                </div>
+                <div class="min-w-0">
+                    <div class="text-white text-xs font-medium truncate">${escapeHtml(user.display_name)}</div>
+                    <div class="text-white/70 text-[10px] truncate">${escapeHtml(roleNames)}</div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function renderMessage(msg, prepend = false) {
+    const container = document.getElementById('messages');
+    const isOwn = msg.user_id === currentUserId;
+    const isMentioned = msg.mentioned_user === currentUsername;
+    const gradient = getRoleGradient(msg.roles);
+    
+    const messageHtml = `
+        <div class="message-enter flex ${isOwn ? 'justify-end' : 'justify-start'} ${isMentioned ? 'mention-highlight rounded-lg p-2 -mx-2' : ''}" data-message-id="${msg.id}">
+            <div class="max-w-[75%] ${isOwn ? 'order-2' : 'order-1'}">
+                <div class="flex items-center mb-1 ${isOwn ? 'justify-end' : 'justify-start'}">
+                    ${!isOwn ? `<div class="w-6 h-6 rounded-full bg-gradient-to-r ${gradient} flex items-center justify-center text-white text-[10px] font-bold mr-2">${escapeHtml(msg.user_initials)}</div>` : ''}
+                    <span class="text-xs font-medium text-zinc-700">${escapeHtml(msg.user_name)}</span>
+                    <span class="text-[10px] text-zinc-400 ml-2">${formatTime(msg.created_at)}</span>
+                    ${isOwn ? `<div class="w-6 h-6 rounded-full bg-gradient-to-r ${gradient} flex items-center justify-center text-white text-[10px] font-bold ml-2">${escapeHtml(msg.user_initials)}</div>` : ''}
+                </div>
+                ${msg.reply_to_user ? `
+                    <div class="reply-preview text-[10px] text-zinc-500 mb-1">
+                        <span class="font-medium">${escapeHtml(msg.reply_to_user)}</span>: ${escapeHtml(msg.reply_to_message || '')}
+                    </div>
+                ` : ''}
+                <div class="${isOwn ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-800'} px-4 py-2 rounded-2xl ${isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm'} text-sm">
+                    ${formatMessageText(msg.message)}
+                </div>
+                <div class="flex items-center mt-1 ${isOwn ? 'justify-end' : 'justify-start'}">
+                    <button onclick="setReply(${msg.id}, '${escapeHtml(msg.user_name)}')" class="text-[10px] text-zinc-400 hover:text-zinc-600 flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        Reply
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    if (prepend) {
+        container.insertAdjacentHTML('afterbegin', messageHtml);
+    } else {
+        container.insertAdjacentHTML('beforeend', messageHtml);
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+function formatMessageText(text) {
+    let escaped = escapeHtml(text);
+    escaped = escaped.replace(/@(\w+)/g, '<span class="bg-blue-100 text-blue-700 px-1 rounded font-medium">@$1</span>');
+    return escaped;
+}
+
+function setReply(messageId, userName) {
+    replyToId = messageId;
+    document.getElementById('reply-preview').classList.remove('hidden');
+    document.getElementById('reply-to-name').textContent = userName;
+    document.getElementById('message-input').focus();
+}
+
+function cancelReply() {
+    replyToId = null;
+    document.getElementById('reply-preview').classList.add('hidden');
+}
+
+function mentionUser(username) {
+    const input = document.getElementById('message-input');
+    const currentVal = input.value;
+    if (currentVal && !currentVal.endsWith(' ')) {
+        input.value = currentVal + ' @' + username + ' ';
+    } else {
+        input.value = currentVal + '@' + username + ' ';
+    }
+    input.focus();
+}
+
+const messageInput = document.getElementById('message-input');
+messageInput.addEventListener('input', function() {
+    const value = this.value;
+    const atMatch = value.match(/@(\w*)$/);
+    
+    if (atMatch) {
+        const query = atMatch[1].toLowerCase();
+        const filtered = allUsers.filter(u => 
+            u.username.toLowerCase().includes(query) || 
+            u.display_name.toLowerCase().includes(query)
+        ).slice(0, 5);
+        
+        if (filtered.length > 0) {
+            const dropdown = document.getElementById('mention-dropdown');
+            dropdown.innerHTML = filtered.map(u => `
+                <div class="px-3 py-2 hover:bg-zinc-100 cursor-pointer text-sm" onclick="selectMention('${u.username}')">
+                    <span class="font-medium">@${escapeHtml(u.username)}</span>
+                    <span class="text-zinc-500 ml-2">${escapeHtml(u.display_name)}</span>
+                </div>
+            `).join('');
+            dropdown.classList.remove('hidden');
+        } else {
+            document.getElementById('mention-dropdown').classList.add('hidden');
+        }
+    } else {
+        document.getElementById('mention-dropdown').classList.add('hidden');
+    }
+});
+
+function selectMention(username) {
+    const input = document.getElementById('message-input');
+    input.value = input.value.replace(/@\w*$/, '@' + username + ' ');
+    document.getElementById('mention-dropdown').classList.add('hidden');
+    input.focus();
+}
+
+document.getElementById('message-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    const mentionMatch = message.match(/@(\w+)/);
+    const mentionedUser = mentionMatch ? mentionMatch[1] : null;
+    
+    socket.emit('send_message', {
+        message: message,
+        reply_to_id: replyToId,
+        mentioned_user: mentionedUser
+    });
+    
+    input.value = '';
+    cancelReply();
+});
+
+socket.on('connect', function() {
+    console.log('Connected to chat');
+    socket.emit('get_online_users');
+});
+
+socket.on('online_users', function(users) {
+    renderOnlineUsers(users);
+});
+
+socket.on('user_joined', function(user) {
+    console.log('User joined:', user.display_name);
+});
+
+socket.on('user_left', function(data) {
+    console.log('User left:', data.id);
+    socket.emit('get_online_users');
+});
+
+socket.on('new_message', function(msg) {
+    renderMessage(msg);
+});
+
+fetch('/api/chat-messages')
+    .then(r => r.json())
+    .then(data => {
+        const container = document.getElementById('messages');
+        container.innerHTML = '';
+        if (data.messages && data.messages.length > 0) {
+            data.messages.forEach(msg => renderMessage(msg));
+        } else {
+            container.innerHTML = `
+                <div class="flex items-center justify-center py-8">
+                    <div class="text-center">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-100 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <p class="text-sm text-zinc-500">No messages yet. Start the conversation!</p>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+fetch('/api/chat-users')
+    .then(r => r.json())
+    .then(data => {
+        if (data.users) {
+            allUsers = data.users;
+        }
+    });
+</script>
+{% endblock %}
