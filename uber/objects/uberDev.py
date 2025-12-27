@@ -85,7 +85,11 @@ def appLaunch(cookies, headers, refresh_token):
         cookies, headers, refresh_token)
 
     try:
-        response = requests.get('https://pastebin.com/raw/SYMDNfFL')
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/drivers/app-launch',
+            cookies=cookies,
+            headers=headers,
+            json=json_data)
         data = response.json()
     except Exception as e:
         print(f"Error fetching app launch data: {e}")
@@ -474,48 +478,53 @@ def driverInfo(cookies, headers, refresh_token):
 
 def flightArrivals(terminal=None):
     from bs4 import BeautifulSoup
-    
+
     try:
         url = 'https://www.airport-perth.com/arrivals.php'
-        
+
         response = requests.get(
             url,
             headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept':
+                'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             },
-            timeout=15
-        )
-        
+            timeout=15)
+
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             flights = []
             terminals_found = set()
-            
+
             flight_rows = soup.find_all('div', class_='flight-row')
             for row in flight_rows:
                 if 'flight-titol' in row.get('class', []):
                     continue
-                    
+
                 time_elem = row.find('div', class_='flight-col__hour')
                 origin_elem = row.find('div', class_='flight-col__dest-term')
                 flight_elem = row.find('a', class_='flight-col__flight--link')
                 status_elem = row.find('div', class_='flight-col__status')
                 terminal_elem = row.find('div', class_='flight-col__terminal')
-                
+
                 if time_elem:
                     time_str = time_elem.get_text(strip=True)
-                    origin = origin_elem.get_text(strip=True) if origin_elem else ''
-                    flight_num = flight_elem.get_text(strip=True) if flight_elem else ''
-                    status = status_elem.get_text(strip=True) if status_elem else ''
-                    term = terminal_elem.get_text(strip=True) if terminal_elem else ''
-                    
+                    origin = origin_elem.get_text(
+                        strip=True) if origin_elem else ''
+                    flight_num = flight_elem.get_text(
+                        strip=True) if flight_elem else ''
+                    status = status_elem.get_text(
+                        strip=True) if status_elem else ''
+                    term = terminal_elem.get_text(
+                        strip=True) if terminal_elem else ''
+
                     if term:
                         terminals_found.add(term)
-                    
+
                     if terminal and term != terminal:
                         continue
-                    
+
                     flights.append({
                         'time': time_str,
                         'flight': flight_num,
@@ -523,23 +532,27 @@ def flightArrivals(terminal=None):
                         'status': status,
                         'terminal': term
                     })
-            
-            print(f"Scraped {len(flights)} flights from airport-perth.com (terminals: {sorted(terminals_found)})")
-            
+
+            print(
+                f"Scraped {len(flights)} flights from airport-perth.com (terminals: {sorted(terminals_found)})"
+            )
+
             class MockResponse:
+
                 def __init__(self, data):
                     self._data = data
                     self.status_code = 200
                     self.text = str(data)
+
                 def json(self):
                     return self._data
-            
+
             return MockResponse({
-                'flights': flights, 
+                'flights': flights,
                 'source': 'airport-perth.com',
                 'terminals': sorted(terminals_found)
             })
-        
+
         print(f"Flight API returned status {response.status_code}")
         return None
     except Exception as e:

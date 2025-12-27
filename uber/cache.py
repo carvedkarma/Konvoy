@@ -8,6 +8,7 @@ CACHE_TTL = {
     'vehicles': 600,
     'driver_info': 600,
     'active_ride': 30,
+    'flights': 3600,
 }
 
 def _get_cache_key(user_id, data_type):
@@ -65,4 +66,12 @@ def get_active_ride(user_id, fetch_func):
         return cached
     data = fetch_func()
     set_cached(user_id, 'active_ride', data)
+    return data
+
+def get_flights(fetch_func):
+    cached = get_cached('global', 'flights')
+    if cached is not None:
+        return cached
+    data = fetch_func()
+    set_cached('global', 'flights', data)
     return data

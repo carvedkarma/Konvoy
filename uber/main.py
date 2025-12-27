@@ -18,6 +18,13 @@ if not flask_secret:
     print("WARNING: FLASK_SECRET_KEY not set. Using generated key for this session.")
     
 app.secret_key = flask_secret
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+app.config['REMEMBER_COOKIE_SECURE'] = False
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
 
 def get_database_url():
     db_url = os.environ.get("DATABASE_URL")
@@ -182,7 +189,7 @@ def login():
         if user and user.check_password(form.password.data):
             user.last_login = datetime.utcnow()
             db.session.commit()
-            login_user(user)
+            login_user(user, remember=True)
             next_page = request.args.get('next')
             return redirect(next_page if next_page else url_for('root'))
         else:
@@ -910,10 +917,26 @@ def api_flight_arrivals():
     
     try:
         terminal = request.args.get('terminal', None)
-        response = flightArrivals(terminal)
         
-        if response is None:
-            print("Flight API returned None - request failed")
+        def fetch_flights():
+            response = flightArrivals(terminal)
+            if response is None:
+                return {'flights': [], 'terminals': [], 'error': True}
+            try:
+                return response.json()
+            except:
+                return {'flights': [], 'terminals': [], 'error': True}
+        
+        cache_key = f"flights_{terminal or 'all'}"
+        data = cache.get_cached('global', cache_key)
+        if data is None:
+            data = fetch_flights()
+            cache.set_cached('global', cache_key, data)
+            print(f"Flight data fetched from API for terminal: {terminal}")
+        else:
+            print(f"Flight data served from cache for terminal: {terminal}")
+        
+        if data.get('error'):
             hourly_data = parseFlightsByHour({})
             return jsonify({
                 'success': True,
@@ -921,14 +944,6 @@ def api_flight_arrivals():
                 'total_flights': 0,
                 'message': 'API unavailable'
             })
-        
-        print(f"Flight API Status: {response.status_code}, Terminal: {terminal}")
-        
-        try:
-            data = response.json()
-        except:
-            print("Response is not JSON")
-            data = {}
         
         hourly_data = parseFlightsByHour(data)
         terminals = data.get('terminals', [])
