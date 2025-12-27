@@ -4,6 +4,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from datetime import datetime, timedelta
 from objects.uberDev import vehicleDetails, appLaunch, driverLocation
 import config
+import cache
 from models import db, User, Role, create_default_roles, encrypt_data, decrypt_data
 from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm, UberConnectForm, UberDisconnectForm
 import secrets
@@ -112,7 +113,6 @@ def root():
 def home_data():
     vehicles = []
     driver_info = None
-    active_ride = None
     default_vehicle = None
     
     if current_user.uber_connected:
@@ -120,44 +120,33 @@ def home_data():
             cookies, headers, refresh_token = current_user.get_uber_credentials()
         except Exception as e:
             print(f"Error getting credentials: {e}")
-            return jsonify(success=True, vehicles=[], driver_info=None, active_ride=None, default_vehicle=None)
+            return jsonify(success=True, vehicles=[], driver_info=None, default_vehicle=None)
         
-        try:
-            vehicles = vehicleDetails(cookies, headers, refresh_token)
-            for v in vehicles:
-                if v.get('isDefault'):
-                    default_vehicle = v
-                    break
-        except Exception as e:
-            print(f"Error fetching vehicles: {e}")
-            vehicles = []
+        def fetch_vehicles():
+            try:
+                return vehicleDetails(cookies, headers, refresh_token)
+            except Exception as e:
+                print(f"Error fetching vehicles: {e}")
+                return []
         
-        try:
-            from objects.uberDev import driverInfo
-            driver_data = driverInfo(cookies, headers, refresh_token)
-            driver_info = {
-                'name': driver_data[0],
-                'photo': driver_data[1]
-            }
-        except Exception as e:
-            print(f"Error fetching driver info: {e}")
-            driver_info = None
+        def fetch_driver_info():
+            try:
+                from objects.uberDev import driverInfo
+                data = driverInfo(cookies, headers, refresh_token)
+                return {'name': data[0], 'photo': data[1]}
+            except Exception as e:
+                print(f"Error fetching driver info: {e}")
+                return None
         
-        try:
-            from objects.uberDev import appLaunch
-            ride_data = appLaunch(cookies, headers, refresh_token)
-            if ride_data and isinstance(ride_data, dict):
-                active_ride = {
-                    'full_name': ride_data.get('full_name', 'Rider'),
-                    'rating': ride_data.get('rating', '--'),
-                    'trip_distance': ride_data.get('trip_distance'),
-                    'ride_type': ride_data.get('ride_type', 'UberX')
-                }
-        except Exception as e:
-            print(f"Error checking ride status: {e}")
-            active_ride = None
+        vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
+        driver_info = cache.get_driver_info(current_user.id, fetch_driver_info)
+        
+        for v in vehicles:
+            if v.get('isDefault'):
+                default_vehicle = v
+                break
     
-    return jsonify(success=True, vehicles=vehicles, driver_info=driver_info, active_ride=active_ride, default_vehicle=default_vehicle)
+    return jsonify(success=True, vehicles=vehicles, driver_info=driver_info, default_vehicle=default_vehicle)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -686,7 +675,11 @@ def location_data():
     if current_user.uber_connected:
         try:
             cookies, headers, refresh_token = current_user.get_uber_credentials()
-            vehicles = vehicleDetails(cookies, headers, refresh_token)
+            
+            def fetch_vehicles():
+                return vehicleDetails(cookies, headers, refresh_token)
+            
+            vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
             for v in vehicles:
                 if v.get('isDefault'):
                     default_vehicle = v
@@ -723,7 +716,11 @@ def fetch_ride_data():
     default_vehicle = None
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
-        vehicles = vehicleDetails(cookies, headers, refresh_token)
+        
+        def fetch_vehicles():
+            return vehicleDetails(cookies, headers, refresh_token)
+        
+        vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
         for v in vehicles:
             if v.get('isDefault'):
                 default_vehicle = v
@@ -733,7 +730,11 @@ def fetch_ride_data():
     
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
-        ride_data = appLaunch(cookies, headers, refresh_token)
+        
+        def fetch_ride():
+            return appLaunch(cookies, headers, refresh_token)
+        
+        ride_data = cache.get_active_ride(current_user.id, fetch_ride)
         if ride_data and isinstance(ride_data, dict):
             return jsonify(success=True, ride_data=ride_data, default_vehicle=default_vehicle)
         else:
