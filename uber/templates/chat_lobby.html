@@ -13,7 +13,12 @@
     50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
 }
 .message-enter {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.2s ease-out;
+}
+@media (max-width: 640px) {
+    .message-enter {
+        animation: none;
+    }
 }
 .online-pulse {
     animation: pulse-online 2s infinite;
@@ -190,7 +195,12 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
 <script>
-const socket = io();
+const socket = io({
+    transports: ['websocket'],
+    upgrade: false,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000
+});
 const currentUserId = {{ current_user.id|tojson }};
 const currentUsername = {{ current_user.username|tojson }};
 let allUsers = [];
@@ -277,7 +287,9 @@ function renderMessage(msg, prepend = false) {
         container.insertAdjacentHTML('afterbegin', messageHtml);
     } else {
         container.insertAdjacentHTML('beforeend', messageHtml);
-        container.scrollTop = container.scrollHeight;
+        requestAnimationFrame(() => {
+            container.scrollTop = container.scrollHeight;
+        });
     }
 }
 
@@ -341,29 +353,33 @@ document.addEventListener('click', function(e) {
 });
 
 const messageInput = document.getElementById('message-input');
+let mentionTimeout;
 messageInput.addEventListener('input', function() {
+    clearTimeout(mentionTimeout);
     const value = this.value;
     const atMatch = value.match(/@(\w*)$/);
     
     if (atMatch) {
-        const query = atMatch[1].toLowerCase();
-        const filtered = allUsers.filter(u => 
-            u.username.toLowerCase().includes(query) || 
-            u.display_name.toLowerCase().includes(query)
-        ).slice(0, 5);
-        
-        if (filtered.length > 0) {
-            const dropdown = document.getElementById('mention-dropdown');
-            dropdown.innerHTML = filtered.map(u => `
-                <div class="px-3 py-2 hover:bg-zinc-100 cursor-pointer text-sm" onclick="selectMention('${u.username}')">
-                    <span class="font-medium">@${escapeHtml(u.username)}</span>
-                    <span class="text-zinc-500 ml-2">${escapeHtml(u.display_name)}</span>
-                </div>
-            `).join('');
-            dropdown.classList.remove('hidden');
-        } else {
-            document.getElementById('mention-dropdown').classList.add('hidden');
-        }
+        mentionTimeout = setTimeout(() => {
+            const query = atMatch[1].toLowerCase();
+            const filtered = allUsers.filter(u => 
+                u.username.toLowerCase().includes(query) || 
+                u.display_name.toLowerCase().includes(query)
+            ).slice(0, 5);
+            
+            if (filtered.length > 0) {
+                const dropdown = document.getElementById('mention-dropdown');
+                dropdown.innerHTML = filtered.map(u => `
+                    <div class="px-3 py-2 hover:bg-zinc-100 cursor-pointer text-sm" onclick="selectMention('${u.username}')">
+                        <span class="font-medium">@${escapeHtml(u.username)}</span>
+                        <span class="text-zinc-500 ml-2">${escapeHtml(u.display_name)}</span>
+                    </div>
+                `).join('');
+                dropdown.classList.remove('hidden');
+            } else {
+                document.getElementById('mention-dropdown').classList.add('hidden');
+            }
+        }, 100);
     } else {
         document.getElementById('mention-dropdown').classList.add('hidden');
     }
