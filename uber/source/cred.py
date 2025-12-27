@@ -177,3 +177,59 @@ fare_headers = {
 }
 
 fare_query = 'query Products($capacity: Int, $destinations: [InputCoordinate!]!, $includeRecommended: Boolean = false, $isRiderCurrentUser: Boolean, $payment: InputPayment, $paymentProfileUUID: String, $pickup: InputCoordinate!, $pickupFormattedTime: String, $profileType: String, $profileUUID: String, $voucherUUID: String, $voucherPolicyUUID: String, $returnByFormattedTime: String, $stuntID: String, $targetProductType: EnumRVWebCommonTargetProductType) {\n  products(\n    capacity: $capacity\n    destinations: $destinations\n    includeRecommended: $includeRecommended\n    isRiderCurrentUser: $isRiderCurrentUser\n    payment: $payment\n    paymentProfileUUID: $paymentProfileUUID\n    pickup: $pickup\n    pickupFormattedTime: $pickupFormattedTime\n    profileType: $profileType\n    profileUUID: $profileUUID\n    voucherUUID: $voucherUUID\n    voucherPolicyUUID: $voucherPolicyUUID\n    returnByFormattedTime: $returnByFormattedTime\n    stuntID: $stuntID\n    targetProductType: $targetProductType\n  ) {\n    ...ProductsFragment\n    __typename\n  }\n}\n\nfragment ProductsFragment on RVWebCommonProductsResponse {\n  defaultVVID\n  hourlyTiersWithMinimumFare {\n    ...HourlyTierFragment\n    __typename\n  }\n  intercity {\n    ...IntercityFragment\n    __typename\n  }\n  links {\n    iFrame\n    text\n    url\n    __typename\n  }\n  productsUnavailableMessage\n  tiers {\n    ...TierFragment\n    __typename\n  }\n  __typename\n}\n\nfragment BadgesFragment on RVWebCommonProductBadge {\n  backgroundColor\n  color\n  contentColor\n  icon\n  inactiveBackgroundColor\n  inactiveContentColor\n  text\n  __typename\n}\n\nfragment HourlyTierFragment on RVWebCommonHourlyTier {\n  description\n  distance\n  fare\n  fareAmountE5\n  farePerHour\n  minutes\n  packageVariantUUID\n  preAdjustmentValue\n  __typename\n}\n\nfragment IntercityFragment on RVWebCommonIntercityInfo {\n  oneWayIntercityConfig(destinations: $destinations, pickup: $pickup) {\n    ...IntercityConfigFragment\n    __typename\n  }\n  roundTripIntercityConfig(destinations: $destinations, pickup: $pickup) {\n    ...IntercityConfigFragment\n    __typename\n  }\n  __typename\n}\n\nfragment IntercityConfigFragment on RVWebCommonIntercityConfig {\n  description\n  onDemandAllowed\n  reservePickup {\n    ...IntercityTimePickerFragment\n    __typename\n  }\n  returnBy {\n    ...IntercityTimePickerFragment\n    __typename\n  }\n  __typename\n}\n\nfragment IntercityTimePickerFragment on RVWebCommonIntercityTimePicker {\n  bookingRange {\n    maximum\n    minimum\n    __typename\n  }\n  header {\n    subTitle\n    title\n    __typename\n  }\n  __typename\n}\n\nfragment TierFragment on RVWebCommonProductTier {\n  products {\n    ...ProductFragment\n    __typename\n  }\n  title\n  __typename\n}\n\nfragment ProductFragment on RVWebCommonProduct {\n  badges {\n    ...BadgesFragment\n    __typename\n  }\n  cityID\n  currencyCode\n  description\n  detailedDescription\n  discountPrimary\n  displayName\n  estimatedTripTime\n  etaStringShort\n  fares {\n    capacity\n    discountPrimary\n    fare\n    fareAmountE5\n    hasPromo\n    hasRidePass\n    meta\n    preAdjustmentValue\n    __typename\n  }\n  hasPromo\n  hasRidePass\n  hasBenefitsOnFare\n  hourly {\n    tiers {\n      ...HourlyTierFragment\n      __typename\n    }\n    overageRates {\n      ...HourlyOverageRatesFragment\n      __typename\n    }\n    __typename\n  }\n  iconType\n  id\n  is3p\n  isAvailable\n  legalConsent {\n    ...ProductLegalConsentFragment\n    __typename\n  }\n  parentProductUuid\n  preAdjustmentValue\n  productImageUrl\n  productUuid\n  reserveEnabled\n  __typename\n}\n\nfragment ProductLegalConsentFragment on RVWebCommonProductLegalConsent {\n  header\n  image {\n    url\n    width\n    __typename\n  }\n  description\n  enabled\n  ctaUrl\n  ctaDisplayString\n  buttonLabel\n  showOnce\n  shouldBlockRequest\n  __typename\n}\n\nfragment HourlyOverageRatesFragment on RVWebCommonHourlyOverageRates {\n  perDistanceUnit\n  perTemporalUnit\n  __typename\n}\n'
+
+flight_cookies = {
+    'shell#lang': 'en',
+    'ASP.NET_SessionId': '44b0hh2t1zfbaogcvdhe3qzf',
+    '__RequestVerificationToken':
+    'x7MU57TQSFlX9dtHtP4CIEMhmVMmHmrknfsXvXyOhVwdrFZT5VMY-TaJI7J82VkW4r3LsBKAuiyO_aemqWs443fGFoI1',
+    'cb': '2',
+    'ARRAffinity':
+    'd273fa9c81fcefc26424831206db7c9a53438f63ff81522c252c356dd5edc78f',
+    'ARRAffinitySameSite':
+    'd273fa9c81fcefc26424831206db7c9a53438f63ff81522c252c356dd5edc78f',
+    '__cf_bm':
+    '6Jy8h9wtn8MWdq2kDmaNs4i1U5jiBR104TvF3RHoNwM-1766805590-1.0.1.1-W9MLTecYcsW5myjzrBm0VpSAjaP9G1EuFSUvX0tOmfB1kV6lKzNr1opcyj3bpMHu5d88f2QuBZG015M2.Iw4xz2Ikih7o2Fo3dXcpWnba94',
+    '__cflb': '04dToS1qZ2PWSZRSYNuwUPFLvssxhsTSay3UEAbU8s',
+    '_gcl_au': '1.1.2001755386.1766805592',
+    '_fbp': 'fb.2.1766805592766.467552315788359590',
+    '_ga': 'GA1.1.1220001636.1766805593',
+    'optiMonkClientId': 'eaa8a357-63fa-08be-2f2a-9b215e42730f',
+    'optiMonkSession': '1766805593',
+    'optiMonkClient':
+    'N4IgrAHATAbCBcoDGBDBwC+AaEAzAbggIwDsMMEADGGAJxQ4A2h8p5VdtEAdACwkBmHADsA9gAcWAjBiA===',
+    '_ga_TV9RFRH56F': 'GS2.1.s1766805592$o1$g1$t1766805998$j35$l0$h946430354',
+}
+
+flight_headers = {
+    'accept':
+    'application/json, text/plain, */*',
+    'accept-language':
+    'en-US,en;q=0.9,en-AU;q=0.8',
+    'cache-control':
+    'no-cache',
+    'content-type':
+    'multipart/form-data; boundary=----WebKitFormBoundaryTe1G0OcxTnfu4MLC',
+    'origin':
+    'https://www.perthairport.com.au',
+    'pragma':
+    'no-cache',
+    'priority':
+    'u=1, i',
+    'referer':
+    'https://www.perthairport.com.au/flights/departures-and-arrivals',
+    'sec-ch-ua':
+    '"Microsoft Edge";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
+    'sec-ch-ua-mobile':
+    '?0',
+    'sec-ch-ua-platform':
+    '"Windows"',
+    'sec-fetch-dest':
+    'empty',
+    'sec-fetch-mode':
+    'cors',
+    'sec-fetch-site':
+    'same-origin',
+    'user-agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0',
+}

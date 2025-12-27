@@ -3,7 +3,7 @@ import time
 import json
 import math
 
-from source.cred import loc_headers, fare_cookies, fare_headers, fare_query
+from source.cred import loc_headers, fare_cookies, fare_headers, fare_query, flight_cookies, flight_headers
 import config
 
 with_ride = 0
@@ -227,56 +227,76 @@ def appLaunch(cookies, headers, refresh_token):
                 for tier in tiers:
                     for product in tier.get('products', []):
                         product_name = product.get('displayName', '').lower()
-                        if ride_type.lower() in product_name or product_name in ride_type.lower():
+                        if ride_type.lower(
+                        ) in product_name or product_name in ride_type.lower():
                             fares_list = product.get('fares', [])
                             if fares_list:
-                                pre_adj = fares_list[0].get('preAdjustmentValue')
-                                raw_fare = pre_adj if pre_adj else fares_list[0].get('fare')
+                                pre_adj = fares_list[0].get(
+                                    'preAdjustmentValue')
+                                raw_fare = pre_adj if pre_adj else fares_list[
+                                    0].get('fare')
                                 if raw_fare:
-                                    fare_num = float(''.join(c for c in raw_fare if c.isdigit() or c == '.'))
+                                    fare_num = float(''.join(
+                                        c for c in raw_fare
+                                        if c.isdigit() or c == '.'))
                                     fare_after_cut = fare_num * 0.73
-                                    currency = ''.join(c for c in raw_fare if not c.isdigit() and c != '.')
+                                    currency = ''.join(
+                                        c for c in raw_fare
+                                        if not c.isdigit() and c != '.')
                                     fare_price = f"~{currency}{fare_after_cut:.2f}"
                                 meta_str = fares_list[0].get('meta', '{}')
                                 try:
                                     meta_data = json.loads(meta_str)
-                                    unmod_dist = meta_data.get('upfrontFare', {}).get('unmodifiedDistance')
+                                    unmod_dist = meta_data.get(
+                                        'upfrontFare',
+                                        {}).get('unmodifiedDistance')
                                     if unmod_dist:
-                                        trip_distance = round(unmod_dist / 1000, 1)
+                                        trip_distance = round(
+                                            unmod_dist / 1000, 1)
                                 except:
                                     pass
-                            estimated_seconds = product.get('estimatedTripTime')
+                            estimated_seconds = product.get(
+                                'estimatedTripTime')
                             eta_short = product.get('etaStringShort', '')
                             eta_short_secs = 0
                             if eta_short:
                                 try:
-                                    eta_short_secs = int(''.join(filter(str.isdigit, eta_short))) * 60
+                                    eta_short_secs = int(''.join(
+                                        filter(str.isdigit, eta_short))) * 60
                                 except:
                                     eta_short_secs = 0
                             if estimated_seconds:
                                 trip_time_seconds = estimated_seconds - eta_short_secs
                                 eta_minutes = round(trip_time_seconds / 60)
                             if product.get('productImageUrl'):
-                                ride_type_image = product.get('productImageUrl')
+                                ride_type_image = product.get(
+                                    'productImageUrl')
                             break
                     if fare_price:
                         break
 
                 if not fare_price and tiers:
-                    first_product = tiers[0].get('products', [{}])[0] if tiers[0].get('products') else {}
+                    first_product = tiers[0].get(
+                        'products',
+                        [{}])[0] if tiers[0].get('products') else {}
                     fares_list = first_product.get('fares', [])
                     if fares_list:
                         pre_adj = fares_list[0].get('preAdjustmentValue')
-                        raw_fare = pre_adj if pre_adj else fares_list[0].get('fare')
+                        raw_fare = pre_adj if pre_adj else fares_list[0].get(
+                            'fare')
                         if raw_fare:
-                            fare_num = float(''.join(c for c in raw_fare if c.isdigit() or c == '.'))
+                            fare_num = float(''.join(
+                                c for c in raw_fare
+                                if c.isdigit() or c == '.'))
                             fare_after_cut = fare_num * 0.73
-                            currency = ''.join(c for c in raw_fare if not c.isdigit() and c != '.')
+                            currency = ''.join(c for c in raw_fare
+                                               if not c.isdigit() and c != '.')
                             fare_price = f"~{currency}{fare_after_cut:.2f}"
                         meta_str = fares_list[0].get('meta', '{}')
                         try:
                             meta_data = json.loads(meta_str)
-                            unmod_dist = meta_data.get('upfrontFare', {}).get('unmodifiedDistance')
+                            unmod_dist = meta_data.get(
+                                'upfrontFare', {}).get('unmodifiedDistance')
                             if unmod_dist:
                                 trip_distance = round(unmod_dist / 1000, 1)
                         except:
@@ -286,7 +306,8 @@ def appLaunch(cookies, headers, refresh_token):
                     eta_short_secs = 0
                     if eta_short:
                         try:
-                            eta_short_secs = int(''.join(filter(str.isdigit, eta_short))) * 60
+                            eta_short_secs = int(''.join(
+                                filter(str.isdigit, eta_short))) * 60
                         except:
                             eta_short_secs = 0
                     if estimated_seconds:
@@ -387,16 +408,19 @@ def updateLocationOnce(lat, lng, cookies, headers, refresh_token):
     """Update driver location once with given coordinates"""
     headers = dict(headers)
     time_stamp = int(time.time() * 1000)
-    
-    headers['authorization'] = 'Bearer ' + refreshToken(cookies, headers, refresh_token)
-    
+
+    headers['authorization'] = 'Bearer ' + refreshToken(
+        cookies, headers, refresh_token)
+
     json_data = {
         'data': {
             'positions': [
                 {
                     'positionNavigationData': {
                         'location': {
-                            'allTimestamps': [{'ts': time_stamp}],
+                            'allTimestamps': [{
+                                'ts': time_stamp
+                            }],
                             'latitude': float(lat),
                             'speed': -1,
                             'course': -1,
@@ -404,7 +428,9 @@ def updateLocationOnce(lat, lng, cookies, headers, refresh_token):
                             'provider': 'ios_core',
                             'verticalAccuracy': 30,
                             'altitude': 30.969567390469884,
-                            'bestTimestamp': {'ts': time_stamp},
+                            'bestTimestamp': {
+                                'ts': time_stamp
+                            },
                             'longitude': float(lng),
                         },
                     },
@@ -412,7 +438,7 @@ def updateLocationOnce(lat, lng, cookies, headers, refresh_token):
             ],
         },
     }
-    
+
     response = requests.post(
         'https://cn-geo1.uber.com/rt/locations/v1/upload-driver-device-locations',
         cookies=cookies,
@@ -444,3 +470,74 @@ def driverInfo(cookies, headers, refresh_token):
     photo = response.json()['data']['userInfo']['photo']['photoURL']
 
     return [name, photo]
+
+
+def flightArrivals():
+    from datetime import datetime
+    today = datetime.now().strftime('%m/%d/%Y')
+    
+    files = {
+        '__RequestVerificationToken':
+        (None,
+         'nLarDj1F5Jb0_-Zs_3454whyURxOxxwU5ae0L2dZclGt7PNBZsBywRkFptGwgUp3Wb7H4CN5dHuk51FTi0bbVT3PhOc1'
+         ),
+        'scController': (None, 'Flights'),
+        'scAction': (None, 'GetFlightResults'),
+        'Nature': (None, 'Arrivals'),
+        'Date': (None, today),
+        'Time': (None, ''),
+        'DomInt': (None, ''),
+        'Terminal': (None, ''),
+        'Query': (None, ''),
+        'ItemstoSkip': (None, '0'),
+    }
+
+    response = requests.post(
+        'https://www.perthairport.com.au/flights/departures-and-arrivals',
+        cookies=flight_cookies,
+        headers=flight_headers,
+        files=files,
+    )
+    return response
+
+
+def parseFlightsByHour(response_data):
+    from collections import defaultdict
+    import re
+    
+    hourly_flights = defaultdict(int)
+    for hour in range(24):
+        hourly_flights[hour] = 0
+    
+    try:
+        flights = response_data.get('flights', [])
+        
+        for flight in flights:
+            scheduled_time = flight.get('scheduledTime', '') or flight.get('time', '') or flight.get('arrivalTime', '')
+            
+            if not scheduled_time:
+                for key, value in flight.items():
+                    if isinstance(value, str) and ':' in value:
+                        time_match = re.search(r'(\d{1,2}):(\d{2})', value)
+                        if time_match:
+                            scheduled_time = value
+                            break
+            
+            if scheduled_time:
+                time_match = re.search(r'(\d{1,2}):(\d{2})', scheduled_time)
+                if time_match:
+                    hour = int(time_match.group(1))
+                    if 0 <= hour < 24:
+                        hourly_flights[hour] += 1
+    except Exception as e:
+        print(f"Error parsing flights: {e}")
+    
+    result = []
+    for hour in range(24):
+        result.append({
+            'hour': hour,
+            'time_label': f"{hour:02d}:00",
+            'count': hourly_flights[hour]
+        })
+    
+    return result

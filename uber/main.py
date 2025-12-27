@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import datetime, timedelta
-from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce
+from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour
 import config
 import cache
 from models import db, User, Role, create_default_roles, encrypt_data, decrypt_data
@@ -835,6 +835,29 @@ def stop():
     config.stop_signal = 1
     print(f"Stop signal received. Variable 'stop_signal' set to: {config.stop_signal}")
     return jsonify(status="success", value=config.stop_signal)
+
+
+@app.route('/api/flight-arrivals')
+@login_required
+def api_flight_arrivals():
+    try:
+        response = flightArrivals()
+        data = response.json()
+        
+        print(f"Flight API Response keys: {data.keys() if isinstance(data, dict) else 'not a dict'}")
+        
+        hourly_data = parseFlightsByHour(data)
+        total_flights = sum(h['count'] for h in hourly_data)
+        
+        return jsonify({
+            'success': True,
+            'hourly_flights': hourly_data,
+            'total_flights': total_flights,
+            'raw_response_sample': str(data)[:500] if data else None
+        })
+    except Exception as e:
+        print(f"Error fetching flight data: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 if __name__ == '__main__':
