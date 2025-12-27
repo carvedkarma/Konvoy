@@ -837,6 +837,72 @@ def stop():
     return jsonify(status="success", value=config.stop_signal)
 
 
+@app.route('/flight-center')
+@login_required
+def flight_center():
+    return render_template('flight_center.html')
+
+
+@app.route('/api/flight-details')
+@login_required
+def api_flight_details():
+    from datetime import datetime, timezone, timedelta
+    from collections import defaultdict
+    
+    try:
+        terminal = request.args.get('terminal', None)
+        response = flightArrivals(terminal)
+        
+        if response is None:
+            return jsonify({
+                'success': False,
+                'message': 'API unavailable'
+            })
+        
+        data = response.json()
+        flights = data.get('flights', [])
+        terminals = data.get('terminals', [])
+        
+        perth_tz = timezone(timedelta(hours=8))
+        perth_now = datetime.now(perth_tz)
+        current_time = perth_now.strftime('%H:%M')
+        
+        flights_by_terminal = defaultdict(list)
+        next_arrival = None
+        
+        for flight in flights:
+            term = flight.get('terminal', 'Unknown')
+            flight_time = flight.get('time', '')
+            
+            if flight_time >= current_time or flight_time < '06:00':
+                flights_by_terminal[term].append(flight)
+                
+                if next_arrival is None and flight_time >= current_time:
+                    next_arrival = flight_time
+        
+        for term in flights_by_terminal:
+            flights_by_terminal[term].sort(key=lambda x: x.get('time', ''))
+        
+        total_flights = sum(len(f) for f in flights_by_terminal.values())
+        
+        return jsonify({
+            'success': True,
+            'flights_by_terminal': dict(flights_by_terminal),
+            'terminals': terminals,
+            'total_flights': total_flights,
+            'current_time': current_time,
+            'next_arrival': next_arrival
+        })
+    except Exception as e:
+        print(f"Error fetching flight details: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        })
+
+
 @app.route('/api/flight-arrivals')
 @login_required
 def api_flight_arrivals():

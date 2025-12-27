@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Flight Center - Konvoy{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .terminal-card {
+        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+    }
+    .terminal-1 { border-left: 4px solid #ef4444; }
+    .terminal-2 { border-left: 4px solid #3b82f6; }
+    .terminal-3 { border-left: 4px solid #22c55e; }
+    .terminal-4 { border-left: 4px solid #f59e0b; }
+    .flight-row:hover { background-color: #f8fafc; }
+    .status-landed { color: #22c55e; }
+    .status-enroute { color: #3b82f6; }
+    .status-delayed { color: #ef4444; }
+    .status-scheduled { color: #6b7280; }
+    .airline-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 10px;
+        color: white;
+    }
+    .skeleton-pulse {
+        animation: pulse 1.5s ease-in-out infinite;
+        background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-zinc-900">Flight Center</h1>
+            <p class="text-zinc-500 text-sm mt-1">Perth Airport Arrivals</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <select id="terminalFilter" class="text-sm bg-white border border-zinc-200 rounded-lg px-4 py-2 text-zinc-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All Terminals</option>
+            </select>
+            <button onclick="refreshFlights()" class="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-zinc-800 transition-colors text-sm font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-zinc-100 shadow-sm">
+            <p class="text-zinc-400 text-xs font-medium">Total Flights</p>
+            <p id="totalFlights" class="text-2xl font-bold text-zinc-900 mt-1">--</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-zinc-100 shadow-sm">
+            <p class="text-zinc-400 text-xs font-medium">Current Time</p>
+            <p id="currentTime" class="text-2xl font-bold text-zinc-900 mt-1">--:--</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-zinc-100 shadow-sm">
+            <p class="text-zinc-400 text-xs font-medium">Next Arrival</p>
+            <p id="nextArrival" class="text-2xl font-bold text-zinc-900 mt-1">--:--</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-zinc-100 shadow-sm">
+            <p class="text-zinc-400 text-xs font-medium">Terminals Active</p>
+            <p id="activeTerminals" class="text-2xl font-bold text-zinc-900 mt-1">--</p>
+        </div>
+    </div>
+
+    <div id="loadingSkeleton" class="space-y-4">
+        <div class="bg-white rounded-xl overflow-hidden border border-zinc-100">
+            <div class="skeleton-pulse h-12 w-full"></div>
+            <div class="p-4 space-y-3">
+                <div class="skeleton-pulse h-16 w-full rounded-lg"></div>
+                <div class="skeleton-pulse h-16 w-full rounded-lg"></div>
+                <div class="skeleton-pulse h-16 w-full rounded-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="flightsContainer" class="hidden space-y-6"></div>
+
+    <div id="noFlights" class="hidden text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-zinc-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+        </svg>
+        <p class="text-zinc-500 font-medium">No flights found</p>
+        <p class="text-zinc-400 text-sm mt-1">Check back later for upcoming arrivals</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const airlineColors = {
+    'QF': '#e31837', 'VA': '#e4002b', 'JQ': '#ff6d00', 'TT': '#00a651',
+    'SQ': '#f4c300', 'EK': '#d71921', 'CX': '#006564', 'MH': '#0033a0',
+    'NZ': '#000000', 'TR': '#b8203b', 'AK': '#e31937', 'GA': '#00467f',
+    'PR': '#0033a0', 'CZ': '#0066b3', 'MU': '#004a93', 'CA': '#d4001e',
+    '3K': '#16338a', 'FD': '#ed1c24', 'AA': '#0078d2', 'UA': '#002244',
+    'DL': '#e31837', 'AS': '#00205b'
+};
+
+function getAirlineColor(flightCode) {
+    const airline = flightCode.substring(0, 2);
+    return airlineColors[airline] || '#4b5563';
+}
+
+function getAirlineName(flightCode) {
+    const airlines = {
+        'QF': 'Qantas', 'VA': 'Virgin Australia', 'JQ': 'Jetstar', 'TT': 'Tigerair',
+        'SQ': 'Singapore Airlines', 'EK': 'Emirates', 'CX': 'Cathay Pacific', 'MH': 'Malaysia Airlines',
+        'NZ': 'Air New Zealand', 'TR': 'Scoot', 'AK': 'AirAsia', 'GA': 'Garuda Indonesia',
+        'PR': 'Philippine Airlines', 'CZ': 'China Southern', 'MU': 'China Eastern', 'CA': 'Air China',
+        '3K': 'Jetstar Asia', 'FD': 'Thai AirAsia', 'AA': 'American Airlines', 'UA': 'United',
+        'DL': 'Delta', 'AS': 'Alaska Airlines'
+    };
+    return airlines[flightCode.substring(0, 2)] || 'Airline';
+}
+
+function getStatusClass(status) {
+    const s = status.toLowerCase();
+    if (s.includes('landed')) return 'status-landed';
+    if (s.includes('en route') || s.includes('enroute')) return 'status-enroute';
+    if (s.includes('delayed') || s.includes('late')) return 'status-delayed';
+    return 'status-scheduled';
+}
+
+function getTerminalBorderClass(terminal) {
+    const classes = { '1': 'terminal-1', '2': 'terminal-2', '3': 'terminal-3', '4': 'terminal-4' };
+    return classes[terminal] || '';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function updateCurrentTime() {
+    const now = new Date();
+    const perthTime = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Perth' }));
+    document.getElementById('currentTime').textContent = 
+        perthTime.getHours().toString().padStart(2, '0') + ':' + 
+        perthTime.getMinutes().toString().padStart(2, '0');
+}
+
+function loadFlights(terminal = '') {
+    const url = terminal ? `/api/flight-details?terminal=${terminal}` : '/api/flight-details';
+    
+    document.getElementById('loadingSkeleton').classList.remove('hidden');
+    document.getElementById('flightsContainer').classList.add('hidden');
+    document.getElementById('noFlights').classList.add('hidden');
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loadingSkeleton').classList.add('hidden');
+            
+            if (!data.success || !data.flights_by_terminal || Object.keys(data.flights_by_terminal).length === 0) {
+                document.getElementById('noFlights').classList.remove('hidden');
+                return;
+            }
+            
+            const terminalSelect = document.getElementById('terminalFilter');
+            if (terminalSelect.options.length <= 1 && data.terminals) {
+                data.terminals.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t;
+                    opt.textContent = `Terminal ${t}`;
+                    terminalSelect.appendChild(opt);
+                });
+            }
+            
+            document.getElementById('totalFlights').textContent = data.total_flights || 0;
+            document.getElementById('activeTerminals').textContent = data.terminals ? data.terminals.length : 0;
+            
+            if (data.next_arrival) {
+                document.getElementById('nextArrival').textContent = data.next_arrival;
+            }
+            
+            const container = document.getElementById('flightsContainer');
+            container.innerHTML = '';
+            
+            const terminals = Object.keys(data.flights_by_terminal).sort();
+            
+            terminals.forEach(term => {
+                const flights = data.flights_by_terminal[term];
+                if (flights.length === 0) return;
+                
+                const terminalHtml = `
+                    <div class="bg-white rounded-xl overflow-hidden border border-zinc-100 shadow-sm ${getTerminalBorderClass(term)}">
+                        <div class="bg-gradient-to-r from-zinc-900 to-zinc-800 px-5 py-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
+                                        <span class="text-white font-bold text-lg">${escapeHtml(term)}</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-white font-bold">Terminal ${escapeHtml(term)}</h3>
+                                        <p class="text-zinc-400 text-xs">${flights.length} flight${flights.length !== 1 ? 's' : ''}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="divide-y divide-zinc-100">
+                            <div class="grid grid-cols-12 gap-4 px-5 py-3 bg-zinc-50 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                                <div class="col-span-3 md:col-span-2">Time</div>
+                                <div class="col-span-4 md:col-span-3">Flight</div>
+                                <div class="col-span-5 md:col-span-4">Origin</div>
+                                <div class="hidden md:block md:col-span-3">Status</div>
+                            </div>
+                            
+                            ${flights.map(flight => `
+                                <div class="flight-row grid grid-cols-12 gap-4 px-5 py-4 items-center transition-colors">
+                                    <div class="col-span-3 md:col-span-2">
+                                        <span class="text-lg font-bold text-zinc-900">${escapeHtml(flight.time)}</span>
+                                    </div>
+                                    <div class="col-span-4 md:col-span-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="airline-icon" style="background-color: ${getAirlineColor(flight.flight)}">
+                                                ${escapeHtml(flight.flight.substring(0, 2))}
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-zinc-900">${escapeHtml(flight.flight)}</p>
+                                                <p class="text-xs text-zinc-400">${getAirlineName(flight.flight)}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-span-5 md:col-span-4">
+                                        <p class="font-medium text-zinc-700">${escapeHtml(flight.origin)}</p>
+                                    </div>
+                                    <div class="hidden md:block md:col-span-3">
+                                        <span class="text-sm font-medium ${getStatusClass(flight.status)}">${escapeHtml(flight.status.replace('[+]', '').trim())}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                container.innerHTML += terminalHtml;
+            });
+            
+            container.classList.remove('hidden');
+        })
+        .catch(error => {
+            console.error('Error loading flights:', error);
+            document.getElementById('loadingSkeleton').classList.add('hidden');
+            document.getElementById('noFlights').classList.remove('hidden');
+        });
+}
+
+function refreshFlights() {
+    const terminal = document.getElementById('terminalFilter').value;
+    loadFlights(terminal);
+}
+
+document.getElementById('terminalFilter').addEventListener('change', function() {
+    loadFlights(this.value);
+});
+
+updateCurrentTime();
+setInterval(updateCurrentTime, 30000);
+loadFlights();
+</script>
+{% endblock %}

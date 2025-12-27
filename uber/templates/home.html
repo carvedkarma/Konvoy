@@ -245,9 +245,12 @@
                 <div class="p-4">
                     <div class="flex items-center justify-between mb-3">
                         <p class="text-zinc-500 text-xs">Remaining flights today</p>
-                        <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
-                            <option value="">All Terminals</option>
-                        </select>
+                        <div class="flex items-center gap-2">
+                            <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Terminals</option>
+                            </select>
+                            <a href="{{ url_for('flight_center') }}" class="text-xs text-blue-600 hover:text-blue-800 font-medium">View All</a>
+                        </div>
                     </div>
                     <div id="flightGrid" class="grid grid-cols-6 gap-1.5"></div>
                     <p id="flightFooter" class="text-zinc-400 text-xs text-center mt-3">Loading...</p>
@@ -519,9 +522,12 @@ fetch('/api/home-data')
                     <div class="p-4">
                         <div class="flex items-center justify-between mb-3">
                             <p class="text-zinc-500 text-xs">Remaining flights today</p>
-                            <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
-                                <option value="">All Terminals</option>
-                            </select>
+                            <div class="flex items-center gap-2">
+                                <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
+                                    <option value="">All Terminals</option>
+                                </select>
+                                <a href="/flight-center" class="text-xs text-blue-600 hover:text-blue-800 font-medium">View All</a>
+                            </div>
                         </div>
                         <div id="flightGrid" class="grid grid-cols-6 gap-1.5"></div>
                         <p id="flightFooter" class="text-zinc-400 text-xs text-center mt-3">Loading...</p>
