@@ -667,11 +667,23 @@ def fetch_ride():
     has_permission = current_user.has_permission('can_fetch_ride')
     
     if not has_permission:
-        return render_template('ride_details.html', has_permission=False, ride_data=None, default_vehicle=None)
+        return render_template('ride_details.html', has_permission=False, ride_data=None, default_vehicle=None, loading=False)
     
     if not current_user.uber_connected:
         flash('Please connect your Uber account first.', 'error')
         return redirect(url_for('uber_connect'))
+    
+    return render_template('ride_details.html', has_permission=True, ride_data=None, default_vehicle=None, loading=True)
+
+
+@app.route('/api/fetch-ride-data')
+@login_required
+def fetch_ride_data():
+    if not current_user.has_permission('can_fetch_ride'):
+        return jsonify(error="No permission"), 403
+    
+    if not current_user.uber_connected:
+        return jsonify(error="Uber not connected"), 400
     
     default_vehicle = None
     try:
@@ -688,12 +700,12 @@ def fetch_ride():
         cookies, headers, refresh_token = current_user.get_uber_credentials()
         ride_data = appLaunch(cookies, headers, refresh_token)
         if ride_data and isinstance(ride_data, dict):
-            return render_template('ride_details.html', has_permission=True, ride_data=ride_data, default_vehicle=default_vehicle)
+            return jsonify(success=True, ride_data=ride_data, default_vehicle=default_vehicle)
         else:
-            return render_template('ride_details.html', has_permission=True, ride_data=None, default_vehicle=default_vehicle)
+            return jsonify(success=True, ride_data=None, default_vehicle=default_vehicle)
     except Exception as e:
         print(f"Error fetching ride data: {e}")
-        return render_template('ride_details.html', has_permission=True, ride_data=None, default_vehicle=default_vehicle)
+        return jsonify(success=True, ride_data=None, default_vehicle=default_vehicle)
 
 
 @app.route('/submit', methods=['POST'])
