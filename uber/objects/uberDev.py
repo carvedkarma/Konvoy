@@ -22,32 +22,6 @@ def locationTracker(addrs):
     return [response.json()[0]['lat'], response.json()[0]['lon']]
 
 
-def refreshToken(cookies, headers, refresh_token):
-    if not refresh_token:
-        print("No refresh token provided")
-        return None
-    
-    json_data = {
-        'request': {
-            'scope': [],
-            'grantType': 'REFRESH_TOKEN',
-            'clientID': 'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
-            'refreshToken': refresh_token,
-        },
-    }
-
-    try:
-        response = requests.post(
-            'https://cn-geo1.uber.com/rt/identity/oauth2/token',
-            cookies=cookies,
-            headers=headers,
-            json=json_data)
-        return response.json().get('accessToken')
-    except Exception as e:
-        print(f"Error refreshing token: {e}")
-        return None
-
-
 def vehicleDetails(cookies, headers):
     if not cookies or not headers:
         print("No Uber credentials provided")
