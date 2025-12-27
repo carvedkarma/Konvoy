@@ -842,9 +842,27 @@ def stop():
 def api_flight_arrivals():
     try:
         response = flightArrivals()
-        data = response.json()
         
-        print(f"Flight API Response keys: {data.keys() if isinstance(data, dict) else 'not a dict'}")
+        if response is None:
+            print("Flight API returned None - request failed")
+            hourly_data = parseFlightsByHour({})
+            return jsonify({
+                'success': True,
+                'hourly_flights': hourly_data,
+                'total_flights': 0,
+                'message': 'API unavailable'
+            })
+        
+        print(f"Flight API Status: {response.status_code}")
+        print(f"Flight API Response (first 500 chars): {response.text[:500]}")
+        
+        try:
+            data = response.json()
+        except:
+            print("Response is not JSON")
+            data = {}
+        
+        print(f"Flight API Response keys: {data.keys() if isinstance(data, dict) else type(data)}")
         
         hourly_data = parseFlightsByHour(data)
         total_flights = sum(h['count'] for h in hourly_data)
@@ -852,12 +870,19 @@ def api_flight_arrivals():
         return jsonify({
             'success': True,
             'hourly_flights': hourly_data,
-            'total_flights': total_flights,
-            'raw_response_sample': str(data)[:500] if data else None
+            'total_flights': total_flights
         })
     except Exception as e:
         print(f"Error fetching flight data: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        hourly_data = parseFlightsByHour({})
+        return jsonify({
+            'success': True,
+            'hourly_flights': hourly_data,
+            'total_flights': 0,
+            'message': 'Error occurred'
+        })
 
 
 if __name__ == '__main__':

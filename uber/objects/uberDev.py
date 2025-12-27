@@ -473,32 +473,54 @@ def driverInfo(cookies, headers, refresh_token):
 
 
 def flightArrivals():
+    import re
     from datetime import datetime
-    today = datetime.now().strftime('%m/%d/%Y')
     
-    files = {
-        '__RequestVerificationToken':
-        (None,
-         'nLarDj1F5Jb0_-Zs_3454whyURxOxxwU5ae0L2dZclGt7PNBZsBywRkFptGwgUp3Wb7H4CN5dHuk51FTi0bbVT3PhOc1'
-         ),
-        'scController': (None, 'Flights'),
-        'scAction': (None, 'GetFlightResults'),
-        'Nature': (None, 'Arrivals'),
-        'Date': (None, today),
-        'Time': (None, ''),
-        'DomInt': (None, ''),
-        'Terminal': (None, ''),
-        'Query': (None, ''),
-        'ItemstoSkip': (None, '0'),
-    }
+    try:
+        session = requests.Session()
+        
+        page_response = session.get(
+            'https://www.perthairport.com.au/flights/departures-and-arrivals',
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            },
+            timeout=15
+        )
+        
+        token_match = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', page_response.text)
+        verification_token = token_match.group(1) if token_match else ''
+        
+        today = datetime.now().strftime('%m/%d/%Y')
+        
+        files = {
+            '__RequestVerificationToken': (None, verification_token),
+            'scController': (None, 'Flights'),
+            'scAction': (None, 'GetFlightResults'),
+            'Nature': (None, 'Arrivals'),
+            'Date': (None, today),
+            'Time': (None, ''),
+            'DomInt': (None, ''),
+            'Terminal': (None, ''),
+            'Query': (None, ''),
+            'ItemstoSkip': (None, '0'),
+        }
 
-    response = requests.post(
-        'https://www.perthairport.com.au/flights/departures-and-arrivals',
-        cookies=flight_cookies,
-        headers=flight_headers,
-        files=files,
-    )
-    return response
+        response = session.post(
+            'https://www.perthairport.com.au/flights/departures-and-arrivals',
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Origin': 'https://www.perthairport.com.au',
+                'Referer': 'https://www.perthairport.com.au/flights/departures-and-arrivals',
+            },
+            files=files,
+            timeout=15
+        )
+        return response
+    except Exception as e:
+        print(f"Flight API request failed: {e}")
+        return None
 
 
 def parseFlightsByHour(response_data):
