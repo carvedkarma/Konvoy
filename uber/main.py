@@ -6,7 +6,7 @@ from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLoc
 import config
 import cache
 from models import db, User, Role, create_default_roles, encrypt_data, decrypt_data
-from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm, UberConnectForm, UberDisconnectForm
+from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm, UberConnectForm, UberDisconnectForm, EmptyForm
 import secrets
 
 app = Flask(__name__)
@@ -388,8 +388,10 @@ def admin_uber_credentials(user_id):
         except:
             pass
     
+    form = EmptyForm()
     return render_template('uber_credentials.html', 
                          user=user,
+                         form=form,
                          current_cookies=current_cookies,
                          current_headers=current_headers,
                          current_refresh_token=current_refresh_token)
