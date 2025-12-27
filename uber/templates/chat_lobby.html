@@ -12,10 +12,6 @@
     0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
     50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
 }
-@keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-}
 .message-enter {
     animation: fadeIn 0.3s ease-out;
 }
@@ -25,19 +21,31 @@
 .user-chip {
     transition: all 0.15s ease;
 }
-.user-chip:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+@media (hover: hover) {
+    .user-chip:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+}
+.chat-wrapper {
+    height: calc(100svh - 140px);
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
 }
 .chat-container {
-    height: calc(100vh - 280px);
-    min-height: 350px;
+    flex: 1;
+    min-height: 0;
     background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(250,250,250,0.9));
     border: 1px solid rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
 }
 .messages-area {
-    height: calc(100% - 80px);
+    flex: 1;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 .messages-area::-webkit-scrollbar {
     width: 5px;
@@ -53,14 +61,10 @@
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(147, 51, 234, 0.12));
     border-left: 3px solid #3b82f6;
 }
-.reply-preview {
-    border-left: 2px solid #9ca3af;
-    padding-left: 8px;
-    margin-bottom: 4px;
-}
 .online-panel {
     background: linear-gradient(135deg, rgba(24,24,27,0.03), rgba(63,63,70,0.05));
     border: 1px solid rgba(0,0,0,0.04);
+    flex-shrink: 0;
 }
 .online-label {
     background: linear-gradient(90deg, #18181b, #3f3f46);
@@ -71,6 +75,7 @@
 .user-card-popup {
     animation: fadeIn 0.15s ease-out;
     backdrop-filter: blur(12px);
+    max-width: calc(100vw - 32px);
 }
 .user-card-popup::before {
     content: '';
@@ -83,6 +88,20 @@
     transform: rotate(45deg);
     border-left: 1px solid rgba(0,0,0,0.08);
     border-top: 1px solid rgba(0,0,0,0.08);
+}
+.input-area {
+    flex-shrink: 0;
+}
+@media (max-width: 640px) {
+    .chat-wrapper {
+        height: calc(100svh - 120px);
+    }
+    .header-section {
+        padding: 0.75rem 1rem;
+    }
+    .header-section h1 {
+        font-size: 1rem;
+    }
 }
 </style>
 {% endblock %}
@@ -103,24 +122,24 @@
     </div>
 </div>
 
-<div class="min-h-[80vh] px-4 py-6">
-    <div class="max-w-6xl mx-auto">
+<div class="px-3 sm:px-4 py-3 sm:py-4">
+    <div class="max-w-6xl mx-auto chat-wrapper">
         
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center">
-                <a href="{{ url_for('root') }}" class="mr-4 p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 transition-colors">
+        <div class="header-section flex items-center justify-between mb-3 sm:mb-4 flex-shrink-0">
+            <div class="flex items-center min-w-0">
+                <a href="{{ url_for('root') }}" class="mr-3 p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 transition-colors flex-shrink-0">
                     <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
                 </a>
-                <div>
-                    <h1 class="text-xl font-bold text-zinc-900">Chat Lobby</h1>
-                    <p class="text-xs text-zinc-500">Real-time team communication</p>
+                <div class="min-w-0">
+                    <h1 class="text-lg sm:text-xl font-bold text-zinc-900 truncate">Chat Lobby</h1>
+                    <p class="text-xs text-zinc-500 hidden sm:block">Real-time team communication</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-2 flex-shrink-0">
                 <div class="w-2 h-2 bg-green-500 rounded-full online-pulse"></div>
-                <span id="online-count" class="text-sm text-zinc-600">0 online</span>
+                <span id="online-count" class="text-xs sm:text-sm text-zinc-600">0 online</span>
             </div>
         </div>
 
@@ -139,31 +158,31 @@
                 </div>
             </div>
 
-            <div class="p-4 border-t border-zinc-100">
-                <form id="message-form" class="flex items-center space-x-3">
+            <div class="input-area p-3 sm:p-4 border-t border-zinc-100 bg-white">
+                <form id="message-form" class="flex items-center gap-2 sm:gap-3">
                     <div class="flex-1 relative">
-                        <input type="text" id="message-input" placeholder="Type a message... Use @username to mention" 
-                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
-                            autocomplete="off">
-                        <div id="mention-dropdown" class="hidden absolute bottom-full left-0 right-0 mb-1 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-40 overflow-y-auto z-10">
+                        <input type="text" id="message-input" placeholder="Type a message..." 
+                            class="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 transition-all"
+                            autocomplete="off" enterkeyhint="send">
+                        <div id="mention-dropdown" class="hidden absolute bottom-full left-0 right-0 mb-1 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-32 overflow-y-auto z-10">
                         </div>
                     </div>
-                    <button type="submit" class="px-5 py-3 bg-black text-white rounded-xl font-medium text-sm hover:bg-zinc-800 transition-colors flex items-center">
-                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <button type="submit" class="p-2.5 sm:px-4 sm:py-3 bg-black text-white rounded-xl font-medium text-sm hover:bg-zinc-800 transition-colors flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 sm:w-4 sm:h-4 sm:mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
                         </svg>
-                        Send
+                        <span class="hidden sm:inline">Send</span>
                     </button>
                 </form>
             </div>
         </div>
 
-        <div id="online-users" class="mt-4 p-3 rounded-xl online-panel">
-            <div class="flex items-center mb-2">
+        <div id="online-users" class="mt-2 sm:mt-4 p-2 sm:p-3 rounded-xl online-panel">
+            <div class="flex items-center mb-1.5 sm:mb-2">
                 <div class="w-2 h-2 bg-green-500 rounded-full online-pulse mr-2"></div>
-                <span class="text-xs font-semibold online-label">Online Now</span>
+                <span class="text-[10px] sm:text-xs font-semibold online-label">Online Now</span>
             </div>
-            <div id="online-users-list" class="flex flex-wrap gap-1.5">
+            <div id="online-users-list" class="flex flex-wrap gap-1 sm:gap-1.5">
             </div>
         </div>
     </div>
@@ -436,5 +455,20 @@ fetch('/api/chat-users')
             allUsers = data.users;
         }
     });
+
+const msgInput = document.getElementById('message-input');
+const messagesArea = document.getElementById('messages');
+
+msgInput.addEventListener('focus', function() {
+    setTimeout(() => {
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }, 300);
+});
+
+if ('visualViewport' in window) {
+    window.visualViewport.addEventListener('resize', function() {
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    });
+}
 </script>
 {% endblock %}
