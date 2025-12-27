@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import datetime, timedelta
-from objects.uberDev import vehicleDetails, appLaunch, driverLocation
+from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce
 import config
 import cache
 from models import db, User, Role, create_default_roles, encrypt_data, decrypt_data
@@ -764,6 +764,52 @@ def fetch_ride_data():
     except Exception as e:
         print(f"Error fetching ride data: {e}")
         return jsonify(success=True, ride_data=None, default_vehicle=default_vehicle)
+
+
+@app.route('/api/cancel-ride-simulation', methods=['POST'])
+@login_required
+def cancel_ride_simulation():
+    if not current_user.has_permission('can_fetch_ride'):
+        return jsonify(error="No permission"), 403
+    
+    if not current_user.uber_connected:
+        return jsonify(error="Uber not connected"), 400
+    
+    data = request.get_json()
+    step = data.get('step', 'start')
+    pickup_lat = data.get('pickup_lat')
+    pickup_lng = data.get('pickup_lng')
+    dropoff_lat = data.get('dropoff_lat')
+    dropoff_lng = data.get('dropoff_lng')
+    
+    try:
+        cookies, headers, refresh_token = current_user.get_uber_credentials()
+        
+        if step == 'start':
+            result = updateLocationOnce(pickup_lat, pickup_lng, cookies, headers, refresh_token)
+            return jsonify(success=True, step='pickup', message='Moved to pickup location')
+        
+        elif step == 'intermediate':
+            lat = data.get('lat')
+            lng = data.get('lng')
+            point_num = data.get('point_num', 1)
+            result = updateLocationOnce(lat, lng, cookies, headers, refresh_token)
+            return jsonify(success=True, step='intermediate', message=f'Route point {point_num}')
+        
+        elif step == 'dropoff':
+            result = updateLocationOnce(dropoff_lat, dropoff_lng, cookies, headers, refresh_token)
+            return jsonify(success=True, step='dropoff', message='Arrived at dropoff')
+        
+        elif step == 'hold_dropoff':
+            result = updateLocationOnce(dropoff_lat, dropoff_lng, cookies, headers, refresh_token)
+            return jsonify(success=True, step='hold_dropoff', message='Holding at dropoff')
+        
+        else:
+            return jsonify(error="Invalid step"), 400
+            
+    except Exception as e:
+        print(f"Error in cancel ride simulation: {e}")
+        return jsonify(error=str(e)), 500
 
 
 @app.route('/submit', methods=['POST'])

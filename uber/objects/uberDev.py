@@ -383,6 +383,45 @@ def driverLocation(address, cookies, headers, refresh_token):
     return
 
 
+def updateLocationOnce(lat, lng, cookies, headers, refresh_token):
+    """Update driver location once with given coordinates"""
+    headers = dict(headers)
+    time_stamp = int(time.time() * 1000)
+    
+    headers['authorization'] = 'Bearer ' + refreshToken(cookies, headers, refresh_token)
+    
+    json_data = {
+        'data': {
+            'positions': [
+                {
+                    'positionNavigationData': {
+                        'location': {
+                            'allTimestamps': [{'ts': time_stamp}],
+                            'latitude': float(lat),
+                            'speed': -1,
+                            'course': -1,
+                            'horizontalAccuracy': 3.6507954947581602,
+                            'provider': 'ios_core',
+                            'verticalAccuracy': 30,
+                            'altitude': 30.969567390469884,
+                            'bestTimestamp': {'ts': time_stamp},
+                            'longitude': float(lng),
+                        },
+                    },
+                },
+            ],
+        },
+    }
+    
+    response = requests.post(
+        'https://cn-geo1.uber.com/rt/locations/v1/upload-driver-device-locations',
+        cookies=cookies,
+        headers=headers,
+        json=json_data,
+    )
+    return response.json()
+
+
 def driverInfo(cookies, headers, refresh_token):
     headers = dict(headers)
     headers['authorization'] = 'Bearer ' + refreshToken(
