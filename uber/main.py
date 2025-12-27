@@ -114,13 +114,14 @@ def home_data():
     vehicles = []
     driver_info = None
     default_vehicle = None
+    active_ride = None
     
     if current_user.uber_connected:
         try:
             cookies, headers, refresh_token = current_user.get_uber_credentials()
         except Exception as e:
             print(f"Error getting credentials: {e}")
-            return jsonify(success=True, vehicles=[], driver_info=None, default_vehicle=None)
+            return jsonify(success=True, vehicles=[], driver_info=None, default_vehicle=None, active_ride=None)
         
         def fetch_vehicles():
             try:
@@ -138,15 +139,31 @@ def home_data():
                 print(f"Error fetching driver info: {e}")
                 return None
         
+        def fetch_ride():
+            try:
+                ride_data = appLaunch(cookies, headers, refresh_token)
+                if ride_data and isinstance(ride_data, dict):
+                    return {
+                        'full_name': ride_data.get('full_name', 'Rider'),
+                        'rating': ride_data.get('rating', '--'),
+                        'trip_distance': ride_data.get('trip_distance'),
+                        'ride_type': ride_data.get('ride_type', 'UberX')
+                    }
+                return None
+            except Exception as e:
+                print(f"Error fetching ride: {e}")
+                return None
+        
         vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
         driver_info = cache.get_driver_info(current_user.id, fetch_driver_info)
+        active_ride = cache.get_active_ride(current_user.id, fetch_ride)
         
         for v in vehicles:
             if v.get('isDefault'):
                 default_vehicle = v
                 break
     
-    return jsonify(success=True, vehicles=vehicles, driver_info=driver_info, default_vehicle=default_vehicle)
+    return jsonify(success=True, vehicles=vehicles, driver_info=driver_info, default_vehicle=default_vehicle, active_ride=active_ride)
 
 
 @app.route('/login', methods=['GET', 'POST'])
