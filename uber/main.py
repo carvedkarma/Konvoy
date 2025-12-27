@@ -840,7 +840,7 @@ def stop():
 @app.route('/api/flight-arrivals')
 @login_required
 def api_flight_arrivals():
-    from datetime import datetime
+    from datetime import datetime, timezone, timedelta
     
     try:
         terminal = request.args.get('terminal', None)
@@ -867,7 +867,10 @@ def api_flight_arrivals():
         hourly_data = parseFlightsByHour(data)
         terminals = data.get('terminals', [])
         
-        current_hour = datetime.now().hour
+        perth_tz = timezone(timedelta(hours=8))
+        perth_now = datetime.now(perth_tz)
+        current_hour = perth_now.hour
+        print(f"Perth time: {perth_now.strftime('%H:%M')}, current_hour: {current_hour}")
         filtered_hours = [h for h in hourly_data if h['hour'] >= current_hour]
         total_flights = sum(h['count'] for h in filtered_hours)
         
