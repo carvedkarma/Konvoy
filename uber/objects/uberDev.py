@@ -473,14 +473,11 @@ def driverInfo(cookies, headers, refresh_token):
 
 
 def flightArrivals():
-    import re
-    from datetime import datetime
+    from bs4 import BeautifulSoup
     
     try:
-        session = requests.Session()
-        
-        page_response = session.get(
-            'https://www.perthairport.com.au/flights/departures-and-arrivals',
+        response = requests.get(
+            'https://www.airport-perth.com/arrivals.php',
             headers={
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -488,36 +485,47 @@ def flightArrivals():
             timeout=15
         )
         
-        token_match = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', page_response.text)
-        verification_token = token_match.group(1) if token_match else ''
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            flights = []
+            
+            flight_rows = soup.find_all('div', class_='flight-row')
+            for row in flight_rows:
+                if 'flight-titol' in row.get('class', []):
+                    continue
+                    
+                time_elem = row.find('div', class_='flight-col__hour')
+                origin_elem = row.find('div', class_='flight-col__dest-term')
+                flight_elem = row.find('a', class_='flight-col__flight--link')
+                status_elem = row.find('div', class_='flight-col__status')
+                
+                if time_elem:
+                    time_str = time_elem.get_text(strip=True)
+                    origin = origin_elem.get_text(strip=True) if origin_elem else ''
+                    flight_num = flight_elem.get_text(strip=True) if flight_elem else ''
+                    status = status_elem.get_text(strip=True) if status_elem else ''
+                    
+                    flights.append({
+                        'time': time_str,
+                        'flight': flight_num,
+                        'origin': origin,
+                        'status': status
+                    })
+            
+            print(f"Scraped {len(flights)} flights from airport-perth.com")
+            
+            class MockResponse:
+                def __init__(self, data):
+                    self._data = data
+                    self.status_code = 200
+                    self.text = str(data)
+                def json(self):
+                    return self._data
+            
+            return MockResponse({'flights': flights, 'source': 'airport-perth.com'})
         
-        today = datetime.now().strftime('%m/%d/%Y')
-        
-        files = {
-            '__RequestVerificationToken': (None, verification_token),
-            'scController': (None, 'Flights'),
-            'scAction': (None, 'GetFlightResults'),
-            'Nature': (None, 'Arrivals'),
-            'Date': (None, today),
-            'Time': (None, ''),
-            'DomInt': (None, ''),
-            'Terminal': (None, ''),
-            'Query': (None, ''),
-            'ItemstoSkip': (None, '0'),
-        }
-
-        response = session.post(
-            'https://www.perthairport.com.au/flights/departures-and-arrivals',
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'application/json, text/plain, */*',
-                'Origin': 'https://www.perthairport.com.au',
-                'Referer': 'https://www.perthairport.com.au/flights/departures-and-arrivals',
-            },
-            files=files,
-            timeout=15
-        )
-        return response
+        print(f"Flight API returned status {response.status_code}")
+        return None
     except Exception as e:
         print(f"Flight API request failed: {e}")
         return None
@@ -526,17 +534,18 @@ def flightArrivals():
 def parseFlightsByHour(response_data):
     from collections import defaultdict
     import re
-    
+
     hourly_flights = defaultdict(int)
     for hour in range(24):
         hourly_flights[hour] = 0
-    
+
     try:
         flights = response_data.get('flights', [])
-        
+
         for flight in flights:
-            scheduled_time = flight.get('scheduledTime', '') or flight.get('time', '') or flight.get('arrivalTime', '')
-            
+            scheduled_time = flight.get('scheduledTime', '') or flight.get(
+                'time', '') or flight.get('arrivalTime', '')
+
             if not scheduled_time:
                 for key, value in flight.items():
                     if isinstance(value, str) and ':' in value:
@@ -544,7 +553,7 @@ def parseFlightsByHour(response_data):
                         if time_match:
                             scheduled_time = value
                             break
-            
+
             if scheduled_time:
                 time_match = re.search(r'(\d{1,2}):(\d{2})', scheduled_time)
                 if time_match:
@@ -553,7 +562,7 @@ def parseFlightsByHour(response_data):
                         hourly_flights[hour] += 1
     except Exception as e:
         print(f"Error parsing flights: {e}")
-    
+
     result = []
     for hour in range(24):
         result.append({
@@ -561,5 +570,5 @@ def parseFlightsByHour(response_data):
             'time_label': f"{hour:02d}:00",
             'count': hourly_flights[hour]
         })
-    
+
     return result
