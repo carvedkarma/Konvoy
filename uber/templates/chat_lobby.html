@@ -10,7 +10,11 @@
 }
 @keyframes pulse-online {
     0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-    50% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+    50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+}
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
 }
 .message-enter {
     animation: fadeIn 0.3s ease-out;
@@ -18,39 +22,51 @@
 .online-pulse {
     animation: pulse-online 2s infinite;
 }
-.user-card {
-    transition: all 0.2s ease;
+.user-chip {
+    transition: all 0.15s ease;
 }
-.user-card:hover {
-    transform: translateY(-2px);
+.user-chip:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 .chat-container {
-    height: calc(100vh - 200px);
-    min-height: 400px;
+    height: calc(100vh - 280px);
+    min-height: 350px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(250,250,250,0.9));
+    border: 1px solid rgba(0,0,0,0.06);
 }
 .messages-area {
     height: calc(100% - 80px);
     overflow-y: auto;
 }
 .messages-area::-webkit-scrollbar {
-    width: 6px;
+    width: 5px;
 }
 .messages-area::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.05);
-    border-radius: 3px;
+    background: transparent;
 }
 .messages-area::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.2);
-    border-radius: 3px;
+    background: linear-gradient(to bottom, #a1a1aa, #71717a);
+    border-radius: 10px;
 }
 .mention-highlight {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15));
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(147, 51, 234, 0.12));
     border-left: 3px solid #3b82f6;
 }
 .reply-preview {
     border-left: 2px solid #9ca3af;
     padding-left: 8px;
     margin-bottom: 4px;
+}
+.online-panel {
+    background: linear-gradient(135deg, rgba(24,24,27,0.03), rgba(63,63,70,0.05));
+    border: 1px solid rgba(0,0,0,0.04);
+}
+.online-label {
+    background: linear-gradient(90deg, #18181b, #3f3f46);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 </style>
 {% endblock %}
@@ -77,11 +93,7 @@
             </div>
         </div>
 
-        <div id="online-users" class="flex flex-wrap gap-2 mb-4 p-3 glass-panel rounded-xl">
-            <div class="text-xs text-zinc-400 w-full mb-1">Online Users</div>
-        </div>
-
-        <div class="glass-panel rounded-xl premium-shadow chat-container flex flex-col">
+        <div class="chat-container rounded-2xl premium-shadow flex flex-col overflow-hidden">
             
             <div id="messages" class="messages-area p-4 space-y-3">
                 <div class="flex items-center justify-center py-8">
@@ -130,6 +142,15 @@
                 </form>
             </div>
         </div>
+
+        <div id="online-users" class="mt-4 p-3 rounded-xl online-panel">
+            <div class="flex items-center mb-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full online-pulse mr-2"></div>
+                <span class="text-xs font-semibold online-label">Online Now</span>
+            </div>
+            <div id="online-users-list" class="flex flex-wrap gap-1.5">
+            </div>
+        </div>
     </div>
 </div>
 
@@ -176,30 +197,26 @@ function formatTime(isoString) {
 }
 
 function renderOnlineUsers(users) {
-    const container = document.getElementById('online-users');
+    const container = document.getElementById('online-users-list');
     const countEl = document.getElementById('online-count');
     countEl.textContent = `${users.length} online`;
     
-    let html = '<div class="text-xs text-zinc-400 w-full mb-1">Online Users</div>';
+    let html = '';
     
     users.forEach(user => {
         const gradient = getRoleGradient(user.roles);
-        const roleNames = user.roles.map(r => r.name).join(', ') || 'User';
         html += `
-            <div class="user-card flex items-center px-3 py-2 rounded-lg bg-gradient-to-r ${gradient} cursor-pointer"
-                 onclick="mentionUser('${escapeHtml(user.username)}')" title="Click to mention">
-                <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white text-xs font-bold mr-2">
+            <div class="user-chip flex items-center px-2 py-1 rounded-full bg-gradient-to-r ${gradient} cursor-pointer shadow-sm"
+                 onclick="mentionUser('${escapeHtml(user.username)}')" title="${escapeHtml(user.display_name)} - Click to mention">
+                <div class="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-white text-[9px] font-bold">
                     ${escapeHtml(user.initials)}
                 </div>
-                <div class="min-w-0">
-                    <div class="text-white text-xs font-medium truncate">${escapeHtml(user.display_name)}</div>
-                    <div class="text-white/70 text-[10px] truncate">${escapeHtml(roleNames)}</div>
-                </div>
+                <span class="text-white text-[10px] font-medium ml-1.5 mr-0.5 max-w-[60px] truncate">${escapeHtml(user.display_name.split(' ')[0])}</span>
             </div>
         `;
     });
     
-    container.innerHTML = html;
+    container.innerHTML = html || '<span class="text-xs text-zinc-400">No users online</span>';
 }
 
 function renderMessage(msg, prepend = false) {
