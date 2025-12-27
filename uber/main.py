@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -135,6 +138,10 @@ def home_data():
             print(f"Error getting credentials: {e}")
             return jsonify(success=True, vehicles=[], driver_info=None, default_vehicle=None, active_ride=None)
         
+        cached_vehicles = cache.get_cached(current_user.id, 'vehicles')
+        cached_driver = cache.get_cached(current_user.id, 'driver_info')
+        cached_ride = cache.get_cached(current_user.id, 'active_ride')
+        
         def fetch_vehicles():
             try:
                 return vehicleDetails(cookies, headers, refresh_token)
@@ -161,9 +168,36 @@ def home_data():
                 print(f"Error fetching ride: {e}")
                 return None
         
-        vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
-        driver_info = cache.get_driver_info(current_user.id, fetch_driver_info)
-        full_ride_data = cache.get_active_ride(current_user.id, fetch_ride)
+        if cached_vehicles is not None and cached_driver is not None and cached_ride is not None:
+            vehicles = cached_vehicles
+            driver_info = cached_driver
+            full_ride_data = cached_ride
+        else:
+            tasks = {}
+            if cached_vehicles is None:
+                tasks['vehicles'] = eventlet.spawn(fetch_vehicles)
+            if cached_driver is None:
+                tasks['driver'] = eventlet.spawn(fetch_driver_info)
+            if cached_ride is None:
+                tasks['ride'] = eventlet.spawn(fetch_ride)
+            
+            if 'vehicles' in tasks:
+                vehicles = tasks['vehicles'].wait()
+                cache.set_cached(current_user.id, 'vehicles', vehicles)
+            else:
+                vehicles = cached_vehicles
+            
+            if 'driver' in tasks:
+                driver_info = tasks['driver'].wait()
+                cache.set_cached(current_user.id, 'driver_info', driver_info)
+            else:
+                driver_info = cached_driver
+            
+            if 'ride' in tasks:
+                full_ride_data = tasks['ride'].wait()
+                cache.set_cached(current_user.id, 'active_ride', full_ride_data)
+            else:
+                full_ride_data = cached_ride
         
         if full_ride_data and isinstance(full_ride_data, dict):
             active_ride = {
