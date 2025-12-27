@@ -71,8 +71,12 @@ Preferred communication style: Simple, everyday language.
   - Dark/light contrast themes
   - Responsive mobile-first design
 - Pages: login, register, home hub, location change, ride details, admin panel
-- **Async Loading**: Fetch Ride page loads instantly with animated spinner, then fetches data via API endpoint
+- **Async Loading**: Pages load instantly with skeleton animations, then fetch data via API endpoints:
+  - Home page (`/`): Shows skeleton loading for driver profile and vehicles
+  - Location page (`/change-location`): Shows skeleton loading for default vehicle
+  - Fetch Ride page (`/fetch-ride`): Shows spinner with rotating status messages
 - **User Feedback**: Status messages cycle during loading ("Connecting to Uber...", "Authenticating session...", etc.)
+- **Security**: All dynamic content properly escaped using `escapeHtml()` function to prevent XSS attacks
 
 ### Configuration Management
 - Environment variables for sensitive data (Flask secret key, database URL, owner credentials)
