@@ -1,7 +1,7 @@
 modules = ["python-3.11", "postgresql-16"]
 [nix]
 channel = "stable-25_05"
-packages = ["cargo", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc", "unzip"]
+packages = ["cargo", "iana-etc", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc", "unzip"]
 
 [agent]
 expertMode = true
