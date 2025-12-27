@@ -278,27 +278,73 @@
                     data-pickup-lng="{{ ride_data.pickup_coords[1] if ride_data.pickup_coords else '' }}"
                     data-dropoff-lat="{{ ride_data.dropoff_coords[0] if ride_data.dropoff_coords else '' }}"
                     data-dropoff-lng="{{ ride_data.dropoff_coords[1] if ride_data.dropoff_coords else '' }}"
-                    class="w-full bg-red-600 text-white py-3 rounded-xl font-semibold text-sm text-center hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
+                    class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white py-3.5 rounded-xl font-semibold text-sm text-center hover:from-red-700 hover:to-red-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
                 Cancel Ride
             </button>
-            <div id="simulation-status" class="hidden text-center py-3 px-4 rounded-xl bg-zinc-100">
-                <p id="simulation-message" class="text-sm font-medium text-zinc-700"></p>
-                <div id="simulation-progress" class="mt-2 h-1 bg-zinc-200 rounded-full overflow-hidden">
-                    <div id="progress-bar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+            <div id="simulation-status" class="hidden">
+                <div class="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-5 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                            <span class="text-emerald-400 text-xs font-bold uppercase tracking-wider">Live Simulation</span>
+                        </div>
+                        <div id="step-counter" class="text-zinc-400 text-xs font-medium">Step 1/5</div>
+                    </div>
+                    <div class="relative mb-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col items-center">
+                                <div id="pickup-indicator" class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center border-2 border-emerald-500">
+                                    <div class="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                                </div>
+                                <span class="text-zinc-500 text-xs mt-1">Pickup</span>
+                            </div>
+                            <div class="flex-1 mx-3 relative h-1 bg-zinc-700 rounded-full overflow-hidden">
+                                <div id="route-progress" class="absolute left-0 top-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                                <div id="car-icon" class="absolute top-1/2 -translate-y-1/2 transition-all duration-1000" style="left: 0%">
+                                    <div class="w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center -mt-0.5">
+                                        <svg class="w-4 h-4 text-zinc-800" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <div id="dropoff-indicator" class="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center border-2 border-zinc-600">
+                                    <svg class="w-4 h-4 text-zinc-500" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                    </svg>
+                                </div>
+                                <span class="text-zinc-500 text-xs mt-1">Dropoff</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-800/50 rounded-xl p-3">
+                        <p id="simulation-message" class="text-white text-sm font-medium text-center"></p>
+                    </div>
                 </div>
             </div>
             <div id="dropoff-notification" class="hidden">
-                <div class="bg-emerald-100 border border-emerald-300 rounded-xl p-4 text-center">
-                    <div class="flex items-center justify-center gap-2 mb-2">
-                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        <span class="text-emerald-700 font-bold">At Dropoff!</span>
+                <div class="bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 shadow-xl text-white">
+                    <div class="flex items-center justify-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-bold text-lg">At Dropoff!</p>
+                            <p class="text-emerald-100 text-sm">Holding position</p>
+                        </div>
                     </div>
-                    <p id="dropoff-countdown" class="text-sm text-emerald-600">Location sending stops in 10s</p>
+                    <div class="bg-white/10 backdrop-blur rounded-xl p-3 text-center">
+                        <p id="dropoff-countdown" class="text-white/90 font-medium">Location sending stops in 3m 0s</p>
+                        <div class="mt-2 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                            <div id="countdown-bar" class="h-full bg-white rounded-full transition-all duration-1000" style="width: 100%"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <a href="{{ url_for('root') }}" class="block w-full bg-black text-white py-3 rounded-xl font-semibold text-sm text-center hover:bg-zinc-800 transition-colors">
@@ -517,27 +563,73 @@ fetch('/api/fetch-ride-data')
                             data-pickup-lng="${rd.pickup_coords ? rd.pickup_coords[1] : ''}"
                             data-dropoff-lat="${rd.dropoff_coords ? rd.dropoff_coords[0] : ''}"
                             data-dropoff-lng="${rd.dropoff_coords ? rd.dropoff_coords[1] : ''}"
-                            class="w-full bg-red-600 text-white py-3 rounded-xl font-semibold text-sm text-center hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
+                            class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white py-3.5 rounded-xl font-semibold text-sm text-center hover:from-red-700 hover:to-red-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                         Cancel Ride
                     </button>
-                    <div id="simulation-status" class="hidden text-center py-3 px-4 rounded-xl bg-zinc-100">
-                        <p id="simulation-message" class="text-sm font-medium text-zinc-700"></p>
-                        <div id="simulation-progress" class="mt-2 h-1 bg-zinc-200 rounded-full overflow-hidden">
-                            <div id="progress-bar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+                    <div id="simulation-status" class="hidden">
+                        <div class="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-2xl p-5 shadow-xl">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                                    <span class="text-emerald-400 text-xs font-bold uppercase tracking-wider">Live Simulation</span>
+                                </div>
+                                <div id="step-counter" class="text-zinc-400 text-xs font-medium">Step 1/5</div>
+                            </div>
+                            <div class="relative mb-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex flex-col items-center">
+                                        <div id="pickup-indicator" class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center border-2 border-emerald-500">
+                                            <div class="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                                        </div>
+                                        <span class="text-zinc-500 text-xs mt-1">Pickup</span>
+                                    </div>
+                                    <div class="flex-1 mx-3 relative h-1 bg-zinc-700 rounded-full overflow-hidden">
+                                        <div id="route-progress" class="absolute left-0 top-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                                        <div id="car-icon" class="absolute top-1/2 -translate-y-1/2 transition-all duration-1000" style="left: 0%">
+                                            <div class="w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center -mt-0.5">
+                                                <svg class="w-4 h-4 text-zinc-800" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-col items-center">
+                                        <div id="dropoff-indicator" class="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center border-2 border-zinc-600">
+                                            <svg class="w-4 h-4 text-zinc-500" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                            </svg>
+                                        </div>
+                                        <span class="text-zinc-500 text-xs mt-1">Dropoff</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-zinc-800/50 rounded-xl p-3">
+                                <p id="simulation-message" class="text-white text-sm font-medium text-center"></p>
+                            </div>
                         </div>
                     </div>
                     <div id="dropoff-notification" class="hidden">
-                        <div class="bg-emerald-100 border border-emerald-300 rounded-xl p-4 text-center">
-                            <div class="flex items-center justify-center gap-2 mb-2">
-                                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                <span class="text-emerald-700 font-bold">At Dropoff!</span>
+                        <div class="bg-gradient-to-br from-emerald-600 to-emerald-500 rounded-2xl p-5 shadow-xl text-white">
+                            <div class="flex items-center justify-center gap-3 mb-3">
+                                <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-lg">At Dropoff!</p>
+                                    <p class="text-emerald-100 text-sm">Holding position</p>
+                                </div>
                             </div>
-                            <p id="dropoff-countdown" class="text-sm text-emerald-600">Location sending stops in 10s</p>
+                            <div class="bg-white/10 backdrop-blur rounded-xl p-3 text-center">
+                                <p id="dropoff-countdown" class="text-white/90 font-medium">Location sending stops in 3m 0s</p>
+                                <div class="mt-2 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                                    <div id="countdown-bar" class="h-full bg-white rounded-full transition-all duration-1000" style="width: 100%"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <a href="/" class="block w-full bg-black text-white py-3 rounded-xl font-semibold text-sm text-center hover:bg-zinc-800 transition-colors">
@@ -633,9 +725,13 @@ async function startCancelRideSimulation() {
     const btn = document.getElementById('cancel-ride-btn');
     const statusDiv = document.getElementById('simulation-status');
     const messageEl = document.getElementById('simulation-message');
-    const progressBar = document.getElementById('progress-bar');
+    const routeProgress = document.getElementById('route-progress');
+    const carIcon = document.getElementById('car-icon');
+    const stepCounter = document.getElementById('step-counter');
+    const dropoffIndicator = document.getElementById('dropoff-indicator');
     const dropoffNotif = document.getElementById('dropoff-notification');
     const countdownEl = document.getElementById('dropoff-countdown');
+    const countdownBar = document.getElementById('countdown-bar');
     
     const pickupLat = parseFloat(btn.dataset.pickupLat);
     const pickupLng = parseFloat(btn.dataset.pickupLng);
@@ -654,10 +750,13 @@ async function startCancelRideSimulation() {
     const totalSteps = numIntermediatePoints + 2;
     let currentStep = 0;
     
-    const updateProgress = (msg) => {
+    const updateProgress = (msg, progress) => {
         currentStep++;
         messageEl.textContent = msg;
-        progressBar.style.width = `${(currentStep / totalSteps) * 100}%`;
+        stepCounter.textContent = `Step ${currentStep}/${totalSteps}`;
+        const progressPercent = Math.min((currentStep / totalSteps) * 100, 100);
+        routeProgress.style.width = `${progressPercent}%`;
+        carIcon.style.left = `calc(${progressPercent}% - 12px)`;
     };
     
     const generateRandomOffset = () => {
@@ -665,7 +764,7 @@ async function startCancelRideSimulation() {
     };
     
     try {
-        updateProgress('Moving to pickup location...');
+        updateProgress('Navigating to pickup location...', 0);
         await fetch('/api/cancel-ride-simulation', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -681,7 +780,7 @@ async function startCancelRideSimulation() {
             const pointLat = baseLat + generateRandomOffset();
             const pointLng = baseLng + generateRandomOffset();
             
-            updateProgress(`En route - Point ${i}/${numIntermediatePoints}...`);
+            updateProgress(`Driving to dropoff • Waypoint ${i}`, progress);
             await fetch('/api/cancel-ride-simulation', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -691,7 +790,12 @@ async function startCancelRideSimulation() {
             await new Promise(r => setTimeout(r, 5000));
         }
         
-        updateProgress('Arriving at dropoff...');
+        updateProgress('Arriving at destination...', 1);
+        dropoffIndicator.classList.remove('bg-zinc-700', 'border-zinc-600');
+        dropoffIndicator.classList.add('bg-emerald-500/20', 'border-emerald-500');
+        dropoffIndicator.querySelector('svg').classList.remove('text-zinc-500');
+        dropoffIndicator.querySelector('svg').classList.add('text-emerald-500');
+        
         await fetch('/api/cancel-ride-simulation', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -704,6 +808,7 @@ async function startCancelRideSimulation() {
         dropoffNotif.classList.remove('hidden');
         
         let countdown = 180;
+        const totalCountdown = 180;
         const formatTime = (secs) => {
             const mins = Math.floor(secs / 60);
             const s = secs % 60;
@@ -713,6 +818,7 @@ async function startCancelRideSimulation() {
         const countdownInterval = setInterval(async () => {
             countdown--;
             countdownEl.textContent = `Location sending stops in ${formatTime(countdown)}`;
+            countdownBar.style.width = `${(countdown / totalCountdown) * 100}%`;
             
             if (countdown > 0) {
                 await fetch('/api/cancel-ride-simulation', {
@@ -724,26 +830,27 @@ async function startCancelRideSimulation() {
             
             if (countdown <= 0) {
                 clearInterval(countdownInterval);
-                countdownEl.textContent = 'Location sending stopped';
-                setTimeout(() => {
-                    dropoffNotif.querySelector('div').innerHTML = `
-                        <div class="flex items-center justify-center gap-2 mb-2">
-                            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                dropoffNotif.querySelector('.bg-gradient-to-br').innerHTML = `
+                    <div class="flex items-center justify-center gap-3 mb-3">
+                        <div class="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                             </svg>
-                            <span class="text-emerald-700 font-bold">Simulation Complete</span>
                         </div>
-                        <p class="text-sm text-emerald-600">Ride cancelled successfully</p>
-                    `;
-                }, 500);
+                        <div>
+                            <p class="font-bold text-lg">Simulation Complete</p>
+                            <p class="text-emerald-100 text-sm">Location sending stopped</p>
+                        </div>
+                    </div>
+                `;
             }
         }, 1000);
         
     } catch (error) {
         console.error('Error during simulation:', error);
         messageEl.textContent = 'Error: ' + error.message;
-        progressBar.classList.remove('bg-emerald-500');
-        progressBar.classList.add('bg-red-500');
+        routeProgress.classList.remove('from-emerald-500', 'to-emerald-400');
+        routeProgress.classList.add('from-red-500', 'to-red-400');
     }
 }
 
