@@ -1109,7 +1109,7 @@ def handle_connect():
         }
         online_users[current_user.id] = user_data
         emit('user_joined', user_data, broadcast=True)
-        emit('online_users', list(online_users.values()))
+        emit('online_users', list(online_users.values()), broadcast=True)
 
 
 @socketio.on('disconnect')
