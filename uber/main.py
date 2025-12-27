@@ -865,6 +865,7 @@ def api_flight_arrivals():
             data = {}
         
         hourly_data = parseFlightsByHour(data)
+        terminals = data.get('terminals', [])
         
         current_hour = datetime.now().hour
         filtered_hours = [h for h in hourly_data if h['hour'] >= current_hour]
@@ -874,7 +875,8 @@ def api_flight_arrivals():
             'success': True,
             'hourly_flights': filtered_hours,
             'total_flights': total_flights,
-            'current_hour': current_hour
+            'current_hour': current_hour,
+            'terminals': terminals
         })
     except Exception as e:
         print(f"Error fetching flight data: {e}")

@@ -477,8 +477,6 @@ def flightArrivals(terminal=None):
     
     try:
         url = 'https://www.airport-perth.com/arrivals.php'
-        if terminal and terminal in ['1', '2', '3', '4']:
-            url = f'https://www.airport-perth.com/arrivals-terminal-{terminal}'
         
         response = requests.get(
             url,
@@ -492,6 +490,7 @@ def flightArrivals(terminal=None):
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             flights = []
+            terminals_found = set()
             
             flight_rows = soup.find_all('div', class_='flight-row')
             for row in flight_rows:
@@ -502,21 +501,30 @@ def flightArrivals(terminal=None):
                 origin_elem = row.find('div', class_='flight-col__dest-term')
                 flight_elem = row.find('a', class_='flight-col__flight--link')
                 status_elem = row.find('div', class_='flight-col__status')
+                terminal_elem = row.find('div', class_='flight-col__terminal')
                 
                 if time_elem:
                     time_str = time_elem.get_text(strip=True)
                     origin = origin_elem.get_text(strip=True) if origin_elem else ''
                     flight_num = flight_elem.get_text(strip=True) if flight_elem else ''
                     status = status_elem.get_text(strip=True) if status_elem else ''
+                    term = terminal_elem.get_text(strip=True) if terminal_elem else ''
+                    
+                    if term:
+                        terminals_found.add(term)
+                    
+                    if terminal and term != terminal:
+                        continue
                     
                     flights.append({
                         'time': time_str,
                         'flight': flight_num,
                         'origin': origin,
-                        'status': status
+                        'status': status,
+                        'terminal': term
                     })
             
-            print(f"Scraped {len(flights)} flights from airport-perth.com")
+            print(f"Scraped {len(flights)} flights from airport-perth.com (terminals: {sorted(terminals_found)})")
             
             class MockResponse:
                 def __init__(self, data):
@@ -526,7 +534,11 @@ def flightArrivals(terminal=None):
                 def json(self):
                     return self._data
             
-            return MockResponse({'flights': flights, 'source': 'airport-perth.com'})
+            return MockResponse({
+                'flights': flights, 
+                'source': 'airport-perth.com',
+                'terminals': sorted(terminals_found)
+            })
         
         print(f"Flight API returned status {response.status_code}")
         return None

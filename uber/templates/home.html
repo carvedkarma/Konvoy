@@ -247,8 +247,6 @@
                         <p class="text-zinc-500 text-xs">Remaining flights today</p>
                         <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
                             <option value="">All Terminals</option>
-                            <option value="1">Terminal 1</option>
-                            <option value="2">Terminal 2</option>
                         </select>
                     </div>
                     <div id="flightGrid" class="grid grid-cols-6 gap-1.5"></div>
@@ -523,8 +521,6 @@ fetch('/api/home-data')
                             <p class="text-zinc-500 text-xs">Remaining flights today</p>
                             <select id="terminalSelect" class="text-xs bg-zinc-100 border-0 rounded-lg px-3 py-1.5 text-zinc-700 focus:ring-2 focus:ring-blue-500">
                                 <option value="">All Terminals</option>
-                                <option value="1">Terminal 1</option>
-                                <option value="2">Terminal 2</option>
                             </select>
                         </div>
                         <div id="flightGrid" class="grid grid-cols-6 gap-1.5"></div>
@@ -563,6 +559,16 @@ function loadFlightData(terminal = '') {
             if (data.success) {
                 const grid = document.getElementById('flightGrid');
                 const footer = document.getElementById('flightFooter');
+                const terminalSelect = document.getElementById('terminalSelect');
+                
+                if (terminalSelect && data.terminals && terminalSelect.options.length <= 1) {
+                    data.terminals.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t;
+                        opt.textContent = `Terminal ${t}`;
+                        terminalSelect.appendChild(opt);
+                    });
+                }
                 
                 grid.innerHTML = '';
                 
@@ -612,6 +618,16 @@ function loadFlightData(terminal = '') {
             if (data.success) {
                 const grid = document.getElementById('flightGrid');
                 const footer = document.getElementById('flightFooter');
+                const terminalSelect = document.getElementById('terminalSelect');
+                
+                if (terminalSelect && data.terminals && terminalSelect.options.length <= 1) {
+                    data.terminals.forEach(t => {
+                        const opt = document.createElement('option');
+                        opt.value = t;
+                        opt.textContent = `Terminal ${t}`;
+                        terminalSelect.appendChild(opt);
+                    });
+                }
                 
                 grid.innerHTML = '';
                 
