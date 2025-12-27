@@ -68,8 +68,12 @@ def vehicleDetails(cookies, headers, refresh_token=None):
                             params=params,
                             cookies=cookies,
                             headers=headers)
-
-    return response.json()['vehicles']
+    
+    data = response.json()
+    if 'vehicles' not in data:
+        print(f"Vehicle API error: {data}")
+        return []
+    return data['vehicles']
 
 
 def appLaunch(cookies, headers, refresh_token=None):
