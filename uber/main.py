@@ -103,33 +103,41 @@ stored_destination = None
 @app.route('/')
 def root():
     if current_user.is_authenticated:
-        vehicles = []
-        driver_info = None
-        if current_user.uber_connected:
-            try:
-                cookies, headers, refresh_token = current_user.get_uber_credentials()
-            except Exception as e:
-                print(f"Error getting credentials: {e}")
-                return render_template('home.html', vehicles=vehicles, driver_info=driver_info)
-            
-            try:
-                vehicles = vehicleDetails(cookies, headers, refresh_token)
-            except Exception as e:
-                print(f"Error fetching vehicles: {e}")
-                vehicles = []
-            
-            try:
-                from objects.uberDev import driverInfo
-                driver_data = driverInfo(cookies, headers, refresh_token)
-                driver_info = {
-                    'name': driver_data[0],
-                    'photo': driver_data[1]
-                }
-            except Exception as e:
-                print(f"Error fetching driver info: {e}")
-                driver_info = None
-        return render_template('home.html', vehicles=vehicles, driver_info=driver_info)
+        return render_template('home.html', loading=current_user.uber_connected, vehicles=[], driver_info=None)
     return redirect(url_for('login'))
+
+
+@app.route('/api/home-data')
+@login_required
+def home_data():
+    vehicles = []
+    driver_info = None
+    
+    if current_user.uber_connected:
+        try:
+            cookies, headers, refresh_token = current_user.get_uber_credentials()
+        except Exception as e:
+            print(f"Error getting credentials: {e}")
+            return jsonify(success=True, vehicles=[], driver_info=None)
+        
+        try:
+            vehicles = vehicleDetails(cookies, headers, refresh_token)
+        except Exception as e:
+            print(f"Error fetching vehicles: {e}")
+            vehicles = []
+        
+        try:
+            from objects.uberDev import driverInfo
+            driver_data = driverInfo(cookies, headers, refresh_token)
+            driver_info = {
+                'name': driver_data[0],
+                'photo': driver_data[1]
+            }
+        except Exception as e:
+            print(f"Error fetching driver info: {e}")
+            driver_info = None
+    
+    return jsonify(success=True, vehicles=vehicles, driver_info=driver_info)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -647,6 +655,13 @@ def reset_password(token):
 @login_required
 def home():
     has_permission = current_user.has_permission('can_change_location')
+    loading = current_user.uber_connected and has_permission
+    return render_template('index.html', has_permission=has_permission, default_vehicle=None, loading=loading)
+
+
+@app.route('/api/location-data')
+@login_required
+def location_data():
     default_vehicle = None
     if current_user.uber_connected:
         try:
@@ -658,7 +673,7 @@ def home():
                     break
         except Exception as e:
             print(f"Error fetching default vehicle: {e}")
-    return render_template('index.html', has_permission=has_permission, default_vehicle=default_vehicle)
+    return jsonify(success=True, default_vehicle=default_vehicle)
 
 
 @app.route('/fetch-ride')

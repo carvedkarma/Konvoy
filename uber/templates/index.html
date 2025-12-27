@@ -11,6 +11,20 @@
     0% { transform: scale(1); opacity: 0.4; }
     100% { transform: scale(1.5); opacity: 0; }
 }
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.skeleton {
+    background: linear-gradient(90deg, #3f3f46 25%, #52525b 50%, #3f3f46 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+.skeleton-light {
+    background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
 </style>
 {% endblock %}
 
@@ -18,7 +32,29 @@
 <div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
     <div id="container" class="w-full max-w-md">
         
-        {% if not has_permission %}
+        {% if loading %}
+        <div id="loading-skeleton">
+            <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-6 text-center">
+                <div class="w-48 h-28 skeleton rounded-lg mx-auto"></div>
+                <div class="h-4 w-32 skeleton rounded mt-3 mx-auto"></div>
+                <div class="h-3 w-24 skeleton rounded mt-2 mx-auto"></div>
+            </div>
+            <div class="bg-white rounded-b-2xl shadow-xl p-6">
+                <div class="flex items-center mb-5">
+                    <div class="w-10 h-10 skeleton-light rounded-full mr-3"></div>
+                    <div>
+                        <div class="h-5 w-28 skeleton-light rounded mb-1"></div>
+                        <div class="h-3 w-20 skeleton-light rounded"></div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="h-12 skeleton-light rounded-xl"></div>
+                    <div class="h-12 skeleton-light rounded-xl"></div>
+                </div>
+            </div>
+        </div>
+        <div id="location-content" class="hidden"></div>
+        {% elif not has_permission %}
         <div class="glass-panel p-6 rounded-xl premium-shadow text-center">
             <div class="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg class="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,7 +152,154 @@
 {% endblock %}
 
 {% block extra_scripts %}
-{% if has_permission %}
+{% if loading %}
+<script>
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+fetch('/api/location-data')
+    .then(response => response.json())
+    .then(data => {
+        const loadingEl = document.getElementById('loading-skeleton');
+        const contentEl = document.getElementById('location-content');
+        const v = data.default_vehicle;
+        
+        const vehicleHeader = v ? `
+            <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-6 text-center">
+                <div class="relative inline-block">
+                    ${v.imageUrl ? `<img src="${escapeHtml(v.imageUrl)}" alt="${escapeHtml(v.make)} ${escapeHtml(v.model)}" class="w-48 h-28 object-contain mx-auto drop-shadow-2xl">` : `
+                    <div class="w-48 h-28 bg-zinc-700 rounded-lg flex items-center justify-center mx-auto">
+                        <svg class="w-20 h-20 text-zinc-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                        </svg>
+                    </div>`}
+                </div>
+                <p class="text-white font-semibold mt-3">${escapeHtml(v.make)} ${escapeHtml(v.model)}</p>
+                <p class="text-zinc-400 text-xs">${escapeHtml(v.year)} · ${escapeHtml(v.licensePlate)}</p>
+            </div>
+        ` : '';
+        
+        contentEl.innerHTML = `
+            <div id="searchState">
+                ${vehicleHeader}
+                <div class="bg-white ${v ? 'rounded-b-2xl' : 'rounded-2xl'} shadow-xl p-6">
+                    <div class="flex items-center mb-5">
+                        <div class="w-10 h-10 bg-black rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-zinc-900">Change Location</h2>
+                            <p class="text-xs text-zinc-500">Update driver position</p>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <input type="text" id="destinationInput" 
+                                class="w-full px-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-black focus:ring-2 focus:ring-black/5 transition-all"
+                                placeholder="Enter address or city">
+                        </div>
+                        <button id="searchBtn" 
+                            class="w-full bg-black text-white py-3.5 rounded-xl font-semibold text-sm hover:bg-zinc-800 transition-colors flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            </svg>
+                            Update Location
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="pulsingState" class="hidden">
+                ${v ? `
+                <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-6 text-center">
+                    ${v.imageUrl ? `<img src="${escapeHtml(v.imageUrl)}" alt="Vehicle" class="w-40 h-24 object-contain mx-auto drop-shadow-2xl">` : ''}
+                    <p class="text-white font-semibold mt-2">${escapeHtml(v.make)} ${escapeHtml(v.model)}</p>
+                </div>
+                ` : ''}
+                <div class="bg-white ${v ? 'rounded-b-2xl' : 'rounded-2xl'} shadow-xl p-8">
+                    <div class="flex flex-col items-center justify-center">
+                        <div class="relative flex items-center justify-center mb-6">
+                            <div class="pulse-ring absolute w-24 h-24 bg-black rounded-full opacity-20"></div>
+                            <div class="pulse-ring absolute w-32 h-32 bg-black rounded-full opacity-10" style="animation-delay: 0.5s"></div>
+                            <button id="stopBtn" 
+                                class="relative z-10 w-20 h-20 bg-black text-white rounded-full font-semibold text-sm shadow-lg flex items-center justify-center hover:bg-zinc-800 transition-colors">
+                                Stop
+                            </button>
+                        </div>
+                        <p class="text-base font-semibold text-zinc-900">Updating location...</p>
+                        <p id="destinationDisplay" class="text-sm text-zinc-500 mt-1"></p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        loadingEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+        
+        initLocationHandlers();
+    })
+    .catch(error => {
+        console.error('Error loading location data:', error);
+        document.getElementById('loading-skeleton').innerHTML = `
+            <div class="glass-panel p-6 rounded-xl premium-shadow text-center">
+                <p class="text-zinc-500">Failed to load. <a href="/change-location" class="text-black underline">Retry</a></p>
+            </div>
+        `;
+    });
+
+function initLocationHandlers() {
+    const searchState = document.getElementById('searchState');
+    const pulsingState = document.getElementById('pulsingState');
+    const searchBtn = document.getElementById('searchBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const destinationInput = document.getElementById('destinationInput');
+    const destinationDisplay = document.getElementById('destinationDisplay');
+
+    searchBtn.addEventListener('click', async () => {
+        const destination = destinationInput.value.trim();
+        if (!destination) {
+            destinationInput.style.borderColor = '#ef4444';
+            return;
+        }
+        destinationInput.style.borderColor = '';
+        destinationDisplay.textContent = destination;
+        
+        searchState.classList.add('hidden');
+        pulsingState.classList.remove('hidden');
+        
+        try {
+            await fetch('/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `destination=${encodeURIComponent(destination)}`
+            });
+        } catch (e) { console.error(e); }
+    });
+
+    stopBtn.addEventListener('click', async () => {
+        try {
+            await fetch('/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+        } catch (e) { console.error(e); }
+
+        pulsingState.classList.add('hidden');
+        searchState.classList.remove('hidden');
+        destinationInput.value = '';
+    });
+
+    destinationInput.addEventListener('input', () => {
+        destinationInput.style.borderColor = '';
+    });
+}
+</script>
+{% elif has_permission %}
 <script>
     const searchState = document.getElementById('searchState');
     const pulsingState = document.getElementById('pulsingState');
