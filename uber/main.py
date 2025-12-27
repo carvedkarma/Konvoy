@@ -143,12 +143,7 @@ def home_data():
             try:
                 ride_data = appLaunch(cookies, headers, refresh_token)
                 if ride_data and isinstance(ride_data, dict):
-                    return {
-                        'full_name': ride_data.get('full_name', 'Rider'),
-                        'rating': ride_data.get('rating', '--'),
-                        'trip_distance': ride_data.get('trip_distance'),
-                        'ride_type': ride_data.get('ride_type', 'UberX')
-                    }
+                    return ride_data
                 return None
             except Exception as e:
                 print(f"Error fetching ride: {e}")
@@ -156,7 +151,17 @@ def home_data():
         
         vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
         driver_info = cache.get_driver_info(current_user.id, fetch_driver_info)
-        active_ride = cache.get_active_ride(current_user.id, fetch_ride)
+        full_ride_data = cache.get_active_ride(current_user.id, fetch_ride)
+        
+        if full_ride_data:
+            active_ride = {
+                'full_name': full_ride_data.get('full_name', 'Rider'),
+                'rating': full_ride_data.get('rating', '--'),
+                'trip_distance': full_ride_data.get('trip_distance'),
+                'ride_type': full_ride_data.get('ride_type', 'UberX')
+            }
+        else:
+            active_ride = None
         
         for v in vehicles:
             if v.get('isDefault'):
