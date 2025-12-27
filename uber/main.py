@@ -367,6 +367,92 @@ def edit_user(user_id):
     return render_template('edit_user.html', user=user, roles=all_roles)
 
 
+@app.route('/admin/uber-credentials/<int:user_id>')
+@login_required
+def admin_uber_credentials(user_id):
+    if not current_user.is_owner():
+        flash('Access denied. Owner privileges required.', 'error')
+        return redirect(url_for('root'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    current_cookies = None
+    current_headers = None
+    current_refresh_token = None
+    
+    if user.uber_connected:
+        try:
+            current_cookies = decrypt_data(user.uber_cookies)
+            current_headers = decrypt_data(user.uber_headers)
+            current_refresh_token = decrypt_data(user.uber_refresh_token)
+        except:
+            pass
+    
+    return render_template('uber_credentials.html', 
+                         user=user,
+                         current_cookies=current_cookies,
+                         current_headers=current_headers,
+                         current_refresh_token=current_refresh_token)
+
+
+@app.route('/admin/uber-credentials/<int:user_id>/set', methods=['POST'])
+@login_required
+def admin_set_uber_credentials(user_id):
+    if not current_user.is_owner():
+        flash('Access denied. Owner privileges required.', 'error')
+        return redirect(url_for('root'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    cookies = request.form.get('cookies', '').strip()
+    headers = request.form.get('headers', '').strip()
+    refresh_token = request.form.get('refresh_token', '').strip()
+    
+    if not cookies or not headers or not refresh_token:
+        flash('All credential fields are required.', 'error')
+        return redirect(url_for('admin_uber_credentials', user_id=user_id))
+    
+    import json
+    try:
+        json.loads(cookies)
+        json.loads(headers)
+    except json.JSONDecodeError:
+        flash('Cookies and Headers must be valid JSON.', 'error')
+        return redirect(url_for('admin_uber_credentials', user_id=user_id))
+    
+    user.uber_cookies = encrypt_data(cookies)
+    user.uber_headers = encrypt_data(headers)
+    user.uber_refresh_token = encrypt_data(refresh_token)
+    user.uber_connected = True
+    
+    db.session.commit()
+    cache.invalidate_cache(user.id)
+    
+    flash(f'Uber credentials saved for {user.username}.', 'success')
+    return redirect(url_for('admin_uber_credentials', user_id=user_id))
+
+
+@app.route('/admin/uber-credentials/<int:user_id>/disconnect', methods=['POST'])
+@login_required
+def admin_disconnect_uber(user_id):
+    if not current_user.is_owner():
+        flash('Access denied. Owner privileges required.', 'error')
+        return redirect(url_for('root'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    user.uber_cookies = None
+    user.uber_headers = None
+    user.uber_refresh_token = None
+    user.uber_connected = False
+    
+    db.session.commit()
+    cache.invalidate_cache(user.id)
+    
+    flash(f'Uber account disconnected for {user.username}.', 'success')
+    return redirect(url_for('admin_uber_credentials', user_id=user_id))
+
+
 @app.route('/roles')
 @login_required
 def roles():

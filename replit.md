@@ -61,6 +61,7 @@ Preferred communication style: Simple, everyday language.
 - CSRF-protected forms prevent unauthorized credential changes
 - Users can disconnect their accounts from profile settings
 - All Uber API functions accept per-user credentials as parameters
+- **Owner Credential Management**: Owners can view/edit/disconnect any user's Uber credentials via `/admin/uber-credentials/<user_id>`
 
 ### Frontend Architecture
 - Server-side rendered templates using Jinja2
