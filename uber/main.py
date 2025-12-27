@@ -160,7 +160,7 @@ def home_data():
         driver_info = cache.get_driver_info(current_user.id, fetch_driver_info)
         full_ride_data = cache.get_active_ride(current_user.id, fetch_ride)
         
-        if full_ride_data:
+        if full_ride_data and isinstance(full_ride_data, dict):
             active_ride = {
                 'full_name': full_ride_data.get('full_name', 'Rider'),
                 'rating': full_ride_data.get('rating', '--'),
