@@ -35,3 +35,7 @@ class RoleForm(FlaskForm):
         ('owner', 'Owner')
     ])
     submit = SubmitField('Update Role')
+
+
+class EmptyForm(FlaskForm):
+    pass

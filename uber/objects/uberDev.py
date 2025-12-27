@@ -1,14 +1,15 @@
 import requests
 import time
-
-from source.cred import cookies, headers, loc_headers
 import config
+
+loc_headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+}
 
 with_ride = 0
 
 
 def locationTracker(addrs):
-
     params = {
         'format': 'json',
         'q': addrs,
@@ -21,57 +22,71 @@ def locationTracker(addrs):
     return [response.json()[0]['lat'], response.json()[0]['lon']]
 
 
-def refreshToken():
-
-    json_data = {
-        'request': {
-            'scope': [],
-            'grantType':
-            'REFRESH_TOKEN',
-            'clientID':
-            'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
-            'refreshToken':
-            'MA.CAESEH2aP_gFrUj8rIZ8sp-6_3MY4Z-a6AYiATEyATE4AUIkOTdmNGZkMmItZmYzZi00ZDIzLWE0NjYtZjNiZjE1NjQ3NmQxSiBTQ2pHSHJlQ0tDVnY0dER1aGk3S1RZQTR5TFpDS2dLN1IkN2JhYTkyNWMtNTQ2Mi00ODA0LTlhNzktYjIxOWVkZGMwNjYx.UbxJUHZk_v-oG0hCH9YN0ILBJ5QgpI_N_LVNXYEFvG4.g-9rmb1jxLUh3wS9p9KWeXUgV2NMN5MAH4gDupaRNy8',
-        },
-    }
-
-    response = requests.post(
-        'https://cn-geo1.uber.com/rt/identity/oauth2/token',
-        cookies=cookies,
-        headers=headers,
-        json=json_data)
-
-    return response.json()['accessToken']
-
-
-def vehicleDetails():
+def vehicleDetails(cookies, headers):
+    if not cookies or not headers:
+        print("No Uber credentials provided")
+        return []
+    
     params = {'includeInaccessible': 'false'}
 
-    response = requests.get('https://cn-geo1.uber.com/rt/drivers/v2/vehicles',
-                            params=params,
-                            cookies=cookies,
-                            headers=headers)
+    try:
+        response = requests.get('https://cn-geo1.uber.com/rt/drivers/v2/vehicles',
+                                params=params,
+                                cookies=cookies,
+                                headers=headers)
+        data = response.json()
+        if 'vehicles' not in data:
+            print(f"Vehicle API error: {data}")
+            return []
+        return data['vehicles']
+    except Exception as e:
+        print(f"Error fetching vehicles: {e}")
+        return []
 
-    return response.json()['vehicles']
+
+def driverInfo(cookies, headers):
+    if not cookies or not headers:
+        print("No Uber credentials provided")
+        return None
+    
+    try:
+        response = requests.get('https://cn-geo1.uber.com/rt/drivers/me',
+                                cookies=cookies,
+                                headers=headers)
+        data = response.json()
+        return data
+    except Exception as e:
+        print(f"Error fetching driver info: {e}")
+        return None
 
 
-def appLaunch():
-
+def appLaunch(cookies, headers):
     global with_ride
+
+    if not cookies or not headers:
+        print("No Uber credentials provided")
+        return [0, None]
 
     json_data = {
         'launchParams': {},
     }
-    headers['authorization'] = 'Bearer ' + refreshToken()
-    response = requests.post('https://cn-geo1.uber.com/rt/drivers/app-launch',
-                             cookies=cookies,
-                             headers=headers,
-                             json=json_data)
-    task_scopes = response.json()['driverTasks']['taskScopes']
+
+    try:
+        response = requests.post('https://cn-geo1.uber.com/rt/drivers/app-launch',
+                                 cookies=cookies,
+                                 headers=headers,
+                                 json=json_data)
+        data = response.json()
+    except Exception as e:
+        print(f"Error fetching app launch data: {e}")
+        return [0, None]
+
+    task_scopes = data.get('driverTasks', {}).get('taskScopes', [])
     if len(task_scopes) == 0:
         print("No Ride Found")
-        return [0, response.json()]
-    else:
+        return [0, data]
+    
+    try:
         print("Ride Found")
         ride_type = task_scopes[0]['completionTask']['coalescedDataUnion'][
             'pickupCoalescedTaskData']['product']['name']
@@ -100,25 +115,37 @@ def appLaunch():
             ride_type, first_name, last_name, rating, pickup_address,
             drop_off_address
         ]
+    except Exception as e:
+        print(f"Error parsing ride data: {e}")
+        return [0, data]
 
 
-def driverLocation(address):
+def driverLocation(address, cookies, headers):
+    if not cookies or not headers:
+        print("No Uber credentials provided")
+        return
 
     print(f'Location Moved to: {address}')
-    driverTasks = appLaunch()[1]
+    result = appLaunch(cookies, headers)
+    if result[1] is None:
+        print("Cannot get driver tasks")
+        return
+    
+    driverTasks = result[1]
     lat, long = locationTracker(address)
-    time_stamp = int(driverTasks['driverTasks']['meta']['lastModifiedTimeMs'])
+    time_stamp = int(driverTasks.get('driverTasks', {}).get('meta', {}).get('lastModifiedTimeMs', int(time.time() * 1000)))
+    
     try:
         while True:
-            # Check for stop signal at the start of each iteration
             if config.stop_signal == 1:
                 print("Stop signal detected. Breaking driverLocation loop.")
-                config.stop_signal = 0  # Reset for next time
+                config.stop_signal = 0
                 break
 
             if with_ride == 1:
                 print("Ride in progress. Breaking driverLocation loop.")
                 break
+            
             json_data = {
                 'data': {
                     'positions': [
@@ -147,7 +174,7 @@ def driverLocation(address):
                     ],
                 },
             }
-            headers['authorization'] = 'Bearer ' + refreshToken()
+            
             response = requests.post(
                 'https://cn-geo1.uber.com/rt/locations/v1/upload-driver-device-locations',
                 cookies=cookies,
@@ -158,6 +185,6 @@ def driverLocation(address):
             print(response.json())
 
             time.sleep(4)
-    except:
-        print("Location Issue!!!")
+    except Exception as e:
+        print(f"Location Issue: {e}")
     return

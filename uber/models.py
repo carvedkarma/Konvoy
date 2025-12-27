@@ -3,6 +3,11 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import DeclarativeBase
 from datetime import datetime
+import json
+import base64
+import os
+import hashlib
+from cryptography.fernet import Fernet
 
 
 class Base(DeclarativeBase):
@@ -10,6 +15,38 @@ class Base(DeclarativeBase):
 
 
 db = SQLAlchemy(model_class=Base)
+
+
+def get_encryption_key():
+    secret = os.environ.get('FLASK_SECRET_KEY')
+    if not secret:
+        raise RuntimeError("FLASK_SECRET_KEY environment variable is required for credential encryption")
+    key = hashlib.sha256(secret.encode()).digest()
+    return base64.urlsafe_b64encode(key)
+
+
+def encrypt_data(data):
+    if not data:
+        return None
+    try:
+        f = Fernet(get_encryption_key())
+        encrypted = f.encrypt(data.encode())
+        return encrypted.decode()
+    except Exception as e:
+        print(f"Encryption error: {e}")
+        raise ValueError(f"Failed to encrypt data: {e}")
+
+
+def decrypt_data(data):
+    if not data:
+        return None
+    try:
+        f = Fernet(get_encryption_key())
+        decrypted = f.decrypt(data.encode())
+        return decrypted.decode()
+    except Exception as e:
+        print(f"Decryption error: {e}")
+        return None
 
 
 class Role(db.Model):
@@ -46,6 +83,10 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+    
+    uber_cookies_encrypted = db.Column(db.Text, nullable=True)
+    uber_headers_encrypted = db.Column(db.Text, nullable=True)
+    uber_connected_at = db.Column(db.DateTime, nullable=True)
     
     ROLE_USER = 'user'
     ROLE_MODERATOR = 'moderator'
@@ -90,6 +131,35 @@ class User(UserMixin, db.Model):
         if self.role == self.ROLE_MODERATOR:
             return 'blue'
         return 'gray'
+    
+    def set_uber_credentials(self, cookies, headers):
+        self.uber_cookies_encrypted = encrypt_data(json.dumps(cookies)) if cookies else None
+        self.uber_headers_encrypted = encrypt_data(json.dumps(headers)) if headers else None
+        self.uber_connected_at = datetime.utcnow()
+    
+    def get_uber_credentials(self):
+        cookies = None
+        headers = None
+        
+        if self.uber_cookies_encrypted:
+            decrypted = decrypt_data(self.uber_cookies_encrypted)
+            if decrypted:
+                cookies = json.loads(decrypted)
+        
+        if self.uber_headers_encrypted:
+            decrypted = decrypt_data(self.uber_headers_encrypted)
+            if decrypted:
+                headers = json.loads(decrypted)
+        
+        return cookies, headers
+    
+    def has_uber_credentials(self):
+        return self.uber_cookies_encrypted is not None and self.uber_headers_encrypted is not None
+    
+    def clear_uber_credentials(self):
+        self.uber_cookies_encrypted = None
+        self.uber_headers_encrypted = None
+        self.uber_connected_at = None
     
     def __repr__(self):
         return f'<User {self.username}>'
