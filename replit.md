@@ -49,6 +49,11 @@ Preferred communication style: Simple, everyday language.
 - Features include: vehicle details, driver location tracking, token refresh
 - Location geocoding via OpenStreetMap's Nominatim API
 - Ride signal system to detect active rides
+- **Fare Pricing API**: GraphQL integration with Uber's pricing endpoint (`m.uber.com/go/graphql`)
+  - Uses `fare_cookies` and `fare_headers` from `source/cred.py` for authentication
+  - Fetches fare estimates by ride type (UberX, Comfort, etc.)
+  - Displays estimated driver earnings (73% of fare after Uber's cut)
+  - Shows trip distance from API (`unmodifiedDistance`) and ETA calculation
 
 ### Uber Account Connection
 - Users can connect their Uber driver accounts via `/uber-connect`
@@ -66,6 +71,8 @@ Preferred communication style: Simple, everyday language.
   - Dark/light contrast themes
   - Responsive mobile-first design
 - Pages: login, register, home hub, location change, ride details, admin panel
+- **Async Loading**: Fetch Ride page loads instantly with animated spinner, then fetches data via API endpoint
+- **User Feedback**: Status messages cycle during loading ("Connecting to Uber...", "Authenticating session...", etc.)
 
 ### Configuration Management
 - Environment variables for sensitive data (Flask secret key, database URL, owner credentials)
