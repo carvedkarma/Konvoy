@@ -3,7 +3,7 @@ import time
 import json
 import math
 
-from source.cred import loc_headers, fare_cookies, fare_headers
+from source.cred import loc_headers, fare_cookies, fare_headers, fare_query
 import config
 
 with_ride = 0
@@ -152,8 +152,7 @@ def appLaunch(cookies, headers, refresh_token):
                 dropoff_coords = (loc.get('latitude'), loc.get('longitude'))
 
             json_data = {
-                'operationName':
-                'Products',
+                'operationName': 'Products',
                 'variables': {
                     'includeRecommended':
                     False,
@@ -175,15 +174,16 @@ def appLaunch(cookies, headers, refresh_token):
                         'longitude': pickup_coords[1],
                     },
                 },
-                'query':
-                'query Products($capacity: Int, $destinations: [InputCoordinate!]!, $includeRecommended: Boolean = false, $isRiderCurrentUser: Boolean, $payment: InputPayment, $paymentProfileUUID: String, $pickup: InputCoordinate!, $pickupFormattedTime: String, $profileType: String, $profileUUID: String, $voucherUUID: String, $voucherPolicyUUID: String, $returnByFormattedTime: String, $stuntID: String, $targetProductType: EnumRVWebCommonTargetProductType) {\n  products(\n    capacity: $capacity\n    destinations: $destinations\n    includeRecommended: $includeRecommended\n    isRiderCurrentUser: $isRiderCurrentUser\n    payment: $payment\n    paymentProfileUUID: $paymentProfileUUID\n    pickup: $pickup\n    pickupFormattedTime: $pickupFormattedTime\n    profileType: $profileType\n    profileUUID: $profileUUID\n    voucherUUID: $voucherUUID\n    voucherPolicyUUID: $voucherPolicyUUID\n    returnByFormattedTime: $returnByFormattedTime\n    stuntID: $stuntID\n    targetProductType: $targetProductType\n  ) {\n    ...ProductsFragment\n    __typename\n  }\n}\n\nfragment ProductsFragment on RVWebCommonProductsResponse {\n  defaultVVID\n  hourlyTiersWithMinimumFare {\n    ...HourlyTierFragment\n    __typename\n  }\n  intercity {\n    ...IntercityFragment\n    __typename\n  }\n  links {\n    iFrame\n    text\n    url\n    __typename\n  }\n  productsUnavailableMessage\n  tiers {\n    ...TierFragment\n    __typename\n  }\n  __typename\n}\n\nfragment BadgesFragment on RVWebCommonProductBadge {\n  backgroundColor\n  color\n  contentColor\n  icon\n  inactiveBackgroundColor\n  inactiveContentColor\n  text\n  __typename\n}\n\nfragment HourlyTierFragment on RVWebCommonHourlyTier {\n  description\n  distance\n  fare\n  fareAmountE5\n  farePerHour\n  minutes\n  packageVariantUUID\n  preAdjustmentValue\n  __typename\n}\n\nfragment IntercityFragment on RVWebCommonIntercityInfo {\n  oneWayIntercityConfig(destinations: $destinations, pickup: $pickup) {\n    ...IntercityConfigFragment\n    __typename\n  }\n  roundTripIntercityConfig(destinations: $destinations, pickup: $pickup) {\n    ...IntercityConfigFragment\n    __typename\n  }\n  __typename\n}\n\nfragment IntercityConfigFragment on RVWebCommonIntercityConfig {\n  description\n  onDemandAllowed\n  reservePickup {\n    ...IntercityTimePickerFragment\n    __typename\n  }\n  returnBy {\n    ...IntercityTimePickerFragment\n    __typename\n  }\n  __typename\n}\n\nfragment IntercityTimePickerFragment on RVWebCommonIntercityTimePicker {\n  bookingRange {\n    maximum\n    minimum\n    __typename\n  }\n  header {\n    subTitle\n    title\n    __typename\n  }\n  __typename\n}\n\nfragment TierFragment on RVWebCommonProductTier {\n  products {\n    ...ProductFragment\n    __typename\n  }\n  title\n  __typename\n}\n\nfragment ProductFragment on RVWebCommonProduct {\n  badges {\n    ...BadgesFragment\n    __typename\n  }\n  cityID\n  currencyCode\n  description\n  detailedDescription\n  discountPrimary\n  displayName\n  estimatedTripTime\n  etaStringShort\n  fares {\n    capacity\n    discountPrimary\n    fare\n    fareAmountE5\n    hasPromo\n    hasRidePass\n    meta\n    preAdjustmentValue\n    __typename\n  }\n  hasPromo\n  hasRidePass\n  hasBenefitsOnFare\n  hourly {\n    tiers {\n      ...HourlyTierFragment\n      __typename\n    }\n    overageRates {\n      ...HourlyOverageRatesFragment\n      __typename\n    }\n    __typename\n  }\n  iconType\n  id\n  is3p\n  isAvailable\n  legalConsent {\n    ...ProductLegalConsentFragment\n    __typename\n  }\n  parentProductUuid\n  preAdjustmentValue\n  productImageUrl\n  productUuid\n  reserveEnabled\n  __typename\n}\n\nfragment ProductLegalConsentFragment on RVWebCommonProductLegalConsent {\n  header\n  image {\n    url\n    width\n    __typename\n  }\n  description\n  enabled\n  ctaUrl\n  ctaDisplayString\n  buttonLabel\n  showOnce\n  shouldBlockRequest\n  __typename\n}\n\nfragment HourlyOverageRatesFragment on RVWebCommonHourlyOverageRates {\n  perDistanceUnit\n  perTemporalUnit\n  __typename\n}\n',
+                'query': fare_query,
             }
 
             response = requests.post('https://m.uber.com/go/graphql',
                                      cookies=fare_cookies,
                                      headers=fare_headers,
                                      json=json_data)
-
+            # save json in a file
+            with open('fare.json', 'w') as f:
+                json.dump(response.json(), f, indent=4)
             if pickup_coords and dropoff_coords and all(pickup_coords) and all(
                     dropoff_coords):
                 trip_distance = calculate_distance(pickup_coords[0],
@@ -226,19 +226,26 @@ def appLaunch(cookies, headers, refresh_token):
                 products_data = response.json()
                 tiers = products_data.get('data', {}).get('products',
                                                           {}).get('tiers', [])
-                
-                print(f"Looking for ride_type: '{ride_type}'")
+
                 for tier in tiers:
                     for product in tier.get('products', []):
                         product_name = product.get('displayName', '').lower()
-                        print(f"Checking product: '{product_name}' - fares: {product.get('fares', [{}])[0].get('fare') if product.get('fares') else 'N/A'}")
                         if ride_type.lower() in product_name or product_name in ride_type.lower():
                             fares_list = product.get('fares', [])
                             if fares_list:
-                                fare_price = fares_list[0].get('fare')
+                                pre_adj = fares_list[0].get('preAdjustmentValue')
+                                fare_price = pre_adj if pre_adj else fares_list[0].get('fare')
                             estimated_seconds = product.get('estimatedTripTime')
+                            eta_short = product.get('etaStringShort', '')
+                            eta_short_secs = 0
+                            if eta_short:
+                                try:
+                                    eta_short_secs = int(''.join(filter(str.isdigit, eta_short))) * 60
+                                except:
+                                    eta_short_secs = 0
                             if estimated_seconds:
-                                eta_minutes = round(estimated_seconds / 60)
+                                trip_time_seconds = estimated_seconds - eta_short_secs
+                                eta_minutes = round(trip_time_seconds / 60)
                             if product.get('productImageUrl'):
                                 ride_type_image = product.get('productImageUrl')
                             break
@@ -249,10 +256,19 @@ def appLaunch(cookies, headers, refresh_token):
                     first_product = tiers[0].get('products', [{}])[0] if tiers[0].get('products') else {}
                     fares_list = first_product.get('fares', [])
                     if fares_list:
-                        fare_price = fares_list[0].get('fare')
+                        pre_adj = fares_list[0].get('preAdjustmentValue')
+                        fare_price = pre_adj if pre_adj else fares_list[0].get('fare')
                     estimated_seconds = first_product.get('estimatedTripTime')
+                    eta_short = first_product.get('etaStringShort', '')
+                    eta_short_secs = 0
+                    if eta_short:
+                        try:
+                            eta_short_secs = int(''.join(filter(str.isdigit, eta_short))) * 60
+                        except:
+                            eta_short_secs = 0
                     if estimated_seconds:
-                        eta_minutes = round(estimated_seconds / 60)
+                        trip_time_seconds = estimated_seconds - eta_short_secs
+                        eta_minutes = round(trip_time_seconds / 60)
                     if first_product.get('productImageUrl'):
                         ride_type_image = first_product.get('productImageUrl')
         except Exception as e:

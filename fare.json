@@ -1,0 +1,366 @@
+{
+    "data": {
+        "products": {
+            "defaultVVID": "613",
+            "hourlyTiersWithMinimumFare": [],
+            "intercity": null,
+            "links": [],
+            "productsUnavailableMessage": "Unfortunately, Uber is currently unavailable in your area.",
+            "tiers": [
+                {
+                    "products": [
+                        {
+                            "badges": [
+                                {
+                                    "backgroundColor": "backgroundAccent",
+                                    "color": "accent",
+                                    "contentColor": "contentOnColor",
+                                    "icon": "LIGHTNING",
+                                    "inactiveBackgroundColor": null,
+                                    "inactiveContentColor": null,
+                                    "text": "Faster",
+                                    "__typename": "RVWebCommonProductBadge"
+                                }
+                            ],
+                            "cityID": "222",
+                            "currencyCode": "AUD",
+                            "description": "UberX",
+                            "detailedDescription": "Affordable everyday rides",
+                            "discountPrimary": "50%",
+                            "displayName": "UberX",
+                            "estimatedTripTime": 1225,
+                            "etaStringShort": "3 mins",
+                            "fares": [
+                                {
+                                    "capacity": 4,
+                                    "discountPrimary": "50%",
+                                    "fare": "A$10.64",
+                                    "fareAmountE5": 1064000,
+                                    "hasPromo": true,
+                                    "hasRidePass": false,
+                                    "meta": "{\"cityID\":\"222\",\"countryIso2\":\"AU\",\"etd\":{\"meta\":{\"isShownEtd\":null,\"cryptoVersion\":null,\"encryptedEtd\":null,\"lighthouseRequestUuid\":\"4607a91e-058c-43cc-8cbd-291a918423c6\"},\"state\":null,\"guaranteedTripTime\":null,\"pickupRequestTime\":null,\"stateShortDescription\":null,\"stateTimeDescription\":null,\"stateDetailedDescription\":null,\"creditsDescription\":null,\"stateDescriptionImageUrl\":null,\"estimatedTripTime\":1225,\"deviceTimeData\":null,\"tripUUID\":null,\"comparisonTripTime\":null,\"legalDisclaimer\":\"Your \\\"latest arrival time\\\" factors in traffic and any additional pickups and drop-offs along your route. It is not a guarantee.\",\"estimateRequestTime\":0,\"stateHeaderDescription\":null,\"etdDisplayString\":\"\",\"estimatedSoloOnTripTime\":966},\"fareEstimateInfo\":{},\"fareFlowUUID\":\"d8f09ac5-f9be-400a-9322-097571e48037\",\"fareRequestUUID\":\"cc4a363a-6ddf-461e-a9c0-f7f318d50953\",\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"fareUUID\":\"\",\"parentProductTypeUUID\":\"6a8e56b8-914e-4b48-a387-e6ad21d9c00c\",\"pricingParams\":{\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"packageVariantUUID\":\"cc4a363a-6ddf-461e-a9c0-f7f318d50953\",\"requestLocation\":{\"latitude\":-31.928177,\"longitude\":115.81999}},\"productUuid\":\"536ccccd-888a-5291-9cc9-9f6c0cc2471f\",\"upfrontFare\":{\"capacity\":1,\"currencyCode\":\"AUD\",\"destinationLat\":-31.987522,\"destinationLng\":115.75699,\"fare\":\"10.64\",\"originLat\":-31.928177,\"originLng\":115.81999,\"signature\":{\"expiresAt\":1766794674,\"issuedAt\":1766794434,\"signature\":\"{\\\"packageVariantUUID\\\":\\\"cc4a363a-6ddf-461e-a9c0-f7f318d50953\\\",\\\"fareSessionUUID\\\":\\\"ad0c01f3-ae94-407e-aa60-90157f336529\\\",\\\"fareFlowUUID\\\":\\\"d8f09ac5-f9be-400a-9322-097571e48037\\\"}\",\"version\":\"pricing_params_v1\"},\"vehicleViewId\":613,\"estimationMethod\":null,\"knnDistance\":null,\"discountedFare\":null,\"ruleNames\":null,\"uuid\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"source\":null,\"ezpzFareBreakdown\":null,\"unmatchedKnnFare\":null,\"estimatedDuration\":null,\"dynamicFareInfo\":{\"isSobriety\":false,\"multiplier\":1,\"surgeSuppressionThreshold\":0,\"uuid\":\"a1153027-3307-4a49-826f-bc36799245a4\"},\"surgeMultiplier\":1,\"matchedKnnFare\":null,\"originalFare\":null,\"knnDuration\":null,\"ezpzFareEstimate\":null,\"originalFarePrePromo\":null,\"estimatedDistance\":null,\"knnFare\":null,\"ufpType\":null,\"typeSpecificData\":null,\"viaLocations\":[],\"unmodifiedDistance\":11417,\"alternativePrices\":null,\"destinationLocationID\":null},\"vehicleViewID\":613,\"originalArgs\":{\"destinations\":[{\"latitude\":-31.987522,\"longitude\":115.75699}],\"includeRecommended\":false,\"payment\":{\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"uberCashToggleOn\":true},\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"pickup\":{\"latitude\":-31.928177,\"longitude\":115.81999}}}",
+                                    "preAdjustmentValue": "A$21.29",
+                                    "__typename": "RVWebCommonFare"
+                                }
+                            ],
+                            "hasPromo": true,
+                            "hasRidePass": false,
+                            "hasBenefitsOnFare": false,
+                            "hourly": null,
+                            "iconType": "TAG",
+                            "id": "613",
+                            "is3p": false,
+                            "isAvailable": true,
+                            "legalConsent": null,
+                            "parentProductUuid": "6a8e56b8-914e-4b48-a387-e6ad21d9c00c",
+                            "preAdjustmentValue": "A$21.29",
+                            "productImageUrl": "https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png",
+                            "productUuid": "536ccccd-888a-5291-9cc9-9f6c0cc2471f",
+                            "reserveEnabled": false,
+                            "__typename": "RVWebCommonProduct"
+                        },
+                        {
+                            "badges": [],
+                            "cityID": "222",
+                            "currencyCode": "AUD",
+                            "description": "Pool",
+                            "detailedDescription": "Save by sharing",
+                            "discountPrimary": "50%",
+                            "displayName": "Pool",
+                            "estimatedTripTime": 1363,
+                            "etaStringShort": "5 mins",
+                            "fares": [
+                                {
+                                    "capacity": 1,
+                                    "discountPrimary": "50%",
+                                    "fare": "A$8.41",
+                                    "fareAmountE5": 841000,
+                                    "hasPromo": true,
+                                    "hasRidePass": false,
+                                    "meta": "{\"cityID\":\"222\",\"countryIso2\":\"AU\",\"etd\":{\"meta\":{\"isShownEtd\":null,\"cryptoVersion\":null,\"encryptedEtd\":null,\"lighthouseRequestUuid\":\"4607a91e-058c-43cc-8cbd-291a918423c6\"},\"state\":null,\"guaranteedTripTime\":1723,\"pickupRequestTime\":null,\"stateShortDescription\":null,\"stateTimeDescription\":null,\"stateDetailedDescription\":null,\"creditsDescription\":null,\"stateDescriptionImageUrl\":null,\"estimatedTripTime\":1363,\"deviceTimeData\":null,\"tripUUID\":null,\"comparisonTripTime\":1363,\"legalDisclaimer\":\"Your \\\"latest arrival time\\\" factors in traffic and any additional pickups and drop-offs along your route. It is not a guarantee.\",\"estimateRequestTime\":0,\"stateHeaderDescription\":null,\"etdDisplayString\":\"\",\"estimatedSoloOnTripTime\":966},\"fareEstimateInfo\":{},\"fareFlowUUID\":\"d8f09ac5-f9be-400a-9322-097571e48037\",\"fareRequestUUID\":\"b49d6045-2e47-55c7-89b8-4c1eece7f6c8\",\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"fareUUID\":\"\",\"parentProductTypeUUID\":\"ff8b5df4-cfa1-4827-a608-5cda11b0aeb6\",\"pricingParams\":{\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"packageVariantUUID\":\"b49d6045-2e47-55c7-89b8-4c1eece7f6c8\",\"requestLocation\":{\"latitude\":-31.928177,\"longitude\":115.81999}},\"productUuid\":\"80e98c12-d7f5-5a89-82c8-a1f6d566b76b\",\"upfrontFare\":{\"capacity\":1,\"currencyCode\":\"AUD\",\"destinationLat\":-31.987522,\"destinationLng\":115.75699,\"fare\":\"8.41\",\"originLat\":-31.928177,\"originLng\":115.81999,\"signature\":{\"expiresAt\":1766794674,\"issuedAt\":1766794434,\"signature\":\"{\\\"packageVariantUUID\\\":\\\"b49d6045-2e47-55c7-89b8-4c1eece7f6c8\\\",\\\"fareSessionUUID\\\":\\\"ad0c01f3-ae94-407e-aa60-90157f336529\\\",\\\"fareFlowUUID\\\":\\\"d8f09ac5-f9be-400a-9322-097571e48037\\\"}\",\"version\":\"pricing_params_v1\"},\"vehicleViewId\":20038969,\"estimationMethod\":null,\"knnDistance\":null,\"discountedFare\":null,\"ruleNames\":null,\"uuid\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"source\":null,\"ezpzFareBreakdown\":null,\"unmatchedKnnFare\":null,\"estimatedDuration\":null,\"dynamicFareInfo\":{\"isSobriety\":false,\"multiplier\":1,\"surgeSuppressionThreshold\":0,\"uuid\":\"a1153027-3307-4a49-826f-bc36799245a4\"},\"surgeMultiplier\":1,\"matchedKnnFare\":null,\"originalFare\":null,\"knnDuration\":null,\"ezpzFareEstimate\":null,\"originalFarePrePromo\":null,\"estimatedDistance\":null,\"knnFare\":null,\"ufpType\":null,\"typeSpecificData\":null,\"viaLocations\":[],\"unmodifiedDistance\":11417,\"alternativePrices\":null,\"destinationLocationID\":null},\"vehicleViewID\":20038969,\"originalArgs\":{\"destinations\":[{\"latitude\":-31.987522,\"longitude\":115.75699}],\"includeRecommended\":false,\"payment\":{\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"uberCashToggleOn\":true},\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"pickup\":{\"latitude\":-31.928177,\"longitude\":115.81999}}}",
+                                    "preAdjustmentValue": "A$16.82",
+                                    "__typename": "RVWebCommonFare"
+                                }
+                            ],
+                            "hasPromo": true,
+                            "hasRidePass": false,
+                            "hasBenefitsOnFare": false,
+                            "hourly": null,
+                            "iconType": "TAG",
+                            "id": "20038969",
+                            "is3p": false,
+                            "isAvailable": true,
+                            "legalConsent": null,
+                            "parentProductUuid": "ff8b5df4-cfa1-4827-a608-5cda11b0aeb6",
+                            "preAdjustmentValue": "A$16.82",
+                            "productImageUrl": "https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/ExpressPool_v1.png",
+                            "productUuid": "80e98c12-d7f5-5a89-82c8-a1f6d566b76b",
+                            "reserveEnabled": false,
+                            "__typename": "RVWebCommonProduct"
+                        },
+                        {
+                            "badges": [
+                                {
+                                    "backgroundColor": "backgroundAccent",
+                                    "color": "accent",
+                                    "contentColor": "contentOnColor",
+                                    "icon": null,
+                                    "inactiveBackgroundColor": null,
+                                    "inactiveContentColor": null,
+                                    "text": "Good deal",
+                                    "__typename": "RVWebCommonProductBadge"
+                                }
+                            ],
+                            "cityID": "222",
+                            "currencyCode": "AUD",
+                            "description": "Comfort",
+                            "detailedDescription": "Comfortable midsized cars with experienced drivers",
+                            "discountPrimary": "50%",
+                            "displayName": "Comfort",
+                            "estimatedTripTime": 1400,
+                            "etaStringShort": "6 mins",
+                            "fares": [
+                                {
+                                    "capacity": 4,
+                                    "discountPrimary": "50%",
+                                    "fare": "A$12.77",
+                                    "fareAmountE5": 1277000,
+                                    "hasPromo": true,
+                                    "hasRidePass": false,
+                                    "meta": "{\"cityID\":\"222\",\"countryIso2\":\"AU\",\"etd\":{\"meta\":{\"isShownEtd\":null,\"cryptoVersion\":null,\"encryptedEtd\":null,\"lighthouseRequestUuid\":\"4607a91e-058c-43cc-8cbd-291a918423c6\"},\"state\":null,\"guaranteedTripTime\":null,\"pickupRequestTime\":null,\"stateShortDescription\":null,\"stateTimeDescription\":null,\"stateDetailedDescription\":null,\"creditsDescription\":null,\"stateDescriptionImageUrl\":null,\"estimatedTripTime\":1400,\"deviceTimeData\":null,\"tripUUID\":null,\"comparisonTripTime\":null,\"legalDisclaimer\":\"Your \\\"latest arrival time\\\" factors in traffic and any additional pickups and drop-offs along your route. It is not a guarantee.\",\"estimateRequestTime\":0,\"stateHeaderDescription\":null,\"etdDisplayString\":\"\",\"estimatedSoloOnTripTime\":966},\"fareEstimateInfo\":{},\"fareFlowUUID\":\"d8f09ac5-f9be-400a-9322-097571e48037\",\"fareRequestUUID\":\"811f08b1-3cbb-478b-ac12-d0e877365b87\",\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"fareUUID\":\"\",\"parentProductTypeUUID\":\"4cefa6a0-efb5-41dc-a8bb-870f2c3212ba\",\"pricingParams\":{\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"packageVariantUUID\":\"811f08b1-3cbb-478b-ac12-d0e877365b87\",\"requestLocation\":{\"latitude\":-31.928177,\"longitude\":115.81999}},\"productUuid\":\"b8563652-0a4f-58df-8513-36f3020d10e3\",\"upfrontFare\":{\"capacity\":1,\"currencyCode\":\"AUD\",\"destinationLat\":-31.987522,\"destinationLng\":115.75699,\"fare\":\"12.77\",\"originLat\":-31.928177,\"originLng\":115.81999,\"signature\":{\"expiresAt\":1766794674,\"issuedAt\":1766794434,\"signature\":\"{\\\"packageVariantUUID\\\":\\\"811f08b1-3cbb-478b-ac12-d0e877365b87\\\",\\\"fareSessionUUID\\\":\\\"ad0c01f3-ae94-407e-aa60-90157f336529\\\",\\\"fareFlowUUID\\\":\\\"d8f09ac5-f9be-400a-9322-097571e48037\\\"}\",\"version\":\"pricing_params_v1\"},\"vehicleViewId\":20016709,\"estimationMethod\":null,\"knnDistance\":null,\"discountedFare\":null,\"ruleNames\":null,\"uuid\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"source\":null,\"ezpzFareBreakdown\":null,\"unmatchedKnnFare\":null,\"estimatedDuration\":null,\"dynamicFareInfo\":{\"isSobriety\":false,\"multiplier\":1,\"surgeSuppressionThreshold\":0,\"uuid\":\"a1153027-3307-4a49-826f-bc36799245a4\"},\"surgeMultiplier\":1,\"matchedKnnFare\":null,\"originalFare\":null,\"knnDuration\":null,\"ezpzFareEstimate\":null,\"originalFarePrePromo\":null,\"estimatedDistance\":null,\"knnFare\":null,\"ufpType\":null,\"typeSpecificData\":null,\"viaLocations\":[],\"unmodifiedDistance\":11417,\"alternativePrices\":null,\"destinationLocationID\":null},\"vehicleViewID\":20016709,\"originalArgs\":{\"destinations\":[{\"latitude\":-31.987522,\"longitude\":115.75699}],\"includeRecommended\":false,\"payment\":{\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"uberCashToggleOn\":true},\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"pickup\":{\"latitude\":-31.928177,\"longitude\":115.81999}}}",
+                                    "preAdjustmentValue": "A$25.54",
+                                    "__typename": "RVWebCommonFare"
+                                }
+                            ],
+                            "hasPromo": true,
+                            "hasRidePass": false,
+                            "hasBenefitsOnFare": false,
+                            "hourly": null,
+                            "iconType": "TAG",
+                            "id": "20016709",
+                            "is3p": false,
+                            "isAvailable": true,
+                            "legalConsent": null,
+                            "parentProductUuid": "4cefa6a0-efb5-41dc-a8bb-870f2c3212ba",
+                            "preAdjustmentValue": "A$25.54",
+                            "productImageUrl": "https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/package_UberComfort_new_2022.png",
+                            "productUuid": "b8563652-0a4f-58df-8513-36f3020d10e3",
+                            "reserveEnabled": false,
+                            "__typename": "RVWebCommonProduct"
+                        },
+                        {
+                            "badges": [],
+                            "cityID": "222",
+                            "currencyCode": "AUD",
+                            "description": "UberXL",
+                            "detailedDescription": "Affordable rides for groups up to 6",
+                            "discountPrimary": "50%",
+                            "displayName": "UberXL",
+                            "estimatedTripTime": 1396,
+                            "etaStringShort": "6 mins",
+                            "fares": [
+                                {
+                                    "capacity": 6,
+                                    "discountPrimary": "50%",
+                                    "fare": "A$22.39",
+                                    "fareAmountE5": 2239000,
+                                    "hasPromo": true,
+                                    "hasRidePass": false,
+                                    "meta": "{\"cityID\":\"222\",\"countryIso2\":\"AU\",\"etd\":{\"meta\":{\"isShownEtd\":null,\"cryptoVersion\":null,\"encryptedEtd\":null,\"lighthouseRequestUuid\":\"4607a91e-058c-43cc-8cbd-291a918423c6\"},\"state\":null,\"guaranteedTripTime\":null,\"pickupRequestTime\":null,\"stateShortDescription\":null,\"stateTimeDescription\":null,\"stateDetailedDescription\":null,\"creditsDescription\":null,\"stateDescriptionImageUrl\":null,\"estimatedTripTime\":1396,\"deviceTimeData\":null,\"tripUUID\":null,\"comparisonTripTime\":null,\"legalDisclaimer\":\"Your \\\"latest arrival time\\\" factors in traffic and any additional pickups and drop-offs along your route. It is not a guarantee.\",\"estimateRequestTime\":0,\"stateHeaderDescription\":null,\"etdDisplayString\":\"\",\"estimatedSoloOnTripTime\":966},\"fareEstimateInfo\":{},\"fareFlowUUID\":\"d8f09ac5-f9be-400a-9322-097571e48037\",\"fareRequestUUID\":\"db969d04-c88a-4953-90d8-e97e69c2a261\",\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"fareUUID\":\"\",\"parentProductTypeUUID\":\"60b76812-c307-4076-b83b-fcb36e75da07\",\"pricingParams\":{\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"packageVariantUUID\":\"db969d04-c88a-4953-90d8-e97e69c2a261\",\"requestLocation\":{\"latitude\":-31.928177,\"longitude\":115.81999}},\"productUuid\":\"15ddfa4f-8e5c-5822-936b-551e8ebd46d5\",\"upfrontFare\":{\"capacity\":1,\"currencyCode\":\"AUD\",\"destinationLat\":-31.987522,\"destinationLng\":115.75699,\"fare\":\"22.39\",\"originLat\":-31.928177,\"originLng\":115.81999,\"signature\":{\"expiresAt\":1766794674,\"issuedAt\":1766794434,\"signature\":\"{\\\"packageVariantUUID\\\":\\\"db969d04-c88a-4953-90d8-e97e69c2a261\\\",\\\"fareSessionUUID\\\":\\\"ad0c01f3-ae94-407e-aa60-90157f336529\\\",\\\"fareFlowUUID\\\":\\\"d8f09ac5-f9be-400a-9322-097571e48037\\\"}\",\"version\":\"pricing_params_v1\"},\"vehicleViewId\":10259,\"estimationMethod\":null,\"knnDistance\":null,\"discountedFare\":null,\"ruleNames\":null,\"uuid\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"source\":null,\"ezpzFareBreakdown\":null,\"unmatchedKnnFare\":null,\"estimatedDuration\":null,\"dynamicFareInfo\":{\"isSobriety\":false,\"multiplier\":1,\"surgeSuppressionThreshold\":0,\"uuid\":\"a1153027-3307-4a49-826f-bc36799245a4\"},\"surgeMultiplier\":1,\"matchedKnnFare\":null,\"originalFare\":null,\"knnDuration\":null,\"ezpzFareEstimate\":null,\"originalFarePrePromo\":null,\"estimatedDistance\":null,\"knnFare\":null,\"ufpType\":null,\"typeSpecificData\":null,\"viaLocations\":[],\"unmodifiedDistance\":11417,\"alternativePrices\":null,\"destinationLocationID\":null},\"vehicleViewID\":10259,\"originalArgs\":{\"destinations\":[{\"latitude\":-31.987522,\"longitude\":115.75699}],\"includeRecommended\":false,\"payment\":{\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"uberCashToggleOn\":true},\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"pickup\":{\"latitude\":-31.928177,\"longitude\":115.81999}}}",
+                                    "preAdjustmentValue": "A$37.39",
+                                    "__typename": "RVWebCommonFare"
+                                }
+                            ],
+                            "hasPromo": true,
+                            "hasRidePass": false,
+                            "hasBenefitsOnFare": false,
+                            "hourly": null,
+                            "iconType": "TAG",
+                            "id": "10259",
+                            "is3p": false,
+                            "isAvailable": true,
+                            "legalConsent": null,
+                            "parentProductUuid": "60b76812-c307-4076-b83b-fcb36e75da07",
+                            "preAdjustmentValue": "A$37.39",
+                            "productImageUrl": "https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Hire_XL_v2.png",
+                            "productUuid": "15ddfa4f-8e5c-5822-936b-551e8ebd46d5",
+                            "reserveEnabled": false,
+                            "__typename": "RVWebCommonProduct"
+                        }
+                    ],
+                    "title": "Rides we think you'll like",
+                    "__typename": "RVWebCommonProductTier"
+                },
+                {
+                    "products": [
+                        {
+                            "badges": [],
+                            "cityID": "222",
+                            "currencyCode": "AUD",
+                            "description": "Uber Max",
+                            "detailedDescription": "Extra space for luggage and groups",
+                            "discountPrimary": "50%",
+                            "displayName": "Uber Max",
+                            "estimatedTripTime": 1370,
+                            "etaStringShort": "5 mins",
+                            "fares": [
+                                {
+                                    "capacity": 6,
+                                    "discountPrimary": "50%",
+                                    "fare": "A$26.68",
+                                    "fareAmountE5": 2668000,
+                                    "hasPromo": true,
+                                    "hasRidePass": false,
+                                    "meta": "{\"cityID\":\"222\",\"countryIso2\":\"AU\",\"etd\":{\"meta\":{\"isShownEtd\":null,\"cryptoVersion\":null,\"encryptedEtd\":null,\"lighthouseRequestUuid\":\"4607a91e-058c-43cc-8cbd-291a918423c6\"},\"state\":null,\"guaranteedTripTime\":null,\"pickupRequestTime\":null,\"stateShortDescription\":null,\"stateTimeDescription\":null,\"stateDetailedDescription\":null,\"creditsDescription\":null,\"stateDescriptionImageUrl\":null,\"estimatedTripTime\":1370,\"deviceTimeData\":null,\"tripUUID\":null,\"comparisonTripTime\":null,\"legalDisclaimer\":\"Your \\\"latest arrival time\\\" factors in traffic and any additional pickups and drop-offs along your route. It is not a guarantee.\",\"estimateRequestTime\":0,\"stateHeaderDescription\":null,\"etdDisplayString\":\"\",\"estimatedSoloOnTripTime\":966},\"fareEstimateInfo\":{},\"fareFlowUUID\":\"d8f09ac5-f9be-400a-9322-097571e48037\",\"fareRequestUUID\":\"71e77cd8-c3a7-4ccd-896a-5ccfb0ae480f\",\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"fareUUID\":\"\",\"parentProductTypeUUID\":\"60b76812-c307-4076-b83b-fcb36e75da07\",\"pricingParams\":{\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"packageVariantUUID\":\"71e77cd8-c3a7-4ccd-896a-5ccfb0ae480f\",\"requestLocation\":{\"latitude\":-31.928177,\"longitude\":115.81999}},\"productUuid\":\"453f1fff-76db-5fc1-ae63-827128855380\",\"upfrontFare\":{\"capacity\":1,\"currencyCode\":\"AUD\",\"destinationLat\":-31.987522,\"destinationLng\":115.75699,\"fare\":\"26.68\",\"originLat\":-31.928177,\"originLng\":115.81999,\"signature\":{\"expiresAt\":1766794674,\"issuedAt\":1766794434,\"signature\":\"{\\\"packageVariantUUID\\\":\\\"71e77cd8-c3a7-4ccd-896a-5ccfb0ae480f\\\",\\\"fareSessionUUID\\\":\\\"ad0c01f3-ae94-407e-aa60-90157f336529\\\",\\\"fareFlowUUID\\\":\\\"d8f09ac5-f9be-400a-9322-097571e48037\\\"}\",\"version\":\"pricing_params_v1\"},\"vehicleViewId\":20056983,\"estimationMethod\":null,\"knnDistance\":null,\"discountedFare\":null,\"ruleNames\":null,\"uuid\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"source\":null,\"ezpzFareBreakdown\":null,\"unmatchedKnnFare\":null,\"estimatedDuration\":null,\"dynamicFareInfo\":{\"isSobriety\":false,\"multiplier\":1,\"surgeSuppressionThreshold\":0,\"uuid\":\"a1153027-3307-4a49-826f-bc36799245a4\"},\"surgeMultiplier\":1,\"matchedKnnFare\":null,\"originalFare\":null,\"knnDuration\":null,\"ezpzFareEstimate\":null,\"originalFarePrePromo\":null,\"estimatedDistance\":null,\"knnFare\":null,\"ufpType\":null,\"typeSpecificData\":null,\"viaLocations\":[],\"unmodifiedDistance\":11417,\"alternativePrices\":null,\"destinationLocationID\":null},\"vehicleViewID\":20056983,\"originalArgs\":{\"destinations\":[{\"latitude\":-31.987522,\"longitude\":115.75699}],\"includeRecommended\":false,\"payment\":{\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"uberCashToggleOn\":true},\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"pickup\":{\"latitude\":-31.928177,\"longitude\":115.81999}}}",
+                                    "preAdjustmentValue": "A$41.68",
+                                    "__typename": "RVWebCommonFare"
+                                }
+                            ],
+                            "hasPromo": true,
+                            "hasRidePass": false,
+                            "hasBenefitsOnFare": false,
+                            "hourly": null,
+                            "iconType": "TAG",
+                            "id": "20056983",
+                            "is3p": false,
+                            "isAvailable": true,
+                            "legalConsent": null,
+                            "parentProductUuid": "60b76812-c307-4076-b83b-fcb36e75da07",
+                            "preAdjustmentValue": "A$41.68",
+                            "productImageUrl": "https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/UberXL_Premium.png",
+                            "productUuid": "453f1fff-76db-5fc1-ae63-827128855380",
+                            "reserveEnabled": false,
+                            "__typename": "RVWebCommonProduct"
+                        },
+                        {
+                            "badges": [],
+                            "cityID": "222",
+                            "currencyCode": "AUD",
+                            "description": "Uber Pet",
+                            "detailedDescription": "Affordable rides for you and your pet",
+                            "discountPrimary": "50%",
+                            "displayName": "Uber Pet",
+                            "estimatedTripTime": 1284,
+                            "etaStringShort": "4 mins",
+                            "fares": [
+                                {
+                                    "capacity": 4,
+                                    "discountPrimary": "50%",
+                                    "fare": "A$13.70",
+                                    "fareAmountE5": 1370000,
+                                    "hasPromo": true,
+                                    "hasRidePass": false,
+                                    "meta": "{\"cityID\":\"222\",\"countryIso2\":\"AU\",\"etd\":{\"meta\":{\"isShownEtd\":null,\"cryptoVersion\":null,\"encryptedEtd\":null,\"lighthouseRequestUuid\":\"4607a91e-058c-43cc-8cbd-291a918423c6\"},\"state\":null,\"guaranteedTripTime\":null,\"pickupRequestTime\":null,\"stateShortDescription\":null,\"stateTimeDescription\":null,\"stateDetailedDescription\":null,\"creditsDescription\":null,\"stateDescriptionImageUrl\":null,\"estimatedTripTime\":1284,\"deviceTimeData\":null,\"tripUUID\":null,\"comparisonTripTime\":null,\"legalDisclaimer\":\"Your \\\"latest arrival time\\\" factors in traffic and any additional pickups and drop-offs along your route. It is not a guarantee.\",\"estimateRequestTime\":0,\"stateHeaderDescription\":null,\"etdDisplayString\":\"\",\"estimatedSoloOnTripTime\":966},\"fareEstimateInfo\":{},\"fareFlowUUID\":\"d8f09ac5-f9be-400a-9322-097571e48037\",\"fareRequestUUID\":\"1d7f1018-2200-4aa0-a79f-b594e28e502d\",\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"fareUUID\":\"\",\"parentProductTypeUUID\":\"6a8e56b8-914e-4b48-a387-e6ad21d9c00c\",\"pricingParams\":{\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"packageVariantUUID\":\"1d7f1018-2200-4aa0-a79f-b594e28e502d\",\"requestLocation\":{\"latitude\":-31.928177,\"longitude\":115.81999}},\"productUuid\":\"8483cb87-7e84-5354-af1b-c2338ba043d5\",\"upfrontFare\":{\"capacity\":1,\"currencyCode\":\"AUD\",\"destinationLat\":-31.987522,\"destinationLng\":115.75699,\"fare\":\"13.7\",\"originLat\":-31.928177,\"originLng\":115.81999,\"signature\":{\"expiresAt\":1766794674,\"issuedAt\":1766794434,\"signature\":\"{\\\"packageVariantUUID\\\":\\\"1d7f1018-2200-4aa0-a79f-b594e28e502d\\\",\\\"fareSessionUUID\\\":\\\"ad0c01f3-ae94-407e-aa60-90157f336529\\\",\\\"fareFlowUUID\\\":\\\"d8f09ac5-f9be-400a-9322-097571e48037\\\"}\",\"version\":\"pricing_params_v1\"},\"vehicleViewId\":20028407,\"estimationMethod\":null,\"knnDistance\":null,\"discountedFare\":null,\"ruleNames\":null,\"uuid\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"source\":null,\"ezpzFareBreakdown\":null,\"unmatchedKnnFare\":null,\"estimatedDuration\":null,\"dynamicFareInfo\":{\"isSobriety\":false,\"multiplier\":1,\"surgeSuppressionThreshold\":0,\"uuid\":\"a1153027-3307-4a49-826f-bc36799245a4\"},\"surgeMultiplier\":1,\"matchedKnnFare\":null,\"originalFare\":null,\"knnDuration\":null,\"ezpzFareEstimate\":null,\"originalFarePrePromo\":null,\"estimatedDistance\":null,\"knnFare\":null,\"ufpType\":null,\"typeSpecificData\":null,\"viaLocations\":[],\"unmodifiedDistance\":11417,\"alternativePrices\":null,\"destinationLocationID\":null},\"vehicleViewID\":20028407,\"originalArgs\":{\"destinations\":[{\"latitude\":-31.987522,\"longitude\":115.75699}],\"includeRecommended\":false,\"payment\":{\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"uberCashToggleOn\":true},\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"pickup\":{\"latitude\":-31.928177,\"longitude\":115.81999}}}",
+                                    "preAdjustmentValue": "A$27.40",
+                                    "__typename": "RVWebCommonFare"
+                                }
+                            ],
+                            "hasPromo": true,
+                            "hasRidePass": false,
+                            "hasBenefitsOnFare": false,
+                            "hourly": null,
+                            "iconType": "TAG",
+                            "id": "20028407",
+                            "is3p": false,
+                            "isAvailable": true,
+                            "legalConsent": null,
+                            "parentProductUuid": "6a8e56b8-914e-4b48-a387-e6ad21d9c00c",
+                            "preAdjustmentValue": "A$27.40",
+                            "productImageUrl": "https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_Pet.png",
+                            "productUuid": "8483cb87-7e84-5354-af1b-c2338ba043d5",
+                            "reserveEnabled": false,
+                            "__typename": "RVWebCommonProduct"
+                        },
+                        {
+                            "badges": [],
+                            "cityID": "222",
+                            "currencyCode": "AUD",
+                            "description": "Assist",
+                            "detailedDescription": "Special assistance from experienced drivers",
+                            "discountPrimary": "50%",
+                            "displayName": "Assist",
+                            "estimatedTripTime": 2008,
+                            "etaStringShort": "16 mins",
+                            "fares": [
+                                {
+                                    "capacity": 4,
+                                    "discountPrimary": "50%",
+                                    "fare": "A$10.64",
+                                    "fareAmountE5": 1064000,
+                                    "hasPromo": true,
+                                    "hasRidePass": false,
+                                    "meta": "{\"cityID\":\"222\",\"countryIso2\":\"AU\",\"etd\":{\"meta\":{\"isShownEtd\":null,\"cryptoVersion\":null,\"encryptedEtd\":null,\"lighthouseRequestUuid\":\"4607a91e-058c-43cc-8cbd-291a918423c6\"},\"state\":null,\"guaranteedTripTime\":null,\"pickupRequestTime\":null,\"stateShortDescription\":null,\"stateTimeDescription\":null,\"stateDetailedDescription\":null,\"creditsDescription\":null,\"stateDescriptionImageUrl\":null,\"estimatedTripTime\":2008,\"deviceTimeData\":null,\"tripUUID\":null,\"comparisonTripTime\":null,\"legalDisclaimer\":\"Your \\\"latest arrival time\\\" factors in traffic and any additional pickups and drop-offs along your route. It is not a guarantee.\",\"estimateRequestTime\":0,\"stateHeaderDescription\":null,\"etdDisplayString\":\"\",\"estimatedSoloOnTripTime\":966},\"fareEstimateInfo\":{},\"fareFlowUUID\":\"d8f09ac5-f9be-400a-9322-097571e48037\",\"fareRequestUUID\":\"95d7fd75-3e1f-4ca6-a2d7-ced7c65d689f\",\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"fareUUID\":\"\",\"parentProductTypeUUID\":\"6a8e56b8-914e-4b48-a387-e6ad21d9c00c\",\"pricingParams\":{\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"packageVariantUUID\":\"95d7fd75-3e1f-4ca6-a2d7-ced7c65d689f\",\"requestLocation\":{\"latitude\":-31.928177,\"longitude\":115.81999}},\"productUuid\":\"3cda26cf-e602-5c9c-b81a-9a20cd607dba\",\"upfrontFare\":{\"capacity\":1,\"currencyCode\":\"AUD\",\"destinationLat\":-31.987522,\"destinationLng\":115.75699,\"fare\":\"10.64\",\"originLat\":-31.928177,\"originLng\":115.81999,\"signature\":{\"expiresAt\":1766794674,\"issuedAt\":1766794434,\"signature\":\"{\\\"packageVariantUUID\\\":\\\"95d7fd75-3e1f-4ca6-a2d7-ced7c65d689f\\\",\\\"fareSessionUUID\\\":\\\"ad0c01f3-ae94-407e-aa60-90157f336529\\\",\\\"fareFlowUUID\\\":\\\"d8f09ac5-f9be-400a-9322-097571e48037\\\"}\",\"version\":\"pricing_params_v1\"},\"vehicleViewId\":3280,\"estimationMethod\":null,\"knnDistance\":null,\"discountedFare\":null,\"ruleNames\":null,\"uuid\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"source\":null,\"ezpzFareBreakdown\":null,\"unmatchedKnnFare\":null,\"estimatedDuration\":null,\"dynamicFareInfo\":{\"isSobriety\":false,\"multiplier\":1,\"surgeSuppressionThreshold\":0,\"uuid\":\"a1153027-3307-4a49-826f-bc36799245a4\"},\"surgeMultiplier\":1,\"matchedKnnFare\":null,\"originalFare\":null,\"knnDuration\":null,\"ezpzFareEstimate\":null,\"originalFarePrePromo\":null,\"estimatedDistance\":null,\"knnFare\":null,\"ufpType\":null,\"typeSpecificData\":null,\"viaLocations\":[],\"unmodifiedDistance\":11417,\"alternativePrices\":null,\"destinationLocationID\":null},\"vehicleViewID\":3280,\"originalArgs\":{\"destinations\":[{\"latitude\":-31.987522,\"longitude\":115.75699}],\"includeRecommended\":false,\"payment\":{\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"uberCashToggleOn\":true},\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"pickup\":{\"latitude\":-31.928177,\"longitude\":115.81999}}}",
+                                    "preAdjustmentValue": "A$21.29",
+                                    "__typename": "RVWebCommonFare"
+                                }
+                            ],
+                            "hasPromo": true,
+                            "hasRidePass": false,
+                            "hasBenefitsOnFare": false,
+                            "hourly": null,
+                            "iconType": "TAG",
+                            "id": "3280",
+                            "is3p": false,
+                            "isAvailable": true,
+                            "legalConsent": null,
+                            "parentProductUuid": "6a8e56b8-914e-4b48-a387-e6ad21d9c00c",
+                            "preAdjustmentValue": "A$21.29",
+                            "productImageUrl": "https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Assist_v1.png",
+                            "productUuid": "3cda26cf-e602-5c9c-b81a-9a20cd607dba",
+                            "reserveEnabled": false,
+                            "__typename": "RVWebCommonProduct"
+                        }
+                    ],
+                    "title": "Popular",
+                    "__typename": "RVWebCommonProductTier"
+                },
+                {
+                    "products": [
+                        {
+                            "badges": [],
+                            "cityID": "222",
+                            "currencyCode": "AUD",
+                            "description": "Black",
+                            "detailedDescription": "Premium rides in high-end cars",
+                            "discountPrimary": "50%",
+                            "displayName": "Black",
+                            "estimatedTripTime": 1702,
+                            "etaStringShort": "11 mins",
+                            "fares": [
+                                {
+                                    "capacity": 4,
+                                    "discountPrimary": "50%",
+                                    "fare": "A$26.50",
+                                    "fareAmountE5": 2650000,
+                                    "hasPromo": true,
+                                    "hasRidePass": false,
+                                    "meta": "{\"cityID\":\"222\",\"countryIso2\":\"AU\",\"etd\":{\"meta\":{\"isShownEtd\":null,\"cryptoVersion\":null,\"encryptedEtd\":null,\"lighthouseRequestUuid\":\"4607a91e-058c-43cc-8cbd-291a918423c6\"},\"state\":null,\"guaranteedTripTime\":null,\"pickupRequestTime\":null,\"stateShortDescription\":null,\"stateTimeDescription\":null,\"stateDetailedDescription\":null,\"creditsDescription\":null,\"stateDescriptionImageUrl\":null,\"estimatedTripTime\":1702,\"deviceTimeData\":null,\"tripUUID\":null,\"comparisonTripTime\":null,\"legalDisclaimer\":\"Your \\\"latest arrival time\\\" factors in traffic and any additional pickups and drop-offs along your route. It is not a guarantee.\",\"estimateRequestTime\":0,\"stateHeaderDescription\":null,\"etdDisplayString\":\"\",\"estimatedSoloOnTripTime\":966},\"fareEstimateInfo\":{},\"fareFlowUUID\":\"d8f09ac5-f9be-400a-9322-097571e48037\",\"fareRequestUUID\":\"800ea668-3394-4b42-96f9-d77630f78d7b\",\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"fareUUID\":\"\",\"parentProductTypeUUID\":\"f1faedb7-5825-484f-b236-24e2cd95ec23\",\"pricingParams\":{\"fareSessionUUID\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"packageVariantUUID\":\"800ea668-3394-4b42-96f9-d77630f78d7b\",\"requestLocation\":{\"latitude\":-31.928177,\"longitude\":115.81999}},\"productUuid\":\"ad6ff92b-166e-5127-bd43-2cf6bf2121ab\",\"upfrontFare\":{\"capacity\":1,\"currencyCode\":\"AUD\",\"destinationLat\":-31.987522,\"destinationLng\":115.75699,\"fare\":\"26.5\",\"originLat\":-31.928177,\"originLng\":115.81999,\"signature\":{\"expiresAt\":1766794674,\"issuedAt\":1766794434,\"signature\":\"{\\\"packageVariantUUID\\\":\\\"800ea668-3394-4b42-96f9-d77630f78d7b\\\",\\\"fareSessionUUID\\\":\\\"ad0c01f3-ae94-407e-aa60-90157f336529\\\",\\\"fareFlowUUID\\\":\\\"d8f09ac5-f9be-400a-9322-097571e48037\\\"}\",\"version\":\"pricing_params_v1\"},\"vehicleViewId\":20019675,\"estimationMethod\":null,\"knnDistance\":null,\"discountedFare\":null,\"ruleNames\":null,\"uuid\":\"ad0c01f3-ae94-407e-aa60-90157f336529\",\"source\":null,\"ezpzFareBreakdown\":null,\"unmatchedKnnFare\":null,\"estimatedDuration\":null,\"dynamicFareInfo\":{\"isSobriety\":false,\"multiplier\":1,\"surgeSuppressionThreshold\":0,\"uuid\":\"a1153027-3307-4a49-826f-bc36799245a4\"},\"surgeMultiplier\":1,\"matchedKnnFare\":null,\"originalFare\":null,\"knnDuration\":null,\"ezpzFareEstimate\":null,\"originalFarePrePromo\":null,\"estimatedDistance\":null,\"knnFare\":null,\"ufpType\":null,\"typeSpecificData\":null,\"viaLocations\":[],\"unmodifiedDistance\":11417,\"alternativePrices\":null,\"destinationLocationID\":null},\"vehicleViewID\":20019675,\"originalArgs\":{\"destinations\":[{\"latitude\":-31.987522,\"longitude\":115.75699}],\"includeRecommended\":false,\"payment\":{\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"uberCashToggleOn\":true},\"paymentProfileUUID\":\"33ec509c-9a7f-57d4-ad1f-3124df7586c8\",\"pickup\":{\"latitude\":-31.928177,\"longitude\":115.81999}}}",
+                                    "preAdjustmentValue": "A$41.50",
+                                    "__typename": "RVWebCommonFare"
+                                }
+                            ],
+                            "hasPromo": true,
+                            "hasRidePass": false,
+                            "hasBenefitsOnFare": false,
+                            "hourly": null,
+                            "iconType": "TAG",
+                            "id": "20019675",
+                            "is3p": false,
+                            "isAvailable": true,
+                            "legalConsent": null,
+                            "parentProductUuid": "f1faedb7-5825-484f-b236-24e2cd95ec23",
+                            "preAdjustmentValue": "A$41.50",
+                            "productImageUrl": "https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Black_v1.png",
+                            "productUuid": "ad6ff92b-166e-5127-bd43-2cf6bf2121ab",
+                            "reserveEnabled": false,
+                            "__typename": "RVWebCommonProduct"
+                        }
+                    ],
+                    "title": "Premium",
+                    "__typename": "RVWebCommonProductTier"
+                }
+            ],
+            "__typename": "RVWebCommonProductsResponse"
+        }
+    }
+}
