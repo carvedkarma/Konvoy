@@ -196,10 +196,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
 <script>
 const socket = io({
-    transports: ['websocket'],
-    upgrade: false,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000
+    transports: ['polling', 'websocket'],
+    reconnectionDelay: 500,
+    reconnectionDelayMax: 3000,
+    timeout: 10000
 });
 const currentUserId = {{ current_user.id|tojson }};
 const currentUsername = {{ current_user.username|tojson }};
