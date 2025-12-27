@@ -144,17 +144,15 @@ def home_data():
             driver_info = None
         
         try:
-            from objects.uberDev import rideSignal, rideDetails
-            ride_signal = rideSignal(cookies, headers, refresh_token)
-            if ride_signal and ride_signal.get('status') == 'active':
-                ride_data = rideDetails(cookies, headers, refresh_token)
-                if ride_data:
-                    active_ride = {
-                        'full_name': ride_data.get('full_name', 'Rider'),
-                        'rating': ride_data.get('rating', '--'),
-                        'trip_distance': ride_data.get('trip_distance'),
-                        'ride_type': ride_data.get('ride_type', 'UberX')
-                    }
+            from objects.uberDev import appLaunch
+            ride_data = appLaunch(cookies, headers, refresh_token)
+            if ride_data and isinstance(ride_data, dict):
+                active_ride = {
+                    'full_name': ride_data.get('full_name', 'Rider'),
+                    'rating': ride_data.get('rating', '--'),
+                    'trip_distance': ride_data.get('trip_distance'),
+                    'ride_type': ride_data.get('ride_type', 'UberX')
+                }
         except Exception as e:
             print(f"Error checking ride status: {e}")
             active_ride = None
