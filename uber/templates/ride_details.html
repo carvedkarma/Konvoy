@@ -650,13 +650,18 @@ async function startCancelRideSimulation() {
     btn.classList.add('hidden');
     statusDiv.classList.remove('hidden');
     
-    const totalSteps = 6;
+    const numIntermediatePoints = 3 + Math.floor(Math.random() * 2);
+    const totalSteps = numIntermediatePoints + 2;
     let currentStep = 0;
     
     const updateProgress = (msg) => {
         currentStep++;
         messageEl.textContent = msg;
         progressBar.style.width = `${(currentStep / totalSteps) * 100}%`;
+    };
+    
+    const generateRandomOffset = () => {
+        return (Math.random() - 0.5) * 0.002;
     };
     
     try {
@@ -667,29 +672,24 @@ async function startCancelRideSimulation() {
             body: JSON.stringify({step: 'start', pickup_lat: pickupLat, pickup_lng: pickupLng, dropoff_lat: dropoffLat, dropoff_lng: dropoffLng})
         });
         
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 5000));
         
-        const point1Lat = pickupLat + (dropoffLat - pickupLat) * 0.33;
-        const point1Lng = pickupLng + (dropoffLng - pickupLng) * 0.33;
-        updateProgress('En route - Point 1...');
-        await fetch('/api/cancel-ride-simulation', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({step: 'intermediate', lat: point1Lat, lng: point1Lng, point_num: 1, dropoff_lat: dropoffLat, dropoff_lng: dropoffLng})
-        });
-        
-        await new Promise(r => setTimeout(r, 1000));
-        
-        const point2Lat = pickupLat + (dropoffLat - pickupLat) * 0.66;
-        const point2Lng = pickupLng + (dropoffLng - pickupLng) * 0.66;
-        updateProgress('En route - Point 2...');
-        await fetch('/api/cancel-ride-simulation', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({step: 'intermediate', lat: point2Lat, lng: point2Lng, point_num: 2, dropoff_lat: dropoffLat, dropoff_lng: dropoffLng})
-        });
-        
-        await new Promise(r => setTimeout(r, 1000));
+        for (let i = 1; i <= numIntermediatePoints; i++) {
+            const progress = i / (numIntermediatePoints + 1);
+            const baseLat = pickupLat + (dropoffLat - pickupLat) * progress;
+            const baseLng = pickupLng + (dropoffLng - pickupLng) * progress;
+            const pointLat = baseLat + generateRandomOffset();
+            const pointLng = baseLng + generateRandomOffset();
+            
+            updateProgress(`En route - Point ${i}/${numIntermediatePoints}...`);
+            await fetch('/api/cancel-ride-simulation', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({step: 'intermediate', lat: pointLat, lng: pointLng, point_num: i, dropoff_lat: dropoffLat, dropoff_lng: dropoffLng})
+            });
+            
+            await new Promise(r => setTimeout(r, 5000));
+        }
         
         updateProgress('Arriving at dropoff...');
         await fetch('/api/cancel-ride-simulation', {
@@ -703,10 +703,16 @@ async function startCancelRideSimulation() {
         statusDiv.classList.add('hidden');
         dropoffNotif.classList.remove('hidden');
         
-        let countdown = 10;
+        let countdown = 180;
+        const formatTime = (secs) => {
+            const mins = Math.floor(secs / 60);
+            const s = secs % 60;
+            return mins > 0 ? `${mins}m ${s}s` : `${s}s`;
+        };
+        
         const countdownInterval = setInterval(async () => {
             countdown--;
-            countdownEl.textContent = `Location sending stops in ${countdown}s`;
+            countdownEl.textContent = `Location sending stops in ${formatTime(countdown)}`;
             
             if (countdown > 0) {
                 await fetch('/api/cancel-ride-simulation', {
