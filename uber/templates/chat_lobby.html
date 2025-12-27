@@ -241,17 +241,22 @@ function renderMessage(msg, prepend = false) {
     
     const rolesJson = JSON.stringify(msg.roles || []).replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const messageHtml = `
-        <div class="message-enter flex ${isOwn ? 'justify-end' : 'justify-start'} ${isMentioned ? 'mention-highlight rounded-lg p-2 -mx-2' : ''}" data-message-id="${msg.id}">
-            <div class="flex items-center gap-2 ${isOwn ? 'flex-row-reverse' : ''}">
+        <div class="message-enter flex justify-start ${isMentioned ? 'mention-highlight rounded-lg p-2 -mx-2' : ''}" data-message-id="${msg.id}">
+            <div class="flex items-center gap-2">
                 <div class="avatar-click w-7 h-7 rounded-full bg-gradient-to-r ${gradient} flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-zinc-300 transition-all"
                      onclick="showUserCard(event, ${msg.user_id}, '${escapeHtml(msg.username || '')}', '${escapeHtml(msg.user_name)}', '${escapeHtml(msg.user_initials)}', JSON.parse(this.dataset.roles))"
                      data-roles="${rolesJson}">
                     ${escapeHtml(msg.user_initials)}
                 </div>
-                <div class="${isOwn ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-800'} px-3 py-2 rounded-2xl ${isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm'} text-sm">
-                    ${formatMessageText(msg.message)}
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2 mb-0.5">
+                        <span class="text-xs font-medium text-zinc-700">${escapeHtml(msg.user_name)}</span>
+                        <span class="text-[10px] text-zinc-400">${formatTime(msg.created_at)}</span>
+                    </div>
+                    <div class="bg-zinc-100 text-zinc-800 px-3 py-2 rounded-2xl rounded-tl-sm text-sm">
+                        ${formatMessageText(msg.message)}
+                    </div>
                 </div>
-                <span class="text-[10px] text-zinc-400 flex-shrink-0">${formatTime(msg.created_at)}</span>
             </div>
         </div>
     `;
