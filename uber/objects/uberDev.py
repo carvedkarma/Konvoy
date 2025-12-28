@@ -86,12 +86,11 @@ def appLaunch(cookies, headers, refresh_token):
 
     try:
         # dont delete this
-        # response = requests.post(
-        #     'https://cn-geo1.uber.com/rt/drivers/app-launch',
-        #     cookies=cookies,
-        #     headers=headers,
-        #     json=json_data)
-        response = requests.get('https://pastebin.com/raw/SYMDNfFL')
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/drivers/app-launch',
+            cookies=cookies,
+            headers=headers,
+            json=json_data)
         data = response.json()
     except Exception as e:
         print(f"Error fetching app launch data: {e}")
@@ -224,30 +223,6 @@ def appLaunch(cookies, headers, refresh_token):
         if not ride_type_image:
             ride_type_image = ride_type_images.get('uberx')
 
-        def normalize_ride_type(name):
-            return name.lower().replace('uber ', '').replace('uber', '').strip()
-        
-        def match_ride_type(ride_type, product_name):
-            rt = normalize_ride_type(ride_type)
-            pn = normalize_ride_type(product_name)
-            if rt == pn:
-                return True
-            if rt in pn or pn in rt:
-                if 'comfort' in rt and 'comfort' not in pn:
-                    return False
-                if 'comfort' in pn and 'comfort' not in rt:
-                    return False
-                if 'xl' in rt and 'xl' not in pn:
-                    return False
-                if 'xl' in pn and 'xl' not in rt:
-                    return False
-                if 'black' in rt and 'black' not in pn:
-                    return False
-                if 'black' in pn and 'black' not in rt:
-                    return False
-                return True
-            return False
-        
         try:
             if response and response.status_code == 200:
                 products_data = response.json()
@@ -256,8 +231,9 @@ def appLaunch(cookies, headers, refresh_token):
 
                 for tier in tiers:
                     for product in tier.get('products', []):
-                        product_name = product.get('displayName', '')
-                        if match_ride_type(ride_type, product_name):
+                        product_name = product.get('displayName', '').lower()
+                        if ride_type.lower(
+                        ) in product_name or product_name in ride_type.lower():
                             fares_list = product.get('fares', [])
                             if fares_list:
                                 pre_adj = fares_list[0].get(
