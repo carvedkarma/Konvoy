@@ -1142,8 +1142,8 @@ def handle_connect():
             'roles': [{'name': r.display_name, 'color': r.color} for r in current_user.roles]
         }
         online_users[current_user.id] = user_data
-        emit('user_joined', user_data, broadcast=True)
-        emit('online_users', list(online_users.values()), broadcast=True)
+        socketio.emit('user_joined', user_data)
+        socketio.emit('online_users', list(online_users.values()))
 
 
 @socketio.on('disconnect')
@@ -1151,7 +1151,8 @@ def handle_disconnect():
     if current_user.is_authenticated and current_user.id in online_users:
         user_data = online_users.pop(current_user.id, None)
         if user_data:
-            emit('user_left', {'id': current_user.id}, broadcast=True)
+            socketio.emit('user_left', {'id': current_user.id})
+            socketio.emit('online_users', list(online_users.values()))
 
 
 @socketio.on('send_message')
@@ -1181,7 +1182,7 @@ def handle_send_message(data):
     db.session.add(chat_msg)
     db.session.commit()
     
-    emit('new_message', chat_msg.to_dict(), broadcast=True)
+    socketio.emit('new_message', chat_msg.to_dict())
 
 
 @socketio.on('get_online_users')
