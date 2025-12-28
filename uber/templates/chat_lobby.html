@@ -239,6 +239,21 @@ function formatTime(isoString) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+function getPageLabel(page) {
+    const pageMap = {
+        '/': 'Home',
+        '/change-location': 'Location',
+        '/fetch-ride': 'Rides',
+        '/chat-lobby': 'Chat',
+        '/profile': 'Profile',
+        '/admin': 'Admin',
+        '/roles': 'Roles',
+        '/uber-connect': 'Uber',
+        '/flight-center': 'Flights'
+    };
+    return pageMap[page] || 'Browsing';
+}
+
 function renderOnlineUsers(users) {
     const container = document.getElementById('online-users-list');
     const countEl = document.getElementById('online-count');
@@ -248,13 +263,15 @@ function renderOnlineUsers(users) {
     
     users.forEach(user => {
         const gradient = getRoleGradient(user.roles);
+        const pageLabel = getPageLabel(user.current_page);
         html += `
             <div class="user-chip flex items-center px-2 py-1 rounded-full bg-gradient-to-r ${gradient} cursor-pointer shadow-sm"
-                 onclick="mentionUser('${escapeHtml(user.username)}')" title="${escapeHtml(user.display_name)} - Click to mention">
+                 onclick="mentionUser('${escapeHtml(user.username)}')" title="${escapeHtml(user.display_name)} - ${pageLabel}">
                 <div class="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-white text-[9px] font-bold">
                     ${escapeHtml(user.initials)}
                 </div>
-                <span class="text-white text-[10px] font-medium ml-1.5 mr-0.5 max-w-[60px] truncate">${escapeHtml(user.display_name.split(' ')[0])}</span>
+                <span class="text-white text-[10px] font-medium ml-1.5 max-w-[60px] truncate">${escapeHtml(user.display_name.split(' ')[0])}</span>
+                <span class="text-white/70 text-[8px] ml-1 hidden sm:inline">${pageLabel}</span>
             </div>
         `;
     });
@@ -413,7 +430,7 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
 
 socket.on('connect', function() {
     console.log('Connected to chat, socket id:', socket.id);
-    socket.emit('get_online_users');
+    fetchActiveUsers();
 });
 
 socket.on('connect_error', function(error) {
@@ -424,21 +441,31 @@ socket.on('disconnect', function(reason) {
     console.log('Socket disconnected:', reason);
 });
 
-socket.on('online_users', function(users) {
-    console.log('Received online users:', users.length);
-    online_users_data = {};
-    users.forEach(u => { online_users_data[u.id] = u; });
-    renderOnlineUsers(users);
-});
+function fetchActiveUsers() {
+    fetch('/api/active-users')
+        .then(r => r.json())
+        .then(data => {
+            if (data.users) {
+                console.log('Fetched active users:', data.users.length);
+                online_users_data = {};
+                data.users.forEach(u => { online_users_data[u.id] = u; });
+                renderOnlineUsers(data.users);
+            }
+        })
+        .catch(err => console.error('Error fetching active users:', err));
+}
+
+fetchActiveUsers();
+setInterval(fetchActiveUsers, 10000);
 
 socket.on('user_joined', function(user) {
-    console.log('User joined:', user.display_name);
-    socket.emit('get_online_users');
+    console.log('User joined chat:', user.display_name);
+    fetchActiveUsers();
 });
 
 socket.on('user_left', function(data) {
-    console.log('User left:', data.id);
-    socket.emit('get_online_users');
+    console.log('User left chat:', data.id);
+    fetchActiveUsers();
 });
 
 socket.on('new_message', function(msg) {

@@ -129,5 +129,19 @@
     </footer>
 
     {% block extra_scripts %}{% endblock %}
+    
+    {% if current_user.is_authenticated %}
+    <script>
+        function sendHeartbeat() {
+            fetch('/api/heartbeat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({page: window.location.pathname})
+            }).catch(() => {});
+        }
+        sendHeartbeat();
+        setInterval(sendHeartbeat, 30000);
+    </script>
+    {% endif %}
 </body>
 </html>

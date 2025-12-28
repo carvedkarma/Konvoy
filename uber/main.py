@@ -60,6 +60,7 @@ db.init_app(app)
 
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 online_users = {}
+active_users = {}  # Track all users active on any page
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -1103,6 +1104,40 @@ def api_flight_arrivals():
             'total_flights': 0,
             'message': 'Error occurred'
         })
+
+
+@app.route('/api/heartbeat', methods=['POST'])
+@login_required
+def heartbeat():
+    user_data = {
+        'id': current_user.id,
+        'username': current_user.username,
+        'display_name': current_user.get_display_name(),
+        'initials': current_user.get_initials(),
+        'roles': [{'name': r.display_name, 'color': r.color} for r in current_user.roles],
+        'last_seen': datetime.utcnow().isoformat(),
+        'current_page': request.json.get('page', 'unknown') if request.json else 'unknown'
+    }
+    active_users[current_user.id] = user_data
+    
+    now = datetime.utcnow()
+    expired_ids = [uid for uid, data in active_users.items() 
+                   if datetime.fromisoformat(data['last_seen']) < now - timedelta(seconds=60)]
+    for uid in expired_ids:
+        active_users.pop(uid, None)
+    
+    return jsonify({'success': True, 'active_count': len(active_users)})
+
+
+@app.route('/api/active-users')
+@login_required
+def get_active_users():
+    now = datetime.utcnow()
+    expired_ids = [uid for uid, data in active_users.items() 
+                   if datetime.fromisoformat(data['last_seen']) < now - timedelta(seconds=60)]
+    for uid in expired_ids:
+        active_users.pop(uid, None)
+    return jsonify({'success': True, 'users': list(active_users.values())})
 
 
 @app.route('/chat-lobby')
