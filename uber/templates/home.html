@@ -695,6 +695,102 @@ function loadFlightData(terminal = '') {
             });
     }
 }
+
+let currentActiveRide = null;
+const uberConnected = {{ 'true' if current_user.uber_connected else 'false' }};
+
+function refreshActiveRide() {
+    if (!uberConnected) return;
+    
+    fetch('/api/active-ride')
+        .then(r => r.json())
+        .then(data => {
+            const activeRide = data.active_ride;
+            const hadRide = currentActiveRide !== null;
+            const hasRide = activeRide !== null;
+            
+            if (JSON.stringify(currentActiveRide) !== JSON.stringify(activeRide)) {
+                currentActiveRide = activeRide;
+                updateActiveRideSection(activeRide);
+            }
+        })
+        .catch(err => console.error('Error refreshing ride:', err));
+}
+
+function updateActiveRideSection(activeRide) {
+    const existingSection = document.querySelector('.active-ride-card');
+    const contentEl = document.getElementById('home-content');
+    if (!contentEl) return;
+    
+    const driverSection = contentEl.querySelector('.glass-panel.rounded-xl.premium-shadow.p-6.mb-6') || 
+                          contentEl.querySelector('.text-center.mb-6');
+    
+    if (existingSection) {
+        existingSection.closest('a').remove();
+    }
+    
+    if (activeRide) {
+        const riderInitials = activeRide.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const rideHtml = `
+            <a href="/fetch-ride" class="block mb-5 transform hover:scale-[1.01] transition-all duration-300" id="active-ride-link">
+                <div class="active-ride-card rounded-xl p-4 text-white relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iNCIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <span class="live-dot w-2 h-2 bg-white rounded-full mr-2"></span>
+                                <span class="text-xs font-bold tracking-wide">ACTIVE RIDE</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-xs font-medium">${activeRide.ride_type}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-11 h-11 bg-white rounded-full flex items-center justify-center text-emerald-700 text-sm font-bold shadow-md">
+                                        ${riderInitials}
+                                    </div>
+                                    <div class="flex items-center mt-1 bg-white/15 rounded-full px-1.5 py-0.5">
+                                        <svg class="w-2.5 h-2.5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                        <span class="text-[10px] font-medium ml-0.5">${activeRide.rating}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="road-line h-0.5 w-6 rounded-full"></div>
+                                    <svg class="w-5 h-5 text-white/60 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                    <div class="road-line h-0.5 w-6 rounded-full"></div>
+                                </div>
+                                <div class="car-animate">
+                                    <svg class="w-12 h-12 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="flex items-center text-white/90">
+                                ${activeRide.trip_distance ? `<span class="text-lg font-bold mr-1">${activeRide.trip_distance} km</span>` : ''}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        `;
+        
+        const mainPanel = contentEl.querySelector('.glass-panel.p-5.rounded-xl');
+        if (mainPanel && !document.getElementById('active-ride-link')) {
+            mainPanel.insertAdjacentHTML('beforebegin', rideHtml);
+        }
+    }
+}
+
+if (uberConnected) {
+    setInterval(refreshActiveRide, 15000);
+}
 </script>
 {% else %}
 <script>
