@@ -1133,6 +1133,7 @@ def get_chat_users():
 
 @socketio.on('connect')
 def handle_connect():
+    print(f"Socket connect - authenticated: {current_user.is_authenticated}", flush=True)
     if current_user.is_authenticated:
         user_data = {
             'id': current_user.id,
@@ -1142,8 +1143,9 @@ def handle_connect():
             'roles': [{'name': r.display_name, 'color': r.color} for r in current_user.roles]
         }
         online_users[current_user.id] = user_data
-        socketio.emit('user_joined', user_data)
-        socketio.emit('online_users', list(online_users.values()))
+        print(f"User connected: {current_user.username}, online users: {len(online_users)}", flush=True)
+        emit('user_joined', user_data, broadcast=True)
+        emit('online_users', list(online_users.values()), broadcast=True)
 
 
 @socketio.on('disconnect')
@@ -1151,13 +1153,15 @@ def handle_disconnect():
     if current_user.is_authenticated and current_user.id in online_users:
         user_data = online_users.pop(current_user.id, None)
         if user_data:
-            socketio.emit('user_left', {'id': current_user.id})
-            socketio.emit('online_users', list(online_users.values()))
+            emit('user_left', {'id': current_user.id}, broadcast=True)
+            emit('online_users', list(online_users.values()), broadcast=True)
 
 
 @socketio.on('send_message')
 def handle_send_message(data):
+    print(f"Received send_message event, authenticated: {current_user.is_authenticated}", flush=True)
     if not current_user.is_authenticated:
+        print("User not authenticated, ignoring message", flush=True)
         return
     
     message_text = data.get('message', '').strip()
@@ -1165,7 +1169,10 @@ def handle_send_message(data):
     mentioned_username = data.get('mentioned_user')
     
     if not message_text:
+        print("Empty message, ignoring", flush=True)
         return
+    
+    print(f"Processing message from {current_user.username}: {message_text[:50]}", flush=True)
     
     mentioned_user_id = None
     if mentioned_username:
@@ -1182,7 +1189,9 @@ def handle_send_message(data):
     db.session.add(chat_msg)
     db.session.commit()
     
-    socketio.emit('new_message', chat_msg.to_dict())
+    print(f"Message saved with id {chat_msg.id}, broadcasting...", flush=True)
+    emit('new_message', chat_msg.to_dict(), broadcast=True)
+    print("Broadcast complete", flush=True)
 
 
 @socketio.on('get_online_users')

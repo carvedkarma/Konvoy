@@ -402,6 +402,7 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
     const mentionMatch = message.match(/@(\w+)/);
     const mentionedUser = mentionMatch ? mentionMatch[1] : null;
     
+    console.log('Sending message:', message);
     socket.emit('send_message', {
         message: message,
         mentioned_user: mentionedUser
@@ -411,11 +412,20 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
 });
 
 socket.on('connect', function() {
-    console.log('Connected to chat');
+    console.log('Connected to chat, socket id:', socket.id);
     socket.emit('get_online_users');
 });
 
+socket.on('connect_error', function(error) {
+    console.error('Socket connection error:', error);
+});
+
+socket.on('disconnect', function(reason) {
+    console.log('Socket disconnected:', reason);
+});
+
 socket.on('online_users', function(users) {
+    console.log('Received online users:', users.length);
     online_users_data = {};
     users.forEach(u => { online_users_data[u.id] = u; });
     renderOnlineUsers(users);
@@ -423,6 +433,7 @@ socket.on('online_users', function(users) {
 
 socket.on('user_joined', function(user) {
     console.log('User joined:', user.display_name);
+    socket.emit('get_online_users');
 });
 
 socket.on('user_left', function(data) {
@@ -431,6 +442,7 @@ socket.on('user_left', function(data) {
 });
 
 socket.on('new_message', function(msg) {
+    console.log('Received new message:', msg.id);
     renderMessage(msg);
 });
 
