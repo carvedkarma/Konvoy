@@ -141,6 +141,7 @@ def home_data():
         
         cached_vehicles = cache.get_cached(current_user.id, 'vehicles')
         cached_driver = cache.get_cached(current_user.id, 'driver_info')
+        cached_ride = cache.get_cached(current_user.id, 'active_ride')
         
         def fetch_vehicles():
             try:
@@ -168,27 +169,36 @@ def home_data():
                 print(f"Error fetching ride: {e}")
                 return None
         
-        tasks = {}
-        if cached_vehicles is None:
-            tasks['vehicles'] = eventlet.spawn(fetch_vehicles)
-        if cached_driver is None:
-            tasks['driver'] = eventlet.spawn(fetch_driver_info)
-        tasks['ride'] = eventlet.spawn(fetch_ride)
-        
-        if 'vehicles' in tasks:
-            vehicles = tasks['vehicles'].wait()
-            cache.set_cached(current_user.id, 'vehicles', vehicles)
-        else:
+        if cached_vehicles is not None and cached_driver is not None and cached_ride is not None:
             vehicles = cached_vehicles
-        
-        if 'driver' in tasks:
-            driver_info = tasks['driver'].wait()
-            cache.set_cached(current_user.id, 'driver_info', driver_info)
-        else:
             driver_info = cached_driver
-        
-        full_ride_data = tasks['ride'].wait()
-        cache.set_cached(current_user.id, 'active_ride', full_ride_data)
+            full_ride_data = cached_ride
+        else:
+            tasks = {}
+            if cached_vehicles is None:
+                tasks['vehicles'] = eventlet.spawn(fetch_vehicles)
+            if cached_driver is None:
+                tasks['driver'] = eventlet.spawn(fetch_driver_info)
+            if cached_ride is None:
+                tasks['ride'] = eventlet.spawn(fetch_ride)
+            
+            if 'vehicles' in tasks:
+                vehicles = tasks['vehicles'].wait()
+                cache.set_cached(current_user.id, 'vehicles', vehicles)
+            else:
+                vehicles = cached_vehicles
+            
+            if 'driver' in tasks:
+                driver_info = tasks['driver'].wait()
+                cache.set_cached(current_user.id, 'driver_info', driver_info)
+            else:
+                driver_info = cached_driver
+            
+            if 'ride' in tasks:
+                full_ride_data = tasks['ride'].wait()
+                cache.set_cached(current_user.id, 'active_ride', full_ride_data)
+            else:
+                full_ride_data = cached_ride
         
         if full_ride_data and isinstance(full_ride_data, dict):
             active_ride = {
@@ -214,6 +224,17 @@ def get_active_ride():
     if not current_user.uber_connected:
         return jsonify(success=True, active_ride=None)
     
+    cached_ride = cache.get_cached(current_user.id, 'active_ride')
+    if cached_ride is not None:
+        if isinstance(cached_ride, dict):
+            return jsonify(success=True, active_ride={
+                'full_name': cached_ride.get('full_name', 'Rider'),
+                'rating': cached_ride.get('rating', '--'),
+                'trip_distance': cached_ride.get('trip_distance'),
+                'ride_type': cached_ride.get('ride_type', 'UberX')
+            })
+        return jsonify(success=True, active_ride=None)
+    
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
     except Exception as e:
@@ -221,8 +242,8 @@ def get_active_ride():
     
     try:
         ride_data = appLaunch(cookies, headers, refresh_token)
+        cache.set_cached(current_user.id, 'active_ride', ride_data)
         if ride_data and isinstance(ride_data, dict):
-            cache.set_cached(current_user.id, 'active_ride', ride_data)
             return jsonify(success=True, active_ride={
                 'full_name': ride_data.get('full_name', 'Rider'),
                 'rating': ride_data.get('rating', '--'),

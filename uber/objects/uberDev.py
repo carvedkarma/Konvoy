@@ -44,7 +44,7 @@ def refreshToken(cookies, headers, refresh_token):
         'request': {
             'scope': [],
             'grantType': 'REFRESH_TOKEN',
-            'clientID': 'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
+            'clientID': 'zozycDbnl17oSjKXdw_x_QuNvq5wfRHq',
             'refreshToken': refresh_token,
         },
     }
