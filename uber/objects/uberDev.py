@@ -477,85 +477,96 @@ def driverInfo(cookies, headers, refresh_token):
     return [name, photo]
 
 
-def flightArrivals(terminal=None):
+def flightArrivals(terminal=None, include_tomorrow=True):
     from bs4 import BeautifulSoup
+    from datetime import datetime, timezone, timedelta
 
     try:
-        url = 'https://www.airport-perth.com/arrivals.php'
+        perth_tz = timezone(timedelta(hours=8))
+        perth_now = datetime.now(perth_tz)
+        current_hour = perth_now.hour
+        
+        all_flights = []
+        terminals_found = set()
+        
+        urls_to_fetch = [('https://www.airport-perth.com/arrivals.php', 'today')]
+        
+        if include_tomorrow and current_hour >= 20:
+            tomorrow = perth_now + timedelta(days=1)
+            tomorrow_str = tomorrow.strftime('%Y-%m-%d')
+            urls_to_fetch.append((f'https://www.airport-perth.com/arrivals.php?d={tomorrow_str}', 'tomorrow'))
+        
+        for url, day_label in urls_to_fetch:
+            try:
+                response = requests.get(
+                    url,
+                    headers={
+                        'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept':
+                        'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    },
+                    timeout=15)
 
-        response = requests.get(
-            url,
-            headers={
-                'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept':
-                'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            },
-            timeout=15)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
 
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            flights = []
-            terminals_found = set()
+                    flight_rows = soup.find_all('div', class_='flight-row')
+                    for row in flight_rows:
+                        if 'flight-titol' in row.get('class', []):
+                            continue
 
-            flight_rows = soup.find_all('div', class_='flight-row')
-            for row in flight_rows:
-                if 'flight-titol' in row.get('class', []):
-                    continue
+                        time_elem = row.find('div', class_='flight-col__hour')
+                        origin_elem = row.find('div', class_='flight-col__dest-term')
+                        flight_elem = row.find('a', class_='flight-col__flight--link')
+                        status_elem = row.find('div', class_='flight-col__status')
+                        terminal_elem = row.find('div', class_='flight-col__terminal')
 
-                time_elem = row.find('div', class_='flight-col__hour')
-                origin_elem = row.find('div', class_='flight-col__dest-term')
-                flight_elem = row.find('a', class_='flight-col__flight--link')
-                status_elem = row.find('div', class_='flight-col__status')
-                terminal_elem = row.find('div', class_='flight-col__terminal')
+                        if time_elem:
+                            time_str = time_elem.get_text(strip=True)
+                            origin = origin_elem.get_text(strip=True) if origin_elem else ''
+                            flight_num = flight_elem.get_text(strip=True) if flight_elem else ''
+                            status = status_elem.get_text(strip=True) if status_elem else ''
+                            term = terminal_elem.get_text(strip=True) if terminal_elem else ''
 
-                if time_elem:
-                    time_str = time_elem.get_text(strip=True)
-                    origin = origin_elem.get_text(
-                        strip=True) if origin_elem else ''
-                    flight_num = flight_elem.get_text(
-                        strip=True) if flight_elem else ''
-                    status = status_elem.get_text(
-                        strip=True) if status_elem else ''
-                    term = terminal_elem.get_text(
-                        strip=True) if terminal_elem else ''
+                            if term:
+                                terminals_found.add(term)
 
-                    if term:
-                        terminals_found.add(term)
+                            if terminal and term != terminal:
+                                continue
 
-                    if terminal and term != terminal:
-                        continue
+                            all_flights.append({
+                                'time': time_str,
+                                'flight': flight_num,
+                                'origin': origin,
+                                'status': status,
+                                'terminal': term,
+                                'day': day_label
+                            })
+                    
+                    print(f"Scraped {day_label}: {len([f for f in all_flights if f.get('day') == day_label])} flights")
+                else:
+                    print(f"Flight API returned status {response.status_code} for {day_label}")
+            except Exception as e:
+                print(f"Error fetching {day_label} flights: {e}")
+        
+        print(f"Total scraped: {len(all_flights)} flights (terminals: {sorted(terminals_found)})")
 
-                    flights.append({
-                        'time': time_str,
-                        'flight': flight_num,
-                        'origin': origin,
-                        'status': status,
-                        'terminal': term
-                    })
+        class MockResponse:
+            def __init__(self, data):
+                self._data = data
+                self.status_code = 200
+                self.text = str(data)
 
-            print(
-                f"Scraped {len(flights)} flights from airport-perth.com (terminals: {sorted(terminals_found)})"
-            )
+            def json(self):
+                return self._data
 
-            class MockResponse:
+        return MockResponse({
+            'flights': all_flights,
+            'source': 'airport-perth.com',
+            'terminals': sorted(terminals_found)
+        })
 
-                def __init__(self, data):
-                    self._data = data
-                    self.status_code = 200
-                    self.text = str(data)
-
-                def json(self):
-                    return self._data
-
-            return MockResponse({
-                'flights': flights,
-                'source': 'airport-perth.com',
-                'terminals': sorted(terminals_found)
-            })
-
-        print(f"Flight API returned status {response.status_code}")
-        return None
     except Exception as e:
         print(f"Flight API request failed: {e}")
         return None
