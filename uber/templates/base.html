@@ -132,15 +132,39 @@
     
     {% if current_user.is_authenticated %}
     <script>
+        let heartbeatInterval = null;
+        
         function sendHeartbeat() {
+            if (document.hidden) return;
             fetch('/api/heartbeat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({page: window.location.pathname})
             }).catch(() => {});
         }
-        sendHeartbeat();
-        setInterval(sendHeartbeat, 30000);
+        
+        function startHeartbeat() {
+            if (heartbeatInterval) return;
+            sendHeartbeat();
+            heartbeatInterval = setInterval(sendHeartbeat, 30000);
+        }
+        
+        function stopHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+        }
+        
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopHeartbeat();
+            } else {
+                startHeartbeat();
+            }
+        });
+        
+        startHeartbeat();
     </script>
     {% endif %}
 </body>
