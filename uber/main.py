@@ -2,25 +2,32 @@ import eventlet
 eventlet.monkey_patch()
 
 import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from flask_socketio import SocketIO, emit, join_room, leave_room
-from datetime import datetime, timedelta
-from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour
-import config
-import cache
-from models import db, User, Role, ChatMessage, create_default_roles, encrypt_data, decrypt_data
-from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm, UberConnectForm, UberDisconnectForm, EmptyForm
-import secrets
-import json
+import sys
+
+try:
+    from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+    from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+    from flask_socketio import SocketIO, emit, join_room, leave_room
+    from datetime import datetime, timedelta
+    from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour
+    import config
+    import cache
+    from models import db, User, Role, ChatMessage, create_default_roles, encrypt_data, decrypt_data
+    from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm, UberConnectForm, UberDisconnectForm, EmptyForm
+    import secrets
+    import json
+    print("All imports successful", flush=True)
+except Exception as e:
+    print(f"Import error: {e}", flush=True)
+    sys.exit(1)
 
 app = Flask(__name__)
 
-flask_secret = os.environ.get("FLASK_SECRET_KEY")
+flask_secret = os.environ.get("FLASK_SECRET_KEY") or os.environ.get("SESSION_SECRET")
 if not flask_secret:
     import secrets
     flask_secret = secrets.token_hex(32)
-    print("WARNING: FLASK_SECRET_KEY not set. Using generated key for this session.")
+    print("WARNING: FLASK_SECRET_KEY not set. Using generated key for this session.", flush=True)
     
 app.secret_key = flask_secret
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
@@ -45,9 +52,10 @@ def get_database_url():
 
 database_url = get_database_url()
 if not database_url:
-    print("ERROR: DATABASE_URL is not set. Please configure your database.")
+    print("ERROR: DATABASE_URL is not set. Please configure your database.", flush=True)
+    sys.exit(1)
 else:
-    print(f"Database configured: {'production (neon)' if 'neon' in database_url else 'development'}")
+    print(f"Database configured: {'production (neon)' if 'neon' in database_url else 'development'}", flush=True)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
@@ -82,44 +90,53 @@ def add_no_cache_headers(response):
     return response
 
 
-with app.app_context():
-    db.create_all()
-    create_default_roles()
-    
-    users_without_roles = User.query.filter(~User.roles.any()).all()
-    for user in users_without_roles:
-        if user.role_id:
-            custom_role = Role.query.get(user.role_id)
-            if custom_role:
-                user.roles.append(custom_role)
-                user.role_id = None
+try:
+    with app.app_context():
+        print("Initializing database...", flush=True)
+        db.create_all()
+        create_default_roles()
         
-        system_role = Role.query.filter_by(name=user.role).first()
-        if system_role and system_role not in user.roles:
-            user.roles.append(system_role)
-    
-    if users_without_roles:
-        db.session.commit()
-        print(f"Migrated {len(users_without_roles)} users to multi-role system.")
-    
-    owner_email = os.environ.get("KONVOY_OWNER_EMAIL")
-    owner_password = os.environ.get("KONVOY_OWNER_PASSWORD")
-    
-    if owner_email and owner_password:
-        owner = User.query.filter_by(email=owner_email).first()
-        if not owner:
-            owner_role = Role.query.filter_by(name='owner').first()
-            owner = User(
-                email=owner_email,
-                username=owner_email.split('@')[0],
-                role='owner'
-            )
-            owner.set_password(owner_password)
-            if owner_role:
-                owner.roles.append(owner_role)
-            db.session.add(owner)
+        users_without_roles = User.query.filter(~User.roles.any()).all()
+        for user in users_without_roles:
+            if user.role_id:
+                custom_role = Role.query.get(user.role_id)
+                if custom_role:
+                    user.roles.append(custom_role)
+                    user.role_id = None
+            
+            system_role = Role.query.filter_by(name=user.role).first()
+            if system_role and system_role not in user.roles:
+                user.roles.append(system_role)
+        
+        if users_without_roles:
             db.session.commit()
-            print("Owner account configured from environment variables.")
+            print(f"Migrated {len(users_without_roles)} users to multi-role system.", flush=True)
+        
+        owner_email = os.environ.get("KONVOY_OWNER_EMAIL")
+        owner_password = os.environ.get("KONVOY_OWNER_PASSWORD")
+        
+        if owner_email and owner_password:
+            owner = User.query.filter_by(email=owner_email).first()
+            if not owner:
+                owner_role = Role.query.filter_by(name='owner').first()
+                owner = User(
+                    email=owner_email,
+                    username=owner_email.split('@')[0],
+                    role='owner'
+                )
+                owner.set_password(owner_password)
+                if owner_role:
+                    owner.roles.append(owner_role)
+                db.session.add(owner)
+                db.session.commit()
+                print("Owner account configured from environment variables.", flush=True)
+        
+        print("Database initialization complete.", flush=True)
+except Exception as e:
+    print(f"Database initialization error: {e}", flush=True)
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
 
 
 stop_signal = 0
@@ -1282,4 +1299,5 @@ def handle_get_online_users():
 
 
 if __name__ == '__main__':
+    print("Starting Konvoy server on port 5000...", flush=True)
     socketio.run(app, host='0.0.0.0', port=5000)
