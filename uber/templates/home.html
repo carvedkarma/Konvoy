@@ -697,17 +697,16 @@ function loadFlightData(terminal = '') {
 }
 
 let currentActiveRide = null;
+let refreshInterval = null;
 const uberConnected = {{ 'true' if current_user.uber_connected else 'false' }};
 
 function refreshActiveRide() {
-    if (!uberConnected) return;
+    if (!uberConnected || document.hidden) return;
     
     fetch('/api/active-ride')
         .then(r => r.json())
         .then(data => {
             const activeRide = data.active_ride;
-            const hadRide = currentActiveRide !== null;
-            const hasRide = activeRide !== null;
             
             if (JSON.stringify(currentActiveRide) !== JSON.stringify(activeRide)) {
                 currentActiveRide = activeRide;
@@ -716,6 +715,27 @@ function refreshActiveRide() {
         })
         .catch(err => console.error('Error refreshing ride:', err));
 }
+
+function startAutoRefresh() {
+    if (refreshInterval) return;
+    refreshInterval = setInterval(refreshActiveRide, 15000);
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+}
+
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        stopAutoRefresh();
+    } else {
+        startAutoRefresh();
+        refreshActiveRide();
+    }
+});
 
 function updateActiveRideSection(activeRide) {
     const existingSection = document.querySelector('.active-ride-card');
@@ -789,7 +809,7 @@ function updateActiveRideSection(activeRide) {
 }
 
 if (uberConnected) {
-    setInterval(refreshActiveRide, 15000);
+    startAutoRefresh();
 }
 </script>
 {% else %}
