@@ -529,7 +529,10 @@ def flightArrivals(terminal=None, include_tomorrow=True):
                             status = status_elem.get_text(strip=True) if status_elem else ''
                             term = terminal_elem.get_text(strip=True) if terminal_elem else ''
                             
-                            is_landed = 'landed' in status.lower()
+                            if day_label == 'tomorrow':
+                                is_landed = False
+                            else:
+                                is_landed = 'landed' in status.lower()
 
                             if term:
                                 terminals_found.add(term)
@@ -541,7 +544,7 @@ def flightArrivals(terminal=None, include_tomorrow=True):
                                 'time': time_str,
                                 'flight': flight_num,
                                 'origin': origin,
-                                'status': status,
+                                'status': status if day_label == 'today' else 'Scheduled',
                                 'terminal': term,
                                 'day': day_label,
                                 'landed': is_landed
