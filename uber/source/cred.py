@@ -113,43 +113,43 @@ fare_cookies = {
     '_scid': '9UzyYsWy63SvqAfMtoyosQtRvuUoEshq',
     'utag_main_userid': '97f4fd2b-ff3f-4d23-a466-f3bf156476d1',
     '_scid_r': 'A8zyYsWy63SvqAfMtoyosQtRvuUoEshqcXS19Q',
-    '_clck': '16bxgnb%5E2%5Eg26%5E0%5E2181',
-    '_clsk': 'ydqufz%5E1766737042962%5E1%5E1%5Ei.clarity.ms%2Fcollect',
-    'city_id_cookie_key': '222',
     'ttcsid_C699QJ9R48GN82KJQDVG':
     '1766737803228::nasK74Pa7uIncWTTKGKV.3.1766737803228.0',
     '__cf_bm':
-    'Ffnfcv1jmAHqTojCr.oTGvJXtyZG2Vy2d_ffysbsEi4-1766763758-1.0.1.1-dXaO1Eb1Wb6ENOWtAHURr0OPyHtqN_RRZo2YEt473Bfile8NlLUkdDF_JhzOpS...kRawrTNsj0.NR8hkWJqDjllp_xL818QSm1LiAyqD64',
-    'x-uber-analytics-session-id': '7b6fd9d1-76a9-4d3b-b314-0d95655cfa98',
+    'fnlfs6O74Dl7nqpXNsW8sH9ry20rC10hoP.EMvqH4Uk-1767019176-1.0.1.1-RBhRPFJnM1u0mso1SyeI14P5HDWraq_5Rs1735Wwazb0Ceih41bB3Q2TYWNeA2qKA.SyvdQXaniPWtQ2cF9Rni8InRu1sZ7pOs6N3Y2g5M4',
+    'x-uber-analytics-session-id': '4c1359ab-12af-4882-82c7-c151dd7180e0',
+    'utag_main__sn': '7',
+    'utag_main_ses_id': '1767019192172%3Bexp-session',
+    '_clck': '16bxgnb%5E2%5Eg29%5E0%5E2181',
+    'udi-fingerprint':
+    'XVKsX8HcVglGfIAz3rxb0/5O3wdO+IeXUt3QZMf9z18yq4zROFQcQX6LRTT4868unFVK5+eg0AEd8zMbIh0aMA==ptkDCl6fJEJNpExV37Tp1JQYRJw7leqvy84aEWLAWUw=',
     'isWebLogin': 'true',
     'sid':
-    'QA.CAESELkcj5D8bEgUg_yL2J56CxUYtPTYywYiATEqJDUwZDM4MWEwLWZhMWUtNDVkMi04NzY2LTVlNmEyNGEyYjZjODI8t8S7LyEA-3lH8ELyVPMeh9w325jau4k-AR4OWOuHEzK83FHomUWExayyDsBLiKrZVdp4l9nV7jrToJS1OgExQgh1YmVyLmNvbQ.jwjsSRWm6G7SWkxNBFp-NFmI69uW2JOGm1Ayu6ZHPrs',
-    'smeta': '{"expiresAt":1769355828987}',
-    'csid': '1.1769355830758.ltXFgEnp2Nd/lzXio5Em9fawV9dVcZc3YexOxpjp38w=',
-    '_ua':
-    '{"session_id":"3ced2bce-0d14-4fb2-a312-9491a1ec52b2","session_time_ms":1766763831036}',
-    'jwt-session':
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7InNsYXRlLWV4cGlyZXMtYXQiOjE3NjY3NjU2MzEwMzgsIlVzZXItQWdlbnQiOiIiLCJ4LXViZXItY2xpZW50LWlkIjoiIiwieC11YmVyLWRldmljZSI6IiIsIngtdWJlci1jbGllbnQtdXNlci1zZXNzaW9uLWlkIjoiIiwidGVuYW5jeSI6InViZXIvcHJvZHVjdGlvbiJ9LCJpYXQiOjE3NjY3MzcwNzgsImV4cCI6MTc2NjgyMzQ3OH0.NNakNhPjnf11Yi5ucDifMnJFxqi4YxXAQMcdXTWAycU',
-    'utag_main__sn': '5',
-    'utag_main_ses_id': '1766763833903%3Bexp-session',
-    'utag_main_dc_visit': '3',
+    'QA.CAESEJnIqG21tkbcoSE7wyBOqSYY-7_oywYiATEqJDUwZDM4MWEwLWZhMWUtNDVkMi04NzY2LTVlNmEyNGEyYjZjODI8NZTqS8-Va0JGOMJwqHriMFOpjADjOn19r4MP6pfb6xghfTQh8RKORqO0qQeG6lQlg21wtvmyOVaiSNW6OgExQgh1YmVyLmNvbQ.Yb-EfXsjfIui8c5MiW33QbOyYrgI69NGhvLDTe-nERI',
+    'smeta': '{"expiresAt":1769611259798}',
     'utag_main__ss': '0%3Bexp-session',
+    '_clsk': '1y7b42y%5E1767019263922%5E2%5E1%5Ei.clarity.ms%2Fcollect',
+    'csid': '1.1769611299582.69dJIV9sCH/LVI0C8l4bPCpidy5gaInvzAm7UgksfF8=',
+    '_ua':
+    '{"session_id":"5fa0c78e-0eb5-4a4c-92ea-95f60c40a8b1","session_time_ms":1767019299862}',
+    'city_id_cookie_key': '222',
+    'jwt-session':
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7InNsYXRlLWV4cGlyZXMtYXQiOjE3NjcwMjEwOTk4NjIsIlVzZXItQWdlbnQiOiIiLCJ4LXViZXItY2xpZW50LWlkIjoiIiwieC11YmVyLWRldmljZSI6IiIsIngtdWJlci1jbGllbnQtdXNlci1zZXNzaW9uLWlkIjoiIiwidGVuYW5jeSI6InViZXIvcHJvZHVjdGlvbiJ9LCJpYXQiOjE3NjcwMTkzMDAsImV4cCI6MTc2NzEwNTcwMH0.FsBFUngs4sDIJj_yNEulxlFGVIxa0KvPy8tTcBQaNnc',
+    'utag_main__pn': '3%3Bexp-session',
+    'utag_main_dc_visit': '5',
+    'utag_main__se': '7%3Bexp-session',
+    'utag_main__st': '1767021101561%3Bexp-session',
+    'utag_main_dc_event': '5%3Bexp-session',
     'utag_main_dc_region': 'ap-southeast-2%3Bexp-session',
-    'utag_main__pn': '2%3Bexp-session',
     'mp_adec770be288b16d9008c964acfba5c2_mixpanel':
     '%7B%22distinct_id%22%3A%20%2250d381a0-fa1e-45d2-8766-5e6a24a2b6c8%22%2C%22%24device_id%22%3A%20%2219af143f290884-08d698fe9b9b4b8-4c657b58-3f4800-19af143f291272d%22%2C%22%24search_engine%22%3A%20%22bing%22%2C%22%24initial_referrer%22%3A%20%22https%3A%2F%2Fwww.bing.com%2F%22%2C%22%24initial_referring_domain%22%3A%20%22www.bing.com%22%2C%22%24user_id%22%3A%20%2250d381a0-fa1e-45d2-8766-5e6a24a2b6c8%22%7D',
-    '_uetsid': 'aac42450e1a611f0a9c8c3c023690841',
+    'ttcsid': '1767019301847::iFwC1poJDkWkbIvdAL6H.7.1767019302069.0',
+    'ttcsid_CRG9VSJC77U326FJDN5G':
+    '1767019301846::O4yDofSZhuSprQ_GcBZu.5.1767019302069.1',
+    '_ga_XTGQLY6KPT': 'GS2.1.s1767019192$o8$g1$t1767019302$j19$l0$h0',
+    '_uetsid': '3c6b7020e4c411f09f73d1c0bbf24126',
     '_uetvid': '358262a0de6c11f0958e998a7682a152',
     '_uetmsclkid': '_uetddcb6ae1df2c1b9e622603a6312b2da0',
-    'udi-fingerprint':
-    '/B4Znfp9Il+oEBRnWdPMQCl3HtKqA1xU6scIhKK4tI3aw7uDsY9a3p6IzLZqCXERLHrUTfEOLibsJ7GMCLdxAw==0xZx1tibhu3f4DOQGV96nu/2wh4Q9sh8HOCReYRWzv4=',
-    'utag_main__se': '14%3Bexp-session',
-    'utag_main__st': '1766765757863%3Bexp-session',
-    '_ga_XTGQLY6KPT': 'GS2.1.s1766763834$o6$g1$t1766763957$j3$l0$h0',
-    'ttcsid_CRG9VSJC77U326FJDN5G':
-    '1766763834241::jO7aZ6beHei3ixNkALLn.3.1766763957872.1',
-    'ttcsid': '1766763834242::jYYYhZmU3_RJiofPvocz.5.1766763957872.0',
-    'utag_main_dc_event': '14%3Bexp-session',
 }
 
 fare_headers = {
@@ -161,7 +161,7 @@ fare_headers = {
     'pragma': 'no-cache',
     'priority': 'u=1, i',
     'referer':
-    'https://m.uber.com/go/product-selection?drop%5B0%5D=%7B%22addressLine1%22%3A%221%20Carousel%20Rd%22%2C%22addressLine2%22%3A%22Cannington%20WA%22%2C%22id%22%3A%22beaead19-827e-6243-8a0e-cf9bad4e29e5%22%2C%22source%22%3A%22SEARCH%22%2C%22latitude%22%3A-32.0163107%2C%22longitude%22%3A115.9402767%2C%22provider%22%3A%22uber_places%22%7D&effect=&pickup=%7B%22addressLine1%22%3A%2224A%20Morgan%20Street%22%2C%22addressLine2%22%3A%22Cannington%20Perth%20WA%22%2C%22id%22%3A%22db0eb01f-6709-cd69-dd35-7de61eaa5723%22%2C%22source%22%3A%22SEARCH%22%2C%22latitude%22%3A-32.0204533%2C%22longitude%22%3A115.9479033%2C%22provider%22%3A%22uber_places%22%7D',
+    'https://m.uber.com/go/product-selection?drop%5B0%5D=%7B%22addressLine1%22%3A%2276%20Newcastle%20St%22%2C%22addressLine2%22%3A%22Perth%20WA%22%2C%22id%22%3A%22e53cde63-06eb-e132-660c-5e5860d0d537%22%2C%22source%22%3A%22SEARCH%22%2C%22latitude%22%3A-31.94813%2C%22longitude%22%3A115.8664833%2C%22provider%22%3A%22uber_places%22%7D&effect=&marketing_vistor_id=995344a0-0c28-44b9-a986-135a60059f0c&pickup=%7B%22addressLine1%22%3A%22201%20Hay%20Street%22%2C%22addressLine2%22%3A%22East%20Perth%20Perth%20WA%22%2C%22id%22%3A%2278e81156-0db0-71a7-9d6b-780421aeb7dd%22%2C%22source%22%3A%22SEARCH%22%2C%22latitude%22%3A-31.958576%2C%22longitude%22%3A115.8722933%2C%22provider%22%3A%22uber_places%22%7D&uclick_id=77f7b912-3cd8-409e-9b92-d076c0fd14d2',
     'sec-ch-ua':
     '"Microsoft Edge";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
     'sec-ch-ua-mobile': '?0',
