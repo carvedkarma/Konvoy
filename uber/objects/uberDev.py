@@ -528,6 +528,8 @@ def flightArrivals(terminal=None, include_tomorrow=True):
                             flight_num = flight_elem.get_text(strip=True) if flight_elem else ''
                             status = status_elem.get_text(strip=True) if status_elem else ''
                             term = terminal_elem.get_text(strip=True) if terminal_elem else ''
+                            
+                            is_landed = 'landed' in status.lower()
 
                             if term:
                                 terminals_found.add(term)
@@ -541,7 +543,8 @@ def flightArrivals(terminal=None, include_tomorrow=True):
                                 'origin': origin,
                                 'status': status,
                                 'terminal': term,
-                                'day': day_label
+                                'day': day_label,
+                                'landed': is_landed
                             })
                     
                     print(f"Scraped {day_label}: {len([f for f in all_flights if f.get('day') == day_label])} flights")

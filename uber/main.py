@@ -1071,14 +1071,25 @@ def api_flight_details():
         
         flights_by_terminal = defaultdict(list)
         next_arrival = None
+        upcoming_count = 0
+        landed_count = 0
         
         for flight in flights:
             term = flight.get('terminal', 'Unknown')
             flight_time = flight.get('time', '')
+            is_landed = flight.get('landed', False)
+            
+            if is_landed:
+                landed_count += 1
+                continue
+            
+            upcoming_count += 1
             flights_by_terminal[term].append(flight)
             
             if next_arrival is None and flight_time >= current_time:
                 next_arrival = flight_time
+        
+        print(f"Flight filter: {upcoming_count} upcoming, {landed_count} already landed")
         
         for term in flights_by_terminal:
             flights_by_terminal[term].sort(key=lambda x: x.get('time', ''))
