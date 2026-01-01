@@ -695,42 +695,10 @@ def profile():
     return render_template('profile.html', form=form, disconnect_form=disconnect_form)
 
 
-@app.route('/uber-connect', methods=['GET', 'POST'])
+@app.route('/uber-connect', methods=['GET'])
 @login_required
 def uber_connect():
-    form = UberConnectForm()
-    disconnect_form = UberDisconnectForm()
-    
-    if form.validate_on_submit():
-        cookies_json = request.form.get('cookies', '').strip()
-        headers_json = request.form.get('headers', '').strip()
-        refresh_token = request.form.get('refresh_token', '').strip()
-        
-        if not cookies_json or not headers_json or not refresh_token:
-            flash('All fields are required.', 'error')
-            callback_url = url_for('uber_callback', _external=True)
-            return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form, callback_url=callback_url)
-        
-        try:
-            import json
-            json.loads(cookies_json)
-            json.loads(headers_json)
-        except json.JSONDecodeError:
-            flash('Invalid JSON format for cookies or headers.', 'error')
-            callback_url = url_for('uber_callback', _external=True)
-            return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form, callback_url=callback_url)
-        
-        current_user.uber_cookies = encrypt_data(cookies_json)
-        current_user.uber_headers = encrypt_data(headers_json)
-        current_user.uber_refresh_token = encrypt_data(refresh_token)
-        current_user.uber_connected = True
-        db.session.commit()
-        cache.invalidate_cache(current_user.id)
-        flash('Uber account connected successfully!', 'success')
-        return redirect(url_for('root'))
-    
-    callback_url = url_for('uber_callback', _external=True)
-    return render_template('uber_connect.html', form=form, disconnect_form=disconnect_form, callback_url=callback_url)
+    return redirect(url_for('uber_phone_connect'))
 
 
 @app.route('/uber-callback', methods=['GET', 'POST'])
