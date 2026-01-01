@@ -647,37 +647,91 @@ def parseFlightsByHour(response_data):
     return result
 
 
-
 def uberAuth(country_code, phone_number):
     """
-    Initiate Uber authentication with phone number.
-    Returns dict with success status, session_id, or captcha info.
+    Initiate Uber phone authentication.
+    Returns dict with success status, session_id, or error info.
+    
+    Note: Uber uses Arkose Labs captcha which requires special handling.
+    This function attempts direct authentication but may require captcha.
     """
-    import uuid
-    
-    device_udid = str(uuid.uuid4()).upper()
-    hot_launch_id = str(uuid.uuid4()).upper()
-    cold_launch_id = str(uuid.uuid4()).upper()
-    request_uuid = str(uuid.uuid4())
-    
     try:
-        headers = {
+        phone_number = phone_number.strip().lstrip('0')
+        country_code = country_code.strip()
+        
+        print(f"Attempting Uber auth for {country_code} {phone_number}")
+        
+        arkose_headers = {
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.9,en-AU;q=0.8',
+            'ark-build-id': '0c9d06b5-fae5-4d44-b2d1-c44e6f865183',
+            'cache-control': 'no-cache',
+            'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'origin': 'https://auth.uber.com',
+            'pragma': 'no-cache',
+            'priority': 'u=1, i',
+            'referer': 'https://auth.uber.com/',
+            'sec-ch-ua': '"Microsoft Edge";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-site',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0',
+            'x-ark-esync-value': '1767245277600',
+        }
+        
+        arkose_data = 'c=0GYUkGyJPEKxedSFpRFuy%2BZj%2FtaFcrd04vzTLQ%3D%3D...&public_key=30000F36-CADF-490C-929A-C6A7DD8B33C4&site=https%3A%2F%2Fauth.uber.com'
+        
+        arkose_response = requests.post(
+            'https://ak04a6qc.uber.com/fc/gt2/public_key/30000F36-CADF-490C-929A-C6A7DD8B33C4',
+            headers=arkose_headers,
+            data=arkose_data,
+            timeout=10
+        )
+        
+        if arkose_response.status_code != 200:
+            return {
+                'success': False,
+                'needs_captcha': True,
+                'error': 'Captcha verification required. Please use HAR file method instead.'
+            }
+        
+        arkose_result = arkose_response.json()
+        token = arkose_result.get('token')
+        
+        if not token:
+            return {
+                'success': False,
+                'needs_captcha': True,
+                'error': 'Could not obtain security token. Please use HAR file method instead.'
+            }
+        
+        print(f"Got Arkose token: {token[:50]}...")
+        
+        uber_headers = {
             'Host': 'cn-geo1.uber.com',
             'referer': 'https://auth.uber.com/',
-            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15',
+            'x-uber-challenge-token': f'{token}|r=ap-southeast-2|meta=3|metabgclr=transparent|metaiconclr=%23757575|guitextcolor=%23000000|pk=30000F36-CADF-490C-929A-C6A7DD8B33C4|at=40|sup=1|rid=92|ag=101|cdn_url=https%3A%2F%2Fak04a6qc.uber.com%2Fcdn%2Ffc|surl=https%3A%2F%2Fak04a6qc.uber.com|smurl=https%3A%2F%2Fak04a6qc.uber.com%2Fcdn%2Ffc%2Fassets%2Fstyle-manager',
+            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Mobile/15E148 Safari/604.1',
             'x-uber-client-version': '4.524.10000',
             'x-uber-client-name': 'driver',
+            'x-uber-challenge-provider': 'ARKOSE_TOKEN',
             'origin': 'https://auth.uber.com',
-            'x-uber-cold-launch-id': cold_launch_id,
-            'x-uber-hot-launch-id': hot_launch_id,
+            'sec-fetch-dest': 'empty',
+            'x-uber-cold-launch-id': 'CFEE8047-DBF5-4291-BAE0-8660964CA5C5',
+            'sec-fetch-site': 'same-site',
+            'x-uber-hot-launch-id': '5C4C82CC-0316-45F7-B968-91D16E55DE3F',
             'accept-language': 'en-AU',
-            'x-uber-request-uuid': request_uuid,
-            'x-uber-usl-id': device_udid,
-            'x-uber-device-udid': device_udid,
+            'x-uber-request-uuid': 'd426fbaf-033a-46c0-8bd0-8dbb9036e7e4',
+            'x-uber-usl-id': 'E8B68CCC-9E56-4952-B2BC-DA152E3B4965',
+            'x-uber-device-udid': 'E8B68CCC-9E56-4952-B2BC-DA152E3B4965',
             'x-uber-client-id': 'com.ubercab.UberPartner',
             'accept': '*/*',
             'content-type': 'application/json',
             'x-uber-device': 'iphone',
+            'sec-fetch-mode': 'cors',
+            'priority': 'u=3, i',
         }
         
         json_data = {
@@ -690,22 +744,34 @@ def uberAuth(country_code, phone_number):
                     'daffFlow': False,
                     'productConstraints': {
                         'isEligibleForWebOTPAutofill': False,
+                        'uslFELibVersion': '',
+                        'uslMobileLibVersion': '',
                         'isWhatsAppAvailable': False,
                         'isPublicKeyCredentialSupported': True,
+                        'isFacebookAvailable': False,
+                        'isRakutenAvailable': False,
+                        'isKakaoAvailable': False,
                     },
                     'additionalParams': {
                         'isEmailUpdatePostAuth': False,
                     },
                     'deviceData': '',
                     'codeChallenge': 'wdxgrpoDP_smdsYGSoKPcPIOXhpUzNXpmkAvr-r8Oxo',
+                    'uslURL': 'https://auth.uber.com/v2?x-uber-device=iphone&x-uber-client-name=driver&x-uber-client-version=4.524.10000&x-uber-client-id=com.ubercab.UberPartner&firstPartyClientID=SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7&isiOSCustomTabSessionClose=true&showPasskeys=true&countryCode=AU',
                     'firstPartyClientID': 'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
                     'screenAnswers': [
                         {
                             'screenType': 'PHONE_NUMBER_INITIAL',
                             'eventType': 'TypeInputMobile',
                             'fieldAnswers': [
-                                {'fieldType': 'PHONE_COUNTRY_CODE', 'phoneCountryCode': country_code},
-                                {'fieldType': 'PHONE_NUMBER', 'phoneNumber': phone_number},
+                                {
+                                    'fieldType': 'PHONE_COUNTRY_CODE',
+                                    'phoneCountryCode': country_code,
+                                },
+                                {
+                                    'fieldType': 'PHONE_NUMBER',
+                                    'phoneNumber': phone_number,
+                                },
                             ],
                         },
                     ],
@@ -715,7 +781,7 @@ def uberAuth(country_code, phone_number):
         
         response = requests.post(
             'https://cn-geo1.uber.com/rt/silk-screen/submit-form',
-            headers=headers,
+            headers=uber_headers,
             json=json_data,
             timeout=15
         )
@@ -723,118 +789,37 @@ def uberAuth(country_code, phone_number):
         result = response.json()
         print(f"Uber auth response: {result}")
         
-        if 'formContainerResponse' in result:
-            form_response = result['formContainerResponse']
-            session_id = form_response.get('outAuthSessionID', '')
-            
-            if session_id:
-                return {
-                    'success': True,
-                    'session_id': session_id,
-                    'device_udid': device_udid,
-                    'headers': headers
-                }
-        
-        if 'error' in result or result.get('status') == 'FAILURE':
+        if 'error' in result or response.status_code != 200:
             error_msg = result.get('error', {}).get('message', 'Authentication failed')
+            if 'captcha' in str(result).lower() or 'challenge' in str(result).lower():
+                return {
+                    'success': False,
+                    'needs_captcha': True,
+                    'error': 'Captcha verification required'
+                }
+            return {'success': False, 'error': error_msg}
+        
+        session_id = result.get('formContainerResult', {}).get('outAuthSessionID', '')
+        if session_id:
             return {
-                'success': False,
-                'error': error_msg,
-                'needs_captcha': 'captcha' in str(error_msg).lower() or 'challenge' in str(error_msg).lower()
+                'success': True,
+                'session_id': session_id,
+                'needs_captcha': False
             }
         
-        return {
-            'success': False,
-            'error': 'Captcha verification required',
-            'needs_captcha': True,
-            'captcha_url': 'https://ak04a6qc.uber.com/v2/30000F36-CADF-490C-929A-C6A7DD8B33C4/index.html'
-        }
-        
-    except requests.exceptions.Timeout:
-        return {'success': False, 'error': 'Request timed out'}
-    except Exception as e:
-        print(f"Uber auth error: {e}")
-        return {'success': False, 'error': str(e)}
-
-
-def uberVerifyCode(session_id, code):
-    """
-    Verify SMS code and complete authentication.
-    Returns dict with success status and credentials.
-    """
-    import uuid
-    
-    device_udid = str(uuid.uuid4()).upper()
-    
-    try:
-        headers = {
-            'Host': 'cn-geo1.uber.com',
-            'referer': 'https://auth.uber.com/',
-            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15',
-            'x-uber-client-version': '4.524.10000',
-            'x-uber-client-name': 'driver',
-            'origin': 'https://auth.uber.com',
-            'accept-language': 'en-AU',
-            'x-uber-device-udid': device_udid,
-            'x-uber-client-id': 'com.ubercab.UberPartner',
-            'accept': '*/*',
-            'content-type': 'application/json',
-            'x-uber-device': 'iphone',
-        }
-        
-        json_data = {
-            'formContainerAnswer': {
-                'inAuthSessionID': session_id,
-                'formAnswer': {
-                    'flowType': 'CONTINUE',
-                    'screenAnswers': [
-                        {
-                            'screenType': 'ENTER_OTP',
-                            'eventType': 'TypeInputMobile',
-                            'fieldAnswers': [
-                                {'fieldType': 'SMS_OTP', 'smsOTP': code},
-                            ],
-                        },
-                    ],
-                },
-            },
-        }
-        
-        response = requests.post(
-            'https://cn-geo1.uber.com/rt/silk-screen/submit-form',
-            headers=headers,
-            json=json_data,
-            timeout=15
-        )
-        
-        result = response.json()
-        print(f"Uber verify response: {result}")
-        
-        if 'formContainerResponse' in result:
-            form_response = result['formContainerResponse']
-            
-            if form_response.get('status') == 'SUCCESS' or 'accessToken' in str(result):
-                cookies_from_response = {}
-                headers_from_response = dict(headers)
-                
-                access_token = result.get('accessToken')
-                refresh_token = result.get('refreshToken')
-                
-                if access_token:
-                    headers_from_response['authorization'] = f'Bearer {access_token}'
-                
+        next_screen = result.get('formContainerResult', {}).get('nextFormContainer', {}).get('screenConfigs', [])
+        if next_screen:
+            screen_type = next_screen[0].get('screenType', '') if next_screen else ''
+            if 'OTP' in screen_type or 'CODE' in screen_type or 'SMS' in screen_type:
                 return {
                     'success': True,
-                    'cookies': cookies_from_response,
-                    'headers': headers_from_response,
-                    'refresh_token': refresh_token or ''
+                    'session_id': result.get('formContainerResult', {}).get('outAuthSessionID', 'pending'),
+                    'needs_captcha': False
                 }
         
-        error_msg = result.get('error', {}).get('message', 'Verification failed')
-        return {'success': False, 'error': error_msg}
+        return {'success': False, 'error': 'Unexpected response from Uber'}
         
-    except requests.exceptions.Timeout:
-        return {'success': False, 'error': 'Request timed out'}
     except Exception as e:
-        print(f"Uber verify error: {e}")
+        print(f"Error in uberAuth: {e}")
         return {'success': False, 'error': str(e)}
+
