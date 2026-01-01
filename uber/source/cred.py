@@ -86,7 +86,6 @@ loc_headers = {
 }
 
 fare_cookies = {
-    '_ga': 'GA1.1.1346453806.1764984353',
     'marketing_vistor_id': '995344a0-0c28-44b9-a986-135a60059f0c',
     'mutiny.user.token': 'b92884f3-8526-4e49-967f-6b0aad860afe',
     'u-cookie-prefs':
@@ -96,60 +95,60 @@ fare_cookies = {
     'c99_user_id': 'dc5d295c-a6cb-4a96-bb18-12da2d32d91b',
     '_tt_enable_cookie': '1',
     '_ttp': '01KD0FKT1E9P8GJ2XXQJS5F08Q_.tt.1',
-    '_gcl_au': '1.1.1121351038.1766321679',
     'udi-id':
     'NOdz5dqAirXJc+CN6S86urhAA3smN50s8ivirDi9rBHbJT/vXEqswPWRkhY6fAgboHsJDQ3PE2QA7EDI5pIiHR7nurFluH35vk+3czw0KMlEtaKhu4wJ5tXhU8UVkYftMzL4rbCrF+iXvk7QLXLIJXwTWkwMwOBR7m50kYmdTAltmLbm4OTa4hnVm9ZKFwgwIPFUmgUi6TcjU1nrxnbeqA==pw6ORM8DwMzKJv5GKs/k5A==9yIhK/YGDyiMdqefmvEepoCPMXjHzMIasWdQJL4UaA0=',
     'optimizelyEndUserId': 'oeu1766321733224r0.03234618856346505',
     '_hjSessionUser_960703':
     'eyJpZCI6IjMyYmI0OWI1LTE0Y2ItNWQzYy1iYjg1LTlmYTNhOWFjY2RiMiIsImNyZWF0ZWQiOjE3NjYzMjE2NzgxNzIsImV4aXN0aW5nIjp0cnVlfQ==',
-    '_rdt_uuid': '1766321678758.01afa062-8e95-4a0f-873f-a0955699d244',
-    '_ga_W3V99WJNZ7': 'GS2.1.s1766321678$o1$g1$t1766321754$j60$l0$h0',
     '_fbp': 'fb.1.1766321678811.928036056558752197.Bg',
     'utag_main_v_id': '019b40fbd950003b48ad3f4e64c40507d03a507501350',
     '_cc': 'AWjzuR5uOK93Dax7twTgfkgS',
     '_cid_cc': 'AWjzuR5uOK93Dax7twTgfkgS',
     '_yjsu_yjad': '1766321806.cb93aa21-12a8-43df-96fb-4e2747651fdb',
-    '_ga_DKGN4Z56QF': 'GS2.1.s1766328498$o3$g1$t1766328507$j51$l0$h0',
     '_scid': '9UzyYsWy63SvqAfMtoyosQtRvuUoEshq',
     'utag_main_userid': '97f4fd2b-ff3f-4d23-a466-f3bf156476d1',
     '_scid_r': 'A8zyYsWy63SvqAfMtoyosQtRvuUoEshqcXS19Q',
-    'ttcsid_C699QJ9R48GN82KJQDVG':
-    '1766737803228::nasK74Pa7uIncWTTKGKV.3.1766737803228.0',
-    '__cf_bm':
-    'fnlfs6O74Dl7nqpXNsW8sH9ry20rC10hoP.EMvqH4Uk-1767019176-1.0.1.1-RBhRPFJnM1u0mso1SyeI14P5HDWraq_5Rs1735Wwazb0Ceih41bB3Q2TYWNeA2qKA.SyvdQXaniPWtQ2cF9Rni8InRu1sZ7pOs6N3Y2g5M4',
-    'x-uber-analytics-session-id': '4c1359ab-12af-4882-82c7-c151dd7180e0',
-    'utag_main__sn': '7',
-    'utag_main_ses_id': '1767019192172%3Bexp-session',
-    '_clck': '16bxgnb%5E2%5Eg29%5E0%5E2181',
-    'udi-fingerprint':
-    'XVKsX8HcVglGfIAz3rxb0/5O3wdO+IeXUt3QZMf9z18yq4zROFQcQX6LRTT4868unFVK5+eg0AEd8zMbIh0aMA==ptkDCl6fJEJNpExV37Tp1JQYRJw7leqvy84aEWLAWUw=',
-    'isWebLogin': 'true',
     'sid':
     'QA.CAESEJnIqG21tkbcoSE7wyBOqSYY-7_oywYiATEqJDUwZDM4MWEwLWZhMWUtNDVkMi04NzY2LTVlNmEyNGEyYjZjODI8NZTqS8-Va0JGOMJwqHriMFOpjADjOn19r4MP6pfb6xghfTQh8RKORqO0qQeG6lQlg21wtvmyOVaiSNW6OgExQgh1YmVyLmNvbQ.Yb-EfXsjfIui8c5MiW33QbOyYrgI69NGhvLDTe-nERI',
     'smeta': '{"expiresAt":1769611259798}',
-    'utag_main__ss': '0%3Bexp-session',
-    '_clsk': '1y7b42y%5E1767019263922%5E2%5E1%5Ei.clarity.ms%2Fcollect',
     'csid': '1.1769611299582.69dJIV9sCH/LVI0C8l4bPCpidy5gaInvzAm7UgksfF8=',
+    '_ga_DKGN4Z56QF': 'GS2.1.s1767232254$o4$g1$t1767233026$j27$l0$h0',
+    '_gid': 'GA1.2.900613874.1767233697',
+    '_ga': 'GA1.1.1346453806.1764984353',
+    '_clck': '16bxgnb%5E2%5Eg2c%5E0%5E2181',
+    '_gcl_au': '1.1.1121351038.1766321679.1063194370.1767233830.1767233829',
+    '_rdt_uuid': '1766321678758.01afa062-8e95-4a0f-873f-a0955699d244',
+    'ttcsid_CRG9VSJC77U326FJDN5G':
+    '1767233713828::sUzAx3iJiNj-p4XFboyu.6.1767233969680.1',
+    'ttcsid': '1767233713828::agkGJyCI6cRe_23QVXE3.8.1767235073070.0',
+    'ttcsid_C699QJ9R48GN82KJQDVG':
+    '1767235044325::IsoVUSq8fuHp-LGnZuR9.4.1767235073071.1',
+    '_ga_W3V99WJNZ7': 'GS2.1.s1767236952$o3$g0$t1767236952$j60$l0$h0',
+    'utag_main__sn': '9',
+    'utag_main_ses_id': '1767265497815%3Bexp-session',
+    '_clsk': 'zojgle%5E1767265499390%5E1%5E1%5Ei.clarity.ms%2Fcollect',
     '_ua':
-    '{"session_id":"5fa0c78e-0eb5-4a4c-92ea-95f60c40a8b1","session_time_ms":1767019299862}',
+    '{"session_id":"9d07aa8f-c795-47bd-85ff-0aa85f6a0b92","session_time_ms":1767265507521}',
     'city_id_cookie_key': '222',
     'jwt-session':
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7InNsYXRlLWV4cGlyZXMtYXQiOjE3NjcwMjEwOTk4NjIsIlVzZXItQWdlbnQiOiIiLCJ4LXViZXItY2xpZW50LWlkIjoiIiwieC11YmVyLWRldmljZSI6IiIsIngtdWJlci1jbGllbnQtdXNlci1zZXNzaW9uLWlkIjoiIiwidGVuYW5jeSI6InViZXIvcHJvZHVjdGlvbiJ9LCJpYXQiOjE3NjcwMTkzMDAsImV4cCI6MTc2NzEwNTcwMH0.FsBFUngs4sDIJj_yNEulxlFGVIxa0KvPy8tTcBQaNnc',
-    'utag_main__pn': '3%3Bexp-session',
-    'utag_main_dc_visit': '5',
-    'utag_main__se': '7%3Bexp-session',
-    'utag_main__st': '1767021101561%3Bexp-session',
-    'utag_main_dc_event': '5%3Bexp-session',
-    'utag_main_dc_region': 'ap-southeast-2%3Bexp-session',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7InNsYXRlLWV4cGlyZXMtYXQiOjE3NjcyNjczMDc1MjEsIlVzZXItQWdlbnQiOiIiLCJ4LXViZXItY2xpZW50LWlkIjoiIiwieC11YmVyLWRldmljZSI6IiIsIngtdWJlci1jbGllbnQtdXNlci1zZXNzaW9uLWlkIjoiIiwidGVuYW5jeSI6InViZXIvcHJvZHVjdGlvbiJ9LCJpYXQiOjE3NjcyNjU1MDcsImV4cCI6MTc2NzM1MTkwN30.WLsu_WNT8AtyNBhQVlZjNjAY2qrO9MRiICzyT_MKdDQ',
+    'utag_main__ss': '0%3Bexp-session',
+    'utag_main_dc_visit': '6',
     'mp_adec770be288b16d9008c964acfba5c2_mixpanel':
     '%7B%22distinct_id%22%3A%20%2250d381a0-fa1e-45d2-8766-5e6a24a2b6c8%22%2C%22%24device_id%22%3A%20%2219af143f290884-08d698fe9b9b4b8-4c657b58-3f4800-19af143f291272d%22%2C%22%24search_engine%22%3A%20%22bing%22%2C%22%24initial_referrer%22%3A%20%22https%3A%2F%2Fwww.bing.com%2F%22%2C%22%24initial_referring_domain%22%3A%20%22www.bing.com%22%2C%22%24user_id%22%3A%20%2250d381a0-fa1e-45d2-8766-5e6a24a2b6c8%22%7D',
-    'ttcsid': '1767019301847::iFwC1poJDkWkbIvdAL6H.7.1767019302069.0',
-    'ttcsid_CRG9VSJC77U326FJDN5G':
-    '1767019301846::O4yDofSZhuSprQ_GcBZu.5.1767019302069.1',
-    '_ga_XTGQLY6KPT': 'GS2.1.s1767019192$o8$g1$t1767019302$j19$l0$h0',
-    '_uetsid': '3c6b7020e4c411f09f73d1c0bbf24126',
+    'utag_main_dc_region': 'ap-southeast-2%3Bexp-session',
+    '__cf_bm':
+    'okQ3wcJk.aUJfUSdFLQxJWRPVXEwJj9gNiJIMs135bo-1767265510-1.0.1.1-EbtGaZobDfCeOwtA_MicNQ2v_FkDxeiybTt2oW..7hy53EL.BGJd.f8XFTyWLku_t47yI5firKUFtDCwXDLnJoE_DIe5NnAWJs3QABSVJBc',
+    '_uetsid': 'b4ec2a80e6b711f099ec13e464a37682',
     '_uetvid': '358262a0de6c11f0958e998a7682a152',
     '_uetmsclkid': '_uetddcb6ae1df2c1b9e622603a6312b2da0',
+    'udi-fingerprint':
+    'csunLr2pjvvqbq9BU7SLIjLMymWJH4C1azvr7GErNUT7gIFjxCT5AOYz5bXr7cHXQHGFEoG+EC2WyDaRFCoozA==+KRgYWNvBtJ4+4Oy2n2lDOzHCrkmV9zo1ca+56ejHCE=',
+    '_ga_XTGQLY6KPT': 'GS2.1.s1767265498$o10$g1$t1767265514$j44$l0$h0',
+    'utag_main__pn': '3%3Bexp-session',
+    'utag_main__se': '9%3Bexp-session',
+    'utag_main__st': '1767267322358%3Bexp-session',
+    'utag_main_dc_event': '8%3Bexp-session',
 }
 
 fare_headers = {
@@ -161,19 +160,15 @@ fare_headers = {
     'pragma': 'no-cache',
     'priority': 'u=1, i',
     'referer':
-    'https://m.uber.com/go/product-selection?drop%5B0%5D=%7B%22addressLine1%22%3A%2276%20Newcastle%20St%22%2C%22addressLine2%22%3A%22Perth%20WA%22%2C%22id%22%3A%22e53cde63-06eb-e132-660c-5e5860d0d537%22%2C%22source%22%3A%22SEARCH%22%2C%22latitude%22%3A-31.94813%2C%22longitude%22%3A115.8664833%2C%22provider%22%3A%22uber_places%22%7D&effect=&marketing_vistor_id=995344a0-0c28-44b9-a986-135a60059f0c&pickup=%7B%22addressLine1%22%3A%22201%20Hay%20Street%22%2C%22addressLine2%22%3A%22East%20Perth%20Perth%20WA%22%2C%22id%22%3A%2278e81156-0db0-71a7-9d6b-780421aeb7dd%22%2C%22source%22%3A%22SEARCH%22%2C%22latitude%22%3A-31.958576%2C%22longitude%22%3A115.8722933%2C%22provider%22%3A%22uber_places%22%7D&uclick_id=77f7b912-3cd8-409e-9b92-d076c0fd14d2',
-    'sec-ch-ua':
-    '"Microsoft Edge";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"Windows"',
+    'https://m.uber.com/go/product-selection?drop%5B0%5D=%7B%22addressLine1%22%3A%22T1%20International%20Terminal%22%2C%22addressLine2%22%3A%22Perth%20Airport%20%28PER%29%2C%20Perth%20WA%22%2C%22id%22%3A%229a45e38b-a8d8-9610-c324-adbf5e3939a3%22%2C%22source%22%3A%22SEARCH%22%2C%22latitude%22%3A-31.9420375%2C%22longitude%22%3A115.9738415%2C%22provider%22%3A%22uber_places%22%7D&marketing_vistor_id=995344a0-0c28-44b9-a986-135a60059f0c&pickup=%7B%22addressLine1%22%3A%22William%20Street%20Stand%20W1%20Transperth%20Bus%20Station%22%2C%22addressLine2%22%3A%22William%20St%2C%20Perth%20WA%22%2C%22id%22%3A%22c5a9e052-f8b7-c383-fb92-47f044cc7090%22%2C%22source%22%3A%22SEARCH%22%2C%22latitude%22%3A-31.9529883%2C%22longitude%22%3A115.8572748%2C%22provider%22%3A%22uber_places%22%7D&uclick_id=d88a6e64-429b-47ff-9688-868711ecd64c&vehicle=613',
     'sec-fetch-dest': 'empty',
     'sec-fetch-mode': 'cors',
     'sec-fetch-site': 'same-origin',
     'user-agent':
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1 Edg/143.0.0.0',
     'x-csrf-token': 'x',
     'x-uber-rv-initial-load-city-id': '222',
-    'x-uber-rv-session-type': 'desktop_session',
+    'x-uber-rv-session-type': 'unknown_web_view_session',
 }
 
 fare_query = 'query Products($capacity: Int, $destinations: [InputCoordinate!]!, $includeRecommended: Boolean = false, $isRiderCurrentUser: Boolean, $payment: InputPayment, $paymentProfileUUID: String, $pickup: InputCoordinate!, $pickupFormattedTime: String, $profileType: String, $profileUUID: String, $voucherUUID: String, $voucherPolicyUUID: String, $returnByFormattedTime: String, $stuntID: String, $targetProductType: EnumRVWebCommonTargetProductType) {\n  products(\n    capacity: $capacity\n    destinations: $destinations\n    includeRecommended: $includeRecommended\n    isRiderCurrentUser: $isRiderCurrentUser\n    payment: $payment\n    paymentProfileUUID: $paymentProfileUUID\n    pickup: $pickup\n    pickupFormattedTime: $pickupFormattedTime\n    profileType: $profileType\n    profileUUID: $profileUUID\n    voucherUUID: $voucherUUID\n    voucherPolicyUUID: $voucherPolicyUUID\n    returnByFormattedTime: $returnByFormattedTime\n    stuntID: $stuntID\n    targetProductType: $targetProductType\n  ) {\n    ...ProductsFragment\n    __typename\n  }\n}\n\nfragment ProductsFragment on RVWebCommonProductsResponse {\n  defaultVVID\n  hourlyTiersWithMinimumFare {\n    ...HourlyTierFragment\n    __typename\n  }\n  intercity {\n    ...IntercityFragment\n    __typename\n  }\n  links {\n    iFrame\n    text\n    url\n    __typename\n  }\n  productsUnavailableMessage\n  tiers {\n    ...TierFragment\n    __typename\n  }\n  __typename\n}\n\nfragment BadgesFragment on RVWebCommonProductBadge {\n  backgroundColor\n  color\n  contentColor\n  icon\n  inactiveBackgroundColor\n  inactiveContentColor\n  text\n  __typename\n}\n\nfragment HourlyTierFragment on RVWebCommonHourlyTier {\n  description\n  distance\n  fare\n  fareAmountE5\n  farePerHour\n  minutes\n  packageVariantUUID\n  preAdjustmentValue\n  __typename\n}\n\nfragment IntercityFragment on RVWebCommonIntercityInfo {\n  oneWayIntercityConfig(destinations: $destinations, pickup: $pickup) {\n    ...IntercityConfigFragment\n    __typename\n  }\n  roundTripIntercityConfig(destinations: $destinations, pickup: $pickup) {\n    ...IntercityConfigFragment\n    __typename\n  }\n  __typename\n}\n\nfragment IntercityConfigFragment on RVWebCommonIntercityConfig {\n  description\n  onDemandAllowed\n  reservePickup {\n    ...IntercityTimePickerFragment\n    __typename\n  }\n  returnBy {\n    ...IntercityTimePickerFragment\n    __typename\n  }\n  __typename\n}\n\nfragment IntercityTimePickerFragment on RVWebCommonIntercityTimePicker {\n  bookingRange {\n    maximum\n    minimum\n    __typename\n  }\n  header {\n    subTitle\n    title\n    __typename\n  }\n  __typename\n}\n\nfragment TierFragment on RVWebCommonProductTier {\n  products {\n    ...ProductFragment\n    __typename\n  }\n  title\n  __typename\n}\n\nfragment ProductFragment on RVWebCommonProduct {\n  badges {\n    ...BadgesFragment\n    __typename\n  }\n  cityID\n  currencyCode\n  description\n  detailedDescription\n  discountPrimary\n  displayName\n  estimatedTripTime\n  etaStringShort\n  fares {\n    capacity\n    discountPrimary\n    fare\n    fareAmountE5\n    hasPromo\n    hasRidePass\n    meta\n    preAdjustmentValue\n    __typename\n  }\n  hasPromo\n  hasRidePass\n  hasBenefitsOnFare\n  hourly {\n    tiers {\n      ...HourlyTierFragment\n      __typename\n    }\n    overageRates {\n      ...HourlyOverageRatesFragment\n      __typename\n    }\n    __typename\n  }\n  iconType\n  id\n  is3p\n  isAvailable\n  legalConsent {\n    ...ProductLegalConsentFragment\n    __typename\n  }\n  parentProductUuid\n  preAdjustmentValue\n  productImageUrl\n  productUuid\n  reserveEnabled\n  __typename\n}\n\nfragment ProductLegalConsentFragment on RVWebCommonProductLegalConsent {\n  header\n  image {\n    url\n    width\n    __typename\n  }\n  description\n  enabled\n  ctaUrl\n  ctaDisplayString\n  buttonLabel\n  showOnce\n  shouldBlockRequest\n  __typename\n}\n\nfragment HourlyOverageRatesFragment on RVWebCommonHourlyOverageRates {\n  perDistanceUnit\n  perTemporalUnit\n  __typename\n}\n'
