@@ -914,6 +914,7 @@ def uber_verify_code():
             current_user.uber_connected = True
             db.session.commit()
             cache.invalidate_cache(current_user.id)
+            print(f"Uber credentials saved for user {current_user.id} ({current_user.email})")
             
             return jsonify({'success': True, 'needs_email_otp': False})
         else:
@@ -958,6 +959,7 @@ def uber_verify_email():
                     current_user.uber_connected = True
                     db.session.commit()
                     cache.invalidate_cache(current_user.id)
+                    print(f"Uber credentials saved (email+auth) for user {current_user.id} ({current_user.email})")
                     
                     return jsonify({'success': True})
                 else:
@@ -973,6 +975,7 @@ def uber_verify_email():
                 current_user.uber_connected = True
                 db.session.commit()
                 cache.invalidate_cache(current_user.id)
+                print(f"Uber credentials saved (email only) for user {current_user.id} ({current_user.email})")
                 
                 return jsonify({'success': True})
         else:
