@@ -229,6 +229,8 @@ def appLaunch(cookies, headers, refresh_token):
                 products_data = response.json()
                 tiers = products_data.get('data', {}).get('products',
                                                           {}).get('tiers', [])
+                if not tiers:
+                    print(f"Fare API: No tiers returned. Response: {str(products_data)[:200]}")
 
                 for tier in tiers:
                     for product in tier.get('products', []):

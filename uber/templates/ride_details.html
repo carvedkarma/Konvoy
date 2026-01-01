@@ -5,31 +5,10 @@
 {% block extra_styles %}
 <style>
 .connection-line {
-    position: relative;
-    width: 80px;
+    width: 60px;
     height: 2px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.5), rgba(255,255,255,0.2));
-}
-
-.dot {
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    background: #fff;
-    border-radius: 50%;
-    top: -2px;
-    animation: travel 2s ease-in-out infinite;
-}
-
-.dot:nth-child(1) { animation-delay: 0s; }
-.dot:nth-child(2) { animation-delay: 0.4s; }
-.dot:nth-child(3) { animation-delay: 0.8s; }
-
-@keyframes travel {
-    0% { left: 0; opacity: 0; transform: scale(0.5); }
-    10% { opacity: 1; transform: scale(1); }
-    90% { opacity: 1; transform: scale(1); }
-    100% { left: calc(100% - 6px); opacity: 0; transform: scale(0.5); }
+    background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.6), rgba(255,255,255,0.3));
+    border-radius: 1px;
 }
 
 .pulse-soft {
@@ -171,11 +150,7 @@
                         </div>
                     </div>
                     
-                    <div class="connection-line mx-4">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
+                    <div class="connection-line mx-4"></div>
                     
                     <div class="car-enter flex flex-col items-center">
                         {% if default_vehicle and default_vehicle.imageUrl %}
@@ -449,11 +424,7 @@ fetch('/api/fetch-ride-data')
                                 </div>
                             </div>
                             
-                            <div class="connection-line mx-4">
-                                <div class="dot"></div>
-                                <div class="dot"></div>
-                                <div class="dot"></div>
-                            </div>
+                            <div class="connection-line mx-4"></div>
                             
                             <div class="car-enter flex flex-col items-center">
                                 ${dv && dv.imageUrl ? `
