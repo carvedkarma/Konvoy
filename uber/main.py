@@ -146,7 +146,8 @@ stored_destination = None
 @app.route('/')
 def root():
     if current_user.is_authenticated:
-        return render_template('home.html', loading=current_user.uber_connected, vehicles=[], driver_info=None)
+        disconnect_form = UberDisconnectForm() if current_user.uber_connected else None
+        return render_template('home.html', loading=current_user.uber_connected, vehicles=[], driver_info=None, disconnect_form=disconnect_form)
     return redirect(url_for('login'))
 
 
@@ -1059,12 +1060,14 @@ def reset_password(token):
 def home():
     has_permission = current_user.has_permission('can_change_location')
     loading = current_user.uber_connected and has_permission
+    disconnect_form = UberDisconnectForm() if current_user.uber_connected else None
     return render_template('index.html', 
                           has_permission=has_permission, 
                           default_vehicle=None, 
                           loading=loading,
                           uber_connected=current_user.uber_connected,
-                          username=current_user.get_display_name())
+                          username=current_user.get_display_name(),
+                          disconnect_form=disconnect_form)
 
 
 @app.route('/api/location-data')
