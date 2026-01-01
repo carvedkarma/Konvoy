@@ -36,8 +36,8 @@
         <div class="max-w-6xl mx-auto px-4">
             <div class="flex items-center justify-between h-14">
                 <a href="{{ url_for('root') }}" class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center p-1.5">
-                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-full h-full object-contain invert">
+                    <div class="w-8 h-8 rounded-lg overflow-hidden shadow">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-full h-full object-cover">
                     </div>
                     <span class="text-lg font-bold text-zinc-900">RizTar</span>
                 </a>
