@@ -1059,28 +1059,59 @@ def reset_password(token):
 def home():
     has_permission = current_user.has_permission('can_change_location')
     loading = current_user.uber_connected and has_permission
-    return render_template('index.html', has_permission=has_permission, default_vehicle=None, loading=loading)
+    return render_template('index.html', 
+                          has_permission=has_permission, 
+                          default_vehicle=None, 
+                          loading=loading,
+                          uber_connected=current_user.uber_connected,
+                          username=current_user.get_display_name())
 
 
 @app.route('/api/location-data')
 @login_required
 def location_data():
     default_vehicle = None
+    driver_info = None
     if current_user.uber_connected:
         try:
             cookies, headers, refresh_token = current_user.get_uber_credentials()
+            user_display_name = current_user.get_display_name()
             
             def fetch_vehicles():
                 return vehicleDetails(cookies, headers, refresh_token)
+            
+            def fetch_driver():
+                from objects.uberDev import driverInfo, uberProfile
+                data = driverInfo(cookies, headers, refresh_token)
+                name = data[0] if data[0] and data[0] != 'Driver' else user_display_name
+                photo = data[1]
+                driver_data = {'name': name, 'photo': photo}
+                try:
+                    profile_data = uberProfile(cookies, headers, refresh_token)
+                    if profile_data:
+                        driver_data['email'] = profile_data.get('email', '')
+                        phone_data = profile_data.get('mobileToken', {})
+                        if phone_data:
+                            driver_data['phone'] = phone_data.get('nationalPhoneNumber', '')
+                except Exception:
+                    pass
+                return driver_data
             
             vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
             for v in vehicles:
                 if v.get('isDefault'):
                     default_vehicle = v
                     break
+            
+            cached_driver = cache.get_cached(current_user.id, 'driver_info')
+            if cached_driver:
+                driver_info = cached_driver
+            else:
+                driver_info = fetch_driver()
+                cache.set_cached(current_user.id, 'driver_info', driver_info)
         except Exception as e:
-            print(f"Error fetching default vehicle: {e}")
-    return jsonify(success=True, default_vehicle=default_vehicle)
+            print(f"Error fetching location data: {e}")
+    return jsonify(success=True, default_vehicle=default_vehicle, driver_info=driver_info)
 
 
 @app.route('/fetch-ride')
