@@ -86,12 +86,12 @@ def appLaunch(cookies, headers, refresh_token):
 
     try:
         # dont delete this
-        # response = requests.post(
-        #     'https://cn-geo1.uber.com/rt/drivers/app-launch',
-        #     cookies=cookies,
-        #     headers=headers,
-        #     json=json_data)
-        response = requests.get('https://pastebin.com/raw/SYMDNfFL')
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/drivers/app-launch',
+            cookies=cookies,
+            headers=headers,
+            json=json_data)
+        # response = requests.get('https://pastebin.com/raw/SYMDNfFL')
         data = response.json()
     except Exception as e:
         print(f"Error fetching app launch data: {e}")
@@ -230,7 +230,9 @@ def appLaunch(cookies, headers, refresh_token):
                 tiers = products_data.get('data', {}).get('products',
                                                           {}).get('tiers', [])
                 if not tiers:
-                    print(f"Fare API: No tiers returned. Response: {str(products_data)[:200]}")
+                    print(
+                        f"Fare API: No tiers returned. Response: {str(products_data)[:200]}"
+                    )
 
                 for tier in tiers:
                     for product in tier.get('products', []):
@@ -775,10 +777,20 @@ def uberAuth(country_code, phone_number):
         }
 
     except requests.exceptions.Timeout:
-        return {'success': False, 'error': 'Request timed out', 'can_request_voice': True, 'session_id': ''}
+        return {
+            'success': False,
+            'error': 'Request timed out',
+            'can_request_voice': True,
+            'session_id': ''
+        }
     except Exception as e:
         print(f"Uber auth error: {e}")
-        return {'success': False, 'error': str(e), 'can_request_voice': True, 'session_id': ''}
+        return {
+            'success': False,
+            'error': str(e),
+            'can_request_voice': True,
+            'session_id': ''
+        }
 
 
 def uberVoiceOTP(session_id, country_code, phone_number):
@@ -797,7 +809,8 @@ def uberVoiceOTP(session_id, country_code, phone_number):
         headers = {
             'Host': 'cn-geo1.uber.com',
             'referer': 'https://auth.uber.com/',
-            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15',
+            'user-agent':
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15',
             'x-uber-client-version': '4.524.10000',
             'x-uber-client-name': 'driver',
             'origin': 'https://auth.uber.com',
@@ -817,10 +830,14 @@ def uberVoiceOTP(session_id, country_code, phone_number):
             'formContainerAnswer': {
                 'inAuthSessionID': session_id if session_id else '',
                 'formAnswer': {
-                    'flowType': 'INITIAL',
-                    'standardFlow': True,
-                    'accountManagementFlow': False,
-                    'daffFlow': False,
+                    'flowType':
+                    'INITIAL',
+                    'standardFlow':
+                    True,
+                    'accountManagementFlow':
+                    False,
+                    'daffFlow':
+                    False,
                     'productConstraints': {
                         'isEligibleForWebOTPAutofill': False,
                         'isWhatsAppAvailable': False,
@@ -829,13 +846,18 @@ def uberVoiceOTP(session_id, country_code, phone_number):
                     'additionalParams': {
                         'isEmailUpdatePostAuth': False,
                     },
-                    'deviceData': '',
-                    'codeChallenge': 'wdxgrpoDP_smdsYGSoKPcPIOXhpUzNXpmkAvr-r8Oxo',
-                    'firstPartyClientID': 'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
+                    'deviceData':
+                    '',
+                    'codeChallenge':
+                    'wdxgrpoDP_smdsYGSoKPcPIOXhpUzNXpmkAvr-r8Oxo',
+                    'firstPartyClientID':
+                    'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
                     'screenAnswers': [
                         {
-                            'screenType': 'PHONE_VOICE_OTP',
-                            'eventType': 'TypeVoiceOTP',
+                            'screenType':
+                            'PHONE_VOICE_OTP',
+                            'eventType':
+                            'TypeVoiceOTP',
                             'fieldAnswers': [
                                 {
                                     'fieldType': 'PHONE_VOICE_OTP',
@@ -870,7 +892,8 @@ def uberVoiceOTP(session_id, country_code, phone_number):
             }
 
         if 'error' in result:
-            error_msg = result.get('error', {}).get('message', 'Voice call failed')
+            error_msg = result.get('error', {}).get('message',
+                                                    'Voice call failed')
             return {'success': False, 'error': error_msg}
 
         return {'success': False, 'error': 'Unexpected response from Uber'}
