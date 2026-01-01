@@ -68,7 +68,7 @@ Preferred communication style: Simple, everyday language.
 - Tailwind CSS loaded via CDN for styling
 - Premium glassmorphism design with:
   - Frosted glass panels with blur effects
-  - Gradient metallic logo
+  - Custom RizTar logo (`static/images/logo.png`) - used site-wide with invert filter on dark backgrounds
   - Dark/light contrast themes
   - Responsive mobile-first design
 - Pages: login, register, home hub, location change, ride details, admin panel
