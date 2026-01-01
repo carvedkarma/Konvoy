@@ -901,22 +901,46 @@ def uber_verify_email():
         if not session_id or not code:
             return jsonify({'success': False, 'error': 'Session ID and code required'})
         
-        from objects.uberDev import uberEmailVerify
+        from objects.uberDev import uberEmailVerify, uberAuthention
         result = uberEmailVerify(session_id, code)
         
         if result.get('success'):
-            cookies = result.get('cookies', {})
-            headers = result.get('headers', {})
-            refresh_token = result.get('refresh_token', '')
-            
-            current_user.uber_cookies = encrypt_data(json.dumps(cookies))
-            current_user.uber_headers = encrypt_data(json.dumps(headers))
-            current_user.uber_refresh_token = encrypt_data(refresh_token)
-            current_user.uber_connected = True
-            db.session.commit()
-            cache.invalidate_cache(current_user.id)
-            
-            return jsonify({'success': True})
+            if result.get('needs_authentication'):
+                auth_code = result.get('auth_code')
+                new_session_id = result.get('session_id', session_id)
+                cookies = result.get('cookies', {})
+                headers = result.get('headers', {})
+                
+                auth_result = uberAuthention(headers, cookies, new_session_id, auth_code)
+                
+                if auth_result.get('success'):
+                    final_cookies = auth_result.get('cookies', {})
+                    final_headers = auth_result.get('headers', {})
+                    refresh_token = auth_result.get('refresh_token', '')
+                    
+                    current_user.uber_cookies = encrypt_data(json.dumps(final_cookies))
+                    current_user.uber_headers = encrypt_data(json.dumps(final_headers))
+                    current_user.uber_refresh_token = encrypt_data(refresh_token)
+                    current_user.uber_connected = True
+                    db.session.commit()
+                    cache.invalidate_cache(current_user.id)
+                    
+                    return jsonify({'success': True})
+                else:
+                    return jsonify({'success': False, 'error': auth_result.get('error', 'Authentication failed')})
+            else:
+                cookies = result.get('cookies', {})
+                headers = result.get('headers', {})
+                refresh_token = result.get('refresh_token', '')
+                
+                current_user.uber_cookies = encrypt_data(json.dumps(cookies))
+                current_user.uber_headers = encrypt_data(json.dumps(headers))
+                current_user.uber_refresh_token = encrypt_data(refresh_token)
+                current_user.uber_connected = True
+                db.session.commit()
+                cache.invalidate_cache(current_user.id)
+                
+                return jsonify({'success': True})
         else:
             return jsonify({'success': False, 'error': result.get('error', 'Invalid code')})
     except Exception as e:
