@@ -1281,3 +1281,22 @@ def uberAuthention(headers, cookies, session_id, auth_code):
     except Exception as e:
         print(f"Uber authentication error: {e}")
         return {'success': False, 'error': str(e)}
+
+
+def uberProfile(cookies, headers, refresh_token):
+    """
+    Get Uber driver profile information.
+    Returns dict with profile details or error.
+    """
+    params = {
+        'localeCode': 'en-AU',
+    }
+    json_data = {}
+
+    response = requests.post('https://account.uber.com/api/getUserInfo',
+                             params=params,
+                             cookies=cookies,
+                             headers=headers,
+                             json=json_data)
+
+    return response.json()

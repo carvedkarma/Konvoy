@@ -9,7 +9,7 @@ try:
     from flask_login import LoginManager, login_user, logout_user, login_required, current_user
     from flask_socketio import SocketIO, emit, join_room, leave_room
     from datetime import datetime, timedelta
-    from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour
+    from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour, uberProfile
     import config
     import cache
     from models import db, User, Role, ChatMessage, create_default_roles, encrypt_data, decrypt_data
@@ -1185,6 +1185,24 @@ def stop():
     config.stop_signal = 1
     print(f"Stop signal received. Variable 'stop_signal' set to: {config.stop_signal}")
     return jsonify(status="success", value=config.stop_signal)
+
+
+@app.route('/api/uber-profile')
+@login_required
+def api_uber_profile():
+    if not current_user.uber_connected:
+        return jsonify(success=False, error="Uber account not connected")
+    
+    try:
+        cookies = json.loads(decrypt_data(current_user.uber_cookies))
+        headers = json.loads(decrypt_data(current_user.uber_headers))
+        refresh_token = decrypt_data(current_user.uber_refresh_token) or ''
+        
+        profile_data = uberProfile(cookies, headers, refresh_token)
+        return jsonify(success=True, data=profile_data)
+    except Exception as e:
+        print(f"Error fetching Uber profile: {e}")
+        return jsonify(success=False, error=str(e))
 
 
 @app.route('/flight-center')
