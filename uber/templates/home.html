@@ -93,7 +93,12 @@
                 </div>
                 <div class="ml-5 flex-1">
                     <h1 class="text-xl font-bold text-zinc-900">{{ driver_info.name }}</h1>
-                    <p class="text-sm text-zinc-500">Uber Driver</p>
+                    {% if driver_info.email %}
+                    <p class="text-sm text-zinc-500">{{ driver_info.email }}</p>
+                    {% endif %}
+                    {% if driver_info.phone %}
+                    <p class="text-xs text-zinc-400">{{ driver_info.phone }}</p>
+                    {% endif %}
                     <div class="flex items-center mt-2 space-x-2">
                         <span class="inline-block px-2.5 py-0.5 text-xs font-medium rounded-full border {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
                         <span class="inline-block px-2.5 py-0.5 text-xs font-medium rounded-full bg-black text-white">Connected</span>
@@ -108,9 +113,8 @@
                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
                 </svg>
             </div>
-            <h1 class="text-2xl font-bold text-zinc-900">{{ current_user.get_display_name() }}</h1>
             <span class="inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full border {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
-            <p class="text-sm text-zinc-500 mt-2">What would you like to do?</p>
+            <p class="text-sm text-zinc-500 mt-2">Connect your Uber account to get started</p>
         </div>
         {% endif %}
 
@@ -320,7 +324,8 @@ fetch('/api/home-data')
                         </div>
                         <div class="ml-5 flex-1">
                             <h1 class="text-xl font-bold text-zinc-900">${escapeHtml(di.name)}</h1>
-                            <p class="text-sm text-zinc-500">Uber Driver</p>
+                            ${di.email ? `<p class="text-sm text-zinc-500">${escapeHtml(di.email)}</p>` : ''}
+                            ${di.phone ? `<p class="text-xs text-zinc-400">${escapeHtml(di.phone)}</p>` : ''}
                             <div class="flex items-center mt-2 space-x-2">
                                 <span class="inline-block px-2.5 py-0.5 text-xs font-medium rounded-full border ${roleBadgeClasses}">${roleDisplay}</span>
                                 <span class="inline-block px-2.5 py-0.5 text-xs font-medium rounded-full bg-black text-white">Connected</span>
@@ -337,9 +342,8 @@ fetch('/api/home-data')
                             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <h1 class="text-2xl font-bold text-zinc-900">${userName}</h1>
                     <span class="inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full border ${roleBadgeClasses}">${roleDisplay}</span>
-                    <p class="text-sm text-zinc-500 mt-2">What would you like to do?</p>
+                    <p class="text-sm text-zinc-500 mt-2">Connect your Uber account to get started</p>
                 </div>
             `;
         }
