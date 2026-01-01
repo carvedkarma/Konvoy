@@ -169,6 +169,8 @@ def home_data():
         cached_driver = cache.get_cached(current_user.id, 'driver_info')
         cached_ride = cache.get_cached(current_user.id, 'active_ride')
         
+        user_display_name = current_user.get_display_name()
+        
         def fetch_vehicles():
             try:
                 return vehicleDetails(cookies, headers, refresh_token)
@@ -180,23 +182,13 @@ def home_data():
             try:
                 from objects.uberDev import driverInfo
                 data = driverInfo(cookies, headers, refresh_token)
-                driver_data = {'name': data[0], 'photo': data[1]}
-                
-                try:
-                    profile_data = uberProfile(cookies, headers, refresh_token)
-                    if profile_data:
-                        driver_data['email'] = profile_data.get('email', '')
-                        driver_data['phone'] = profile_data.get('mobileToken', {}).get('nationalPhoneNumber', '')
-                        driver_data['profile_picture'] = profile_data.get('pictureUrl', '')
-                        if driver_data['profile_picture'] and not driver_data['photo']:
-                            driver_data['photo'] = driver_data['profile_picture']
-                except Exception as e:
-                    print(f"Error fetching uber profile: {e}")
-                
+                name = data[0] if data[0] and data[0] != 'Driver' else user_display_name
+                photo = data[1]
+                driver_data = {'name': name, 'photo': photo}
                 return driver_data
             except Exception as e:
                 print(f"Error fetching driver info: {e}")
-                return None
+                return {'name': user_display_name, 'photo': None}
         
         def fetch_ride():
             try:

@@ -459,27 +459,43 @@ def updateLocationOnce(lat, lng, cookies, headers, refresh_token):
 
 
 def driverInfo(cookies, headers, refresh_token):
-    headers = dict(headers)
-    headers['authorization'] = 'Bearer ' + refreshToken(
-        cookies, headers, refresh_token)
+    try:
+        headers = dict(headers)
+        token = refreshToken(cookies, headers, refresh_token)
+        if token:
+            headers['authorization'] = 'Bearer ' + token
 
-    params = {
-        'localeCode': 'en',
-    }
-
-    json_data = {}
-
-    response = requests.post('https://account.uber.com/api/getUserInfo',
-                             params=params,
-                             cookies=cookies,
-                             headers=headers,
-                             json=json_data)
-    name = response.json(
-    )['data']['userInfo']['name']['firstname'] + ' ' + response.json(
-    )['data']['userInfo']['name']['lastname']
-    photo = response.json()['data']['userInfo']['photo']['photoURL']
-
-    return [name, photo]
+        response = requests.get('https://cn-geo1.uber.com/rt/drivers/me',
+                                cookies=cookies,
+                                headers=headers,
+                                timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            firstname = data.get('firstName', data.get('first_name', 'Driver'))
+            lastname = data.get('lastName', data.get('last_name', ''))
+            name = f"{firstname} {lastname}".strip()
+            photo = data.get('picture', data.get('pictureUrl', None))
+            return [name, photo]
+        
+        response2 = requests.get('https://cn-geo1.uber.com/rt/partners/me',
+                                 cookies=cookies,
+                                 headers=headers,
+                                 timeout=10)
+        
+        if response2.status_code == 200:
+            data = response2.json()
+            firstname = data.get('first_name', data.get('firstName', 'Driver'))
+            lastname = data.get('last_name', data.get('lastName', ''))
+            name = f"{firstname} {lastname}".strip()
+            photo = data.get('picture', None)
+            return [name, photo]
+        
+        print(f"driverInfo: All API endpoints failed. Status codes: {response.status_code}, {response2.status_code}")
+        return ['Driver', None]
+    except Exception as e:
+        print(f"driverInfo error: {e}")
+        return ['Driver', None]
 
 
 def flightArrivals(terminal=None, include_tomorrow=True):
@@ -1288,15 +1304,30 @@ def uberProfile(cookies, headers, refresh_token):
     Get Uber driver profile information.
     Returns dict with profile details or error.
     """
-    params = {
-        'localeCode': 'en-AU',
-    }
-    json_data = {}
+    try:
+        headers = dict(headers)
+        token = refreshToken(cookies, headers, refresh_token)
+        if token:
+            headers['authorization'] = 'Bearer ' + token
 
-    response = requests.post('https://account.uber.com/api/getUserInfo',
-                             params=params,
-                             cookies=cookies,
-                             headers=headers,
-                             json=json_data)
-
-    return response.json()
+        response = requests.get('https://cn-geo1.uber.com/rt/drivers/me',
+                                cookies=cookies,
+                                headers=headers,
+                                timeout=10)
+        
+        if response.status_code == 200:
+            return response.json()
+        
+        response2 = requests.get('https://cn-geo1.uber.com/rt/partners/me',
+                                 cookies=cookies,
+                                 headers=headers,
+                                 timeout=10)
+        
+        if response2.status_code == 200:
+            return response2.json()
+        
+        print(f"uberProfile: All API endpoints failed. Status: {response.status_code}, {response2.status_code}")
+        return None
+    except Exception as e:
+        print(f"uberProfile error: {e}")
+        return None
