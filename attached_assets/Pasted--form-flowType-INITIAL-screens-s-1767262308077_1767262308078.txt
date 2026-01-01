@@ -1,0 +1,87 @@
+{
+    "form": {
+        "flowType": "INITIAL",
+        "screens": [
+            {
+                "screenType": "PHONE_VOICE_OTP",
+                "fields": [
+                    {
+                        "fieldType": "PHONE_VOICE_OTP",
+                        "hintValue": "0488 538 251",
+                        "otpWidth": 4,
+                        "selectAccountHints": null,
+                        "allowCredentials": null
+                    }
+                ],
+                "eventType": "TypeVoiceOTP",
+                "categoryType": "LOGIN_OPTION"
+            }
+        ]
+    },
+    "inAuthSessionID": "0161696f-b7b0-4a37-b9fe-8d090747d00a_50b5e4af-2ebc-49b9-912e-903f2f999807",
+    "alternateForms": [
+        {
+            "flowType": "SIGN_IN",
+            "screens": [
+                {
+                    "screenType": "BACKUP_CODE",
+                    "fields": [
+                        {
+                            "fieldType": "BACKUP_CODE",
+                            "selectAccountHints": null,
+                            "allowCredentials": null
+                        }
+                    ],
+                    "eventType": "TypeBackupCode",
+                    "categoryType": "LOGIN_OPTION"
+                }
+            ]
+        },
+        {
+            "flowType": "SIGN_IN",
+            "screens": [
+                {
+                    "screenType": "PUBLIC_KEY_CREDENTIAL",
+                    "fields": [
+                        {
+                            "fieldType": "PUBLIC_KEY_CREDENTIAL",
+                            "profileHint": {
+                                "firstName": "",
+                                "lastName": "",
+                                "phoneNumber": "",
+                                "email": ""
+                            },
+                            "selectAccountHints": null,
+                            "allowCredentials": [
+                                {
+                                    "type": "public-key",
+                                    "id": "lP6Stb_GgEKTD8UGEbFI75LX1wE",
+                                    "transports": null
+                                }
+                            ]
+                        }
+                    ],
+                    "eventType": "TypePublicKeyCredential",
+                    "categoryType": "LOGIN_OPTION"
+                }
+            ]
+        },
+        {
+            "flowType": "INITIAL",
+            "screens": [
+                {
+                    "screenType": "EMAIL",
+                    "fields": [
+                        {
+                            "fieldType": "EMAIL_ADDRESS",
+                            "selectAccountHints": null,
+                            "allowCredentials": null
+                        }
+                    ],
+                    "eventType": "TypeInputExistingEmail"
+                }
+            ]
+        }
+    ],
+    "cookies": null
+}

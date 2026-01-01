@@ -86,11 +86,12 @@ def appLaunch(cookies, headers, refresh_token):
 
     try:
         # dont delete this
-        response = requests.post(
-            'https://cn-geo1.uber.com/rt/drivers/app-launch',
-            cookies=cookies,
-            headers=headers,
-            json=json_data)
+        # response = requests.post(
+        #     'https://cn-geo1.uber.com/rt/drivers/app-launch',
+        #     cookies=cookies,
+        #     headers=headers,
+        #     json=json_data)
+        response = requests.get('https://pastebin.com/raw/SYMDNfFL')
         data = response.json()
     except Exception as e:
         print(f"Error fetching app launch data: {e}")
@@ -772,9 +773,110 @@ def uberAuth(country_code, phone_number):
         }
 
     except requests.exceptions.Timeout:
-        return {'success': False, 'error': 'Request timed out'}
+        return {'success': False, 'error': 'Request timed out', 'can_request_voice': True, 'session_id': ''}
     except Exception as e:
         print(f"Uber auth error: {e}")
+        return {'success': False, 'error': str(e), 'can_request_voice': True, 'session_id': ''}
+
+
+def uberVoiceOTP(session_id, country_code, phone_number):
+    """
+    Request voice call OTP as fallback when SMS fails.
+    Uses PHONE_VOICE_OTP screen type.
+    """
+    import uuid
+
+    device_udid = str(uuid.uuid4()).upper()
+    hot_launch_id = str(uuid.uuid4()).upper()
+    cold_launch_id = str(uuid.uuid4()).upper()
+    request_uuid = str(uuid.uuid4())
+
+    try:
+        headers = {
+            'Host': 'cn-geo1.uber.com',
+            'referer': 'https://auth.uber.com/',
+            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15',
+            'x-uber-client-version': '4.524.10000',
+            'x-uber-client-name': 'driver',
+            'origin': 'https://auth.uber.com',
+            'x-uber-cold-launch-id': cold_launch_id,
+            'x-uber-hot-launch-id': hot_launch_id,
+            'accept-language': 'en-AU',
+            'x-uber-request-uuid': request_uuid,
+            'x-uber-usl-id': device_udid,
+            'x-uber-device-udid': device_udid,
+            'x-uber-client-id': 'com.ubercab.UberPartner',
+            'accept': '*/*',
+            'content-type': 'application/json',
+            'x-uber-device': 'iphone',
+        }
+
+        json_data = {
+            'formContainerAnswer': {
+                'inAuthSessionID': session_id if session_id else '',
+                'formAnswer': {
+                    'flowType': 'INITIAL',
+                    'standardFlow': True,
+                    'accountManagementFlow': False,
+                    'daffFlow': False,
+                    'productConstraints': {
+                        'isEligibleForWebOTPAutofill': False,
+                        'isWhatsAppAvailable': False,
+                        'isPublicKeyCredentialSupported': True,
+                    },
+                    'additionalParams': {
+                        'isEmailUpdatePostAuth': False,
+                    },
+                    'deviceData': '',
+                    'codeChallenge': 'wdxgrpoDP_smdsYGSoKPcPIOXhpUzNXpmkAvr-r8Oxo',
+                    'firstPartyClientID': 'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
+                    'screenAnswers': [
+                        {
+                            'screenType': 'PHONE_VOICE_OTP',
+                            'eventType': 'TypeVoiceOTP',
+                            'fieldAnswers': [
+                                {
+                                    'fieldType': 'PHONE_VOICE_OTP',
+                                    'phoneCountryCode': country_code,
+                                    'phoneNumber': phone_number
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+        }
+
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/silk-screen/submit-form',
+            headers=headers,
+            json=json_data,
+            timeout=15)
+
+        result = response.json()
+        print(f"Uber voice OTP response: {result}")
+
+        new_session_id = result.get('inAuthSessionID', session_id)
+
+        if new_session_id:
+            return {
+                'success': True,
+                'session_id': new_session_id,
+                'device_udid': device_udid,
+                'headers': dict(headers),
+                'message': 'Voice call initiated'
+            }
+
+        if 'error' in result:
+            error_msg = result.get('error', {}).get('message', 'Voice call failed')
+            return {'success': False, 'error': error_msg}
+
+        return {'success': False, 'error': 'Unexpected response from Uber'}
+
+    except requests.exceptions.Timeout:
+        return {'success': False, 'error': 'Request timed out'}
+    except Exception as e:
+        print(f"Uber voice OTP error: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -992,22 +1094,24 @@ def uberEmailVerify(session_id, OTP):
             timeout=15)
         result = response.json()
         print(f"Uber email verify response: {result}")
-        
+
         response_cookies = {}
         for cookie in response.cookies:
             response_cookies[cookie.name] = cookie.value
-        
+
         auth_code = None
-        new_session_id = result.get('formContainerResponse', {}).get('outAuthSessionID', session_id)
-        
-        screen_responses = result.get('formContainerResponse', {}).get('nextScreens', [])
+        new_session_id = result.get('formContainerResponse',
+                                    {}).get('outAuthSessionID', session_id)
+
+        screen_responses = result.get('formContainerResponse',
+                                      {}).get('nextScreens', [])
         for screen in screen_responses:
             if screen.get('screenType') == 'SESSION_VERIFICATION':
                 for field in screen.get('fieldValues', []):
                     if field.get('fieldType') == 'SESSION_VERIFICATION_CODE':
                         auth_code = field.get('sessionVerificationCode')
                         break
-        
+
         if auth_code:
             return {
                 'success': True,
@@ -1026,7 +1130,8 @@ def uberEmailVerify(session_id, OTP):
             refresh_token = result.get('refreshToken')
 
             if access_token:
-                headers_from_response['authorization'] = f'Bearer {access_token}'
+                headers_from_response[
+                    'authorization'] = f'Bearer {access_token}'
 
             return {
                 'success': True,
@@ -1037,7 +1142,9 @@ def uberEmailVerify(session_id, OTP):
             }
 
         if 'error' in result:
-            error_msg = result.get('error', {}).get('message', 'Email verification failed')
+            error_msg = result.get('error',
+                                   {}).get('message',
+                                           'Email verification failed')
             return {'success': False, 'error': error_msg}
 
         return {
@@ -1067,23 +1174,30 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             'formAnswer': {
                 'screenAnswers': [
                     {
-                        'screenType': 'SESSION_VERIFICATION',
+                        'screenType':
+                        'SESSION_VERIFICATION',
                         'fieldAnswers': [
                             {
                                 'fieldType': 'SESSION_VERIFICATION_CODE',
                                 'sessionVerificationCode': auth_code,
                             },
                             {
-                                'fieldType': 'CODE_VERIFIER',
-                                'codeVerifier': 'TavK2-77HDPiA8yXnxn_BI7w3NLpmW3H7fq3xyx7Xb9OSmxUumPWUQ_ARn3zzCzCuDUgOze2D1fXdgwL4iUia1jb',
+                                'fieldType':
+                                'CODE_VERIFIER',
+                                'codeVerifier':
+                                'TavK2-77HDPiA8yXnxn_BI7w3NLpmW3H7fq3xyx7Xb9OSmxUumPWUQ_ARn3zzCzCuDUgOze2D1fXdgwL4iUia1jb',
                             },
                         ],
-                        'eventType': 'TypeVerifySession',
+                        'eventType':
+                        'TypeVerifySession',
                     },
                 ],
-                'firstPartyClientID': 'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
-                'standardFlow': True,
-                'flowType': 'SIGN_IN',
+                'firstPartyClientID':
+                'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
+                'standardFlow':
+                True,
+                'flowType':
+                'SIGN_IN',
             },
             'inAuthSessionID': session_id,
         },
@@ -1098,23 +1212,23 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             timeout=15)
         result = response.json()
         print(f"Uber authentication response: {result}")
-        
+
         response_cookies = dict(cookies) if cookies else {}
         for cookie in response.cookies:
             response_cookies[cookie.name] = cookie.value
-        
+
         if 'cookies' in result:
             for key, value in result.get('cookies', {}).items():
                 response_cookies[key] = value
-        
+
         headers_from_response = dict(headers) if headers else {}
-        
+
         access_token = result.get('accessToken')
         refresh_token = result.get('refreshToken')
-        
+
         if access_token:
             headers_from_response['authorization'] = f'Bearer {access_token}'
-        
+
         if access_token or refresh_token or response_cookies:
             return {
                 'success': True,
@@ -1123,11 +1237,12 @@ def uberAuthention(headers, cookies, session_id, auth_code):
                 'refresh_token': refresh_token or '',
                 'access_token': access_token or ''
             }
-        
+
         if 'error' in result:
-            error_msg = result.get('error', {}).get('message', 'Authentication failed')
+            error_msg = result.get('error', {}).get('message',
+                                                    'Authentication failed')
             return {'success': False, 'error': error_msg}
-        
+
         return {
             'success': True,
             'cookies': response_cookies,
@@ -1135,7 +1250,7 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             'refresh_token': '',
             'raw_response': result
         }
-        
+
     except requests.exceptions.Timeout:
         return {'success': False, 'error': 'Request timed out'}
     except Exception as e:

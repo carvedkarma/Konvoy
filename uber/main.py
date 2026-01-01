@@ -839,10 +839,44 @@ def uber_send_code():
                 'success': False,
                 'error': result.get('error', 'Failed to send code'),
                 'needs_captcha': result.get('needs_captcha', False),
-                'captcha_url': result.get('captcha_url')
+                'captcha_url': result.get('captcha_url'),
+                'can_request_voice': result.get('can_request_voice', True),
+                'session_id': result.get('session_id', '')
             })
     except Exception as e:
         print(f"Error in uber_send_code: {e}")
+        return jsonify({'success': False, 'error': str(e), 'can_request_voice': True})
+
+
+@app.route('/api/uber-request-voice-otp', methods=['POST'])
+@login_required
+def uber_request_voice_otp():
+    """Request voice call OTP as fallback"""
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id', '')
+        country_code = data.get('country_code', '+61')
+        phone_number = data.get('phone_number', '')
+        
+        if not phone_number:
+            return jsonify({'success': False, 'error': 'Phone number required'})
+        
+        from objects.uberDev import uberVoiceOTP
+        result = uberVoiceOTP(session_id, country_code, phone_number)
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'session_id': result.get('session_id'),
+                'message': 'Voice call initiated - you will receive a call shortly'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Failed to initiate voice call')
+            })
+    except Exception as e:
+        print(f"Error in uber_request_voice_otp: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
