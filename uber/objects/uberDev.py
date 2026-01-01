@@ -1310,18 +1310,20 @@ def uberProfile(cookies, headers, refresh_token):
         if token:
             headers['authorization'] = 'Bearer ' + token
 
-        response = requests.get('https://cn-geo1.uber.com/rt/drivers/me',
+        response = requests.get('https://account.uber.com/api/getUserInfo?localeCode=en',
                                 cookies=cookies,
                                 headers=headers,
                                 timeout=10)
         
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            print(f"uberProfile: Successfully fetched profile from account.uber.com")
+            return data
         
-        response2 = requests.get('https://cn-geo1.uber.com/rt/partners/me',
-                                 cookies=cookies,
-                                 headers=headers,
-                                 timeout=10)
+        response2 = requests.get('https://cn-geo1.uber.com/rt/drivers/me',
+                                cookies=cookies,
+                                headers=headers,
+                                timeout=10)
         
         if response2.status_code == 200:
             return response2.json()
