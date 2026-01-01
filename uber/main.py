@@ -112,8 +112,8 @@ try:
             db.session.commit()
             print(f"Migrated {len(users_without_roles)} users to multi-role system.", flush=True)
         
-        owner_email = os.environ.get("KONVOY_OWNER_EMAIL")
-        owner_password = os.environ.get("KONVOY_OWNER_PASSWORD")
+        owner_email = os.environ.get("RIZTAR_OWNER_EMAIL")
+        owner_password = os.environ.get("RIZTAR_OWNER_PASSWORD")
         
         if owner_email and owner_password:
             owner = User.query.filter_by(email=owner_email).first()
@@ -1308,5 +1308,5 @@ def handle_get_online_users():
 
 
 if __name__ == '__main__':
-    print("Starting Konvoy server on port 5000...", flush=True)
+    print("Starting RizTar server on port 5000...", flush=True)
     socketio.run(app, host='0.0.0.0', port=5000)

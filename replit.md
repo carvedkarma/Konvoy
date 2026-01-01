@@ -1,8 +1,8 @@
-# Konvoy - Uber Driver Management System
+# RizTar - Uber Driver Management System
 
 ## Overview
 
-Konvoy is a premium Flask-based web application designed for managing Uber driver operations. The system provides user authentication with role-based access control (user, moderator, owner), integrates with Uber's internal APIs to fetch vehicle details and driver location data, and offers a luxury glassmorphism-styled dashboard interface for ride management.
+RizTar is a premium Flask-based web application designed for managing Uber driver operations. The system provides user authentication with role-based access control (user, moderator, owner), integrates with Uber's internal APIs to fetch vehicle details and driver location data, and offers a luxury glassmorphism-styled dashboard interface for ride management.
 
 ## User Preferences
 
@@ -134,8 +134,8 @@ uber/
 ### Required Environment Variables
 - `DATABASE_URL`: PostgreSQL connection string (auto-configured)
 - `FLASK_SECRET_KEY`: Session encryption key
-- `KONVOY_OWNER_EMAIL`: Auto-create owner account email
-- `KONVOY_OWNER_PASSWORD`: Auto-create owner account password
+- `RIZTAR_OWNER_EMAIL`: Auto-create owner account email
+- `RIZTAR_OWNER_PASSWORD`: Auto-create owner account password
 
 ### Python Dependencies
 - Flask, Flask-Login, Flask-SQLAlchemy, Flask-WTF
