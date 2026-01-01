@@ -485,17 +485,20 @@ def flightArrivals(terminal=None, include_tomorrow=True):
         perth_tz = timezone(timedelta(hours=8))
         perth_now = datetime.now(perth_tz)
         current_hour = perth_now.hour
-        
+
         all_flights = []
         terminals_found = set()
-        
-        urls_to_fetch = [('https://www.airport-perth.com/arrivals.php', 'today')]
-        
+
+        urls_to_fetch = [('https://www.airport-perth.com/arrivals.php',
+                          'today')]
+
         if include_tomorrow and current_hour >= 20:
             tomorrow = perth_now + timedelta(days=1)
             tomorrow_str = tomorrow.strftime('%Y-%m-%d')
-            urls_to_fetch.append((f'https://www.airport-perth.com/arrivals.php?d={tomorrow_str}', 'tomorrow'))
-        
+            urls_to_fetch.append((
+                f'https://www.airport-perth.com/arrivals.php?d={tomorrow_str}',
+                'tomorrow'))
+
         for url, day_label in urls_to_fetch:
             try:
                 response = requests.get(
@@ -517,18 +520,26 @@ def flightArrivals(terminal=None, include_tomorrow=True):
                             continue
 
                         time_elem = row.find('div', class_='flight-col__hour')
-                        origin_elem = row.find('div', class_='flight-col__dest-term')
-                        flight_elem = row.find('a', class_='flight-col__flight--link')
-                        status_elem = row.find('div', class_='flight-col__status')
-                        terminal_elem = row.find('div', class_='flight-col__terminal')
+                        origin_elem = row.find('div',
+                                               class_='flight-col__dest-term')
+                        flight_elem = row.find(
+                            'a', class_='flight-col__flight--link')
+                        status_elem = row.find('div',
+                                               class_='flight-col__status')
+                        terminal_elem = row.find('div',
+                                                 class_='flight-col__terminal')
 
                         if time_elem:
                             time_str = time_elem.get_text(strip=True)
-                            origin = origin_elem.get_text(strip=True) if origin_elem else ''
-                            flight_num = flight_elem.get_text(strip=True) if flight_elem else ''
-                            status = status_elem.get_text(strip=True) if status_elem else ''
-                            term = terminal_elem.get_text(strip=True) if terminal_elem else ''
-                            
+                            origin = origin_elem.get_text(
+                                strip=True) if origin_elem else ''
+                            flight_num = flight_elem.get_text(
+                                strip=True) if flight_elem else ''
+                            status = status_elem.get_text(
+                                strip=True) if status_elem else ''
+                            term = terminal_elem.get_text(
+                                strip=True) if terminal_elem else ''
+
                             if day_label == 'tomorrow':
                                 is_landed = False
                             else:
@@ -541,24 +552,39 @@ def flightArrivals(terminal=None, include_tomorrow=True):
                                 continue
 
                             all_flights.append({
-                                'time': time_str,
-                                'flight': flight_num,
-                                'origin': origin,
-                                'status': status if day_label == 'today' else 'Scheduled',
-                                'terminal': term,
-                                'day': day_label,
-                                'landed': is_landed
+                                'time':
+                                time_str,
+                                'flight':
+                                flight_num,
+                                'origin':
+                                origin,
+                                'status':
+                                status
+                                if day_label == 'today' else 'Scheduled',
+                                'terminal':
+                                term,
+                                'day':
+                                day_label,
+                                'landed':
+                                is_landed
                             })
-                    
-                    print(f"Scraped {day_label}: {len([f for f in all_flights if f.get('day') == day_label])} flights")
+
+                    print(
+                        f"Scraped {day_label}: {len([f for f in all_flights if f.get('day') == day_label])} flights"
+                    )
                 else:
-                    print(f"Flight API returned status {response.status_code} for {day_label}")
+                    print(
+                        f"Flight API returned status {response.status_code} for {day_label}"
+                    )
             except Exception as e:
                 print(f"Error fetching {day_label} flights: {e}")
-        
-        print(f"Total scraped: {len(all_flights)} flights (terminals: {sorted(terminals_found)})")
+
+        print(
+            f"Total scraped: {len(all_flights)} flights (terminals: {sorted(terminals_found)})"
+        )
 
         class MockResponse:
+
             def __init__(self, data):
                 self._data = data
                 self.status_code = 200
@@ -619,3 +645,196 @@ def parseFlightsByHour(response_data):
         })
 
     return result
+
+
+
+def uberAuth(country_code, phone_number):
+    """
+    Initiate Uber authentication with phone number.
+    Returns dict with success status, session_id, or captcha info.
+    """
+    import uuid
+    
+    device_udid = str(uuid.uuid4()).upper()
+    hot_launch_id = str(uuid.uuid4()).upper()
+    cold_launch_id = str(uuid.uuid4()).upper()
+    request_uuid = str(uuid.uuid4())
+    
+    try:
+        headers = {
+            'Host': 'cn-geo1.uber.com',
+            'referer': 'https://auth.uber.com/',
+            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15',
+            'x-uber-client-version': '4.524.10000',
+            'x-uber-client-name': 'driver',
+            'origin': 'https://auth.uber.com',
+            'x-uber-cold-launch-id': cold_launch_id,
+            'x-uber-hot-launch-id': hot_launch_id,
+            'accept-language': 'en-AU',
+            'x-uber-request-uuid': request_uuid,
+            'x-uber-usl-id': device_udid,
+            'x-uber-device-udid': device_udid,
+            'x-uber-client-id': 'com.ubercab.UberPartner',
+            'accept': '*/*',
+            'content-type': 'application/json',
+            'x-uber-device': 'iphone',
+        }
+        
+        json_data = {
+            'formContainerAnswer': {
+                'inAuthSessionID': '',
+                'formAnswer': {
+                    'flowType': 'INITIAL',
+                    'standardFlow': True,
+                    'accountManagementFlow': False,
+                    'daffFlow': False,
+                    'productConstraints': {
+                        'isEligibleForWebOTPAutofill': False,
+                        'isWhatsAppAvailable': False,
+                        'isPublicKeyCredentialSupported': True,
+                    },
+                    'additionalParams': {
+                        'isEmailUpdatePostAuth': False,
+                    },
+                    'deviceData': '',
+                    'codeChallenge': 'wdxgrpoDP_smdsYGSoKPcPIOXhpUzNXpmkAvr-r8Oxo',
+                    'firstPartyClientID': 'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
+                    'screenAnswers': [
+                        {
+                            'screenType': 'PHONE_NUMBER_INITIAL',
+                            'eventType': 'TypeInputMobile',
+                            'fieldAnswers': [
+                                {'fieldType': 'PHONE_COUNTRY_CODE', 'phoneCountryCode': country_code},
+                                {'fieldType': 'PHONE_NUMBER', 'phoneNumber': phone_number},
+                            ],
+                        },
+                    ],
+                },
+            },
+        }
+        
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/silk-screen/submit-form',
+            headers=headers,
+            json=json_data,
+            timeout=15
+        )
+        
+        result = response.json()
+        print(f"Uber auth response: {result}")
+        
+        if 'formContainerResponse' in result:
+            form_response = result['formContainerResponse']
+            session_id = form_response.get('outAuthSessionID', '')
+            
+            if session_id:
+                return {
+                    'success': True,
+                    'session_id': session_id,
+                    'device_udid': device_udid,
+                    'headers': headers
+                }
+        
+        if 'error' in result or result.get('status') == 'FAILURE':
+            error_msg = result.get('error', {}).get('message', 'Authentication failed')
+            return {
+                'success': False,
+                'error': error_msg,
+                'needs_captcha': 'captcha' in str(error_msg).lower() or 'challenge' in str(error_msg).lower()
+            }
+        
+        return {
+            'success': False,
+            'error': 'Captcha verification required',
+            'needs_captcha': True,
+            'captcha_url': 'https://ak04a6qc.uber.com/v2/30000F36-CADF-490C-929A-C6A7DD8B33C4/index.html'
+        }
+        
+    except requests.exceptions.Timeout:
+        return {'success': False, 'error': 'Request timed out'}
+    except Exception as e:
+        print(f"Uber auth error: {e}")
+        return {'success': False, 'error': str(e)}
+
+
+def uberVerifyCode(session_id, code):
+    """
+    Verify SMS code and complete authentication.
+    Returns dict with success status and credentials.
+    """
+    import uuid
+    
+    device_udid = str(uuid.uuid4()).upper()
+    
+    try:
+        headers = {
+            'Host': 'cn-geo1.uber.com',
+            'referer': 'https://auth.uber.com/',
+            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15',
+            'x-uber-client-version': '4.524.10000',
+            'x-uber-client-name': 'driver',
+            'origin': 'https://auth.uber.com',
+            'accept-language': 'en-AU',
+            'x-uber-device-udid': device_udid,
+            'x-uber-client-id': 'com.ubercab.UberPartner',
+            'accept': '*/*',
+            'content-type': 'application/json',
+            'x-uber-device': 'iphone',
+        }
+        
+        json_data = {
+            'formContainerAnswer': {
+                'inAuthSessionID': session_id,
+                'formAnswer': {
+                    'flowType': 'CONTINUE',
+                    'screenAnswers': [
+                        {
+                            'screenType': 'ENTER_OTP',
+                            'eventType': 'TypeInputMobile',
+                            'fieldAnswers': [
+                                {'fieldType': 'SMS_OTP', 'smsOTP': code},
+                            ],
+                        },
+                    ],
+                },
+            },
+        }
+        
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/silk-screen/submit-form',
+            headers=headers,
+            json=json_data,
+            timeout=15
+        )
+        
+        result = response.json()
+        print(f"Uber verify response: {result}")
+        
+        if 'formContainerResponse' in result:
+            form_response = result['formContainerResponse']
+            
+            if form_response.get('status') == 'SUCCESS' or 'accessToken' in str(result):
+                cookies_from_response = {}
+                headers_from_response = dict(headers)
+                
+                access_token = result.get('accessToken')
+                refresh_token = result.get('refreshToken')
+                
+                if access_token:
+                    headers_from_response['authorization'] = f'Bearer {access_token}'
+                
+                return {
+                    'success': True,
+                    'cookies': cookies_from_response,
+                    'headers': headers_from_response,
+                    'refresh_token': refresh_token or ''
+                }
+        
+        error_msg = result.get('error', {}).get('message', 'Verification failed')
+        return {'success': False, 'error': error_msg}
+        
+    except requests.exceptions.Timeout:
+        return {'success': False, 'error': 'Request timed out'}
+    except Exception as e:
+        print(f"Uber verify error: {e}")
+        return {'success': False, 'error': str(e)}

@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}RizTar | Connect with Phone{% endblock %}
+
+{% block extra_styles %}
+.uber-gradient {
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+}
+.glass-card {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+.phone-input {
+    letter-spacing: 0.5px;
+}
+.uber-btn {
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+    transition: all 0.3s ease;
+}
+.uber-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+.uber-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+.step-indicator {
+    transition: all 0.3s ease;
+}
+.step-indicator.active {
+    background: #000;
+    color: white;
+}
+.step-indicator.completed {
+    background: #10b981;
+    color: white;
+}
+#captchaFrame {
+    border: 1px solid #e4e4e7;
+    border-radius: 12px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="min-h-[90vh] flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 uber-gradient rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                <svg class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-zinc-900">Connect Your Uber Account</h1>
+            <p class="text-sm text-zinc-500 mt-2">Enter your phone number to link your driver account</p>
+        </div>
+
+        <div class="flex justify-center mb-8">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <div id="step1" class="step-indicator active w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-black">1</div>
+                    <span class="ml-2 text-sm font-medium text-zinc-700">Phone</span>
+                </div>
+                <div class="w-12 h-0.5 bg-zinc-200"></div>
+                <div class="flex items-center">
+                    <div id="step2" class="step-indicator w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-zinc-300 text-zinc-400">2</div>
+                    <span class="ml-2 text-sm font-medium text-zinc-400">Verify</span>
+                </div>
+                <div class="w-12 h-0.5 bg-zinc-200"></div>
+                <div class="flex items-center">
+                    <div id="step3" class="step-indicator w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-zinc-300 text-zinc-400">3</div>
+                    <span class="ml-2 text-sm font-medium text-zinc-400">Done</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card rounded-2xl overflow-hidden">
+            <div id="phoneStep" class="p-8">
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-zinc-700 mb-3">Phone Number</label>
+                    <div class="flex gap-3">
+                        <div class="relative">
+                            <select id="countryCode" class="h-14 pl-4 pr-10 bg-zinc-50 border border-zinc-200 rounded-xl text-sm font-medium focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 appearance-none cursor-pointer">
+                                <option value="+61">🇦🇺 +61</option>
+                                <option value="+1">🇺🇸 +1</option>
+                                <option value="+44">🇬🇧 +44</option>
+                                <option value="+91">🇮🇳 +91</option>
+                                <option value="+86">🇨🇳 +86</option>
+                                <option value="+81">🇯🇵 +81</option>
+                                <option value="+65">🇸🇬 +65</option>
+                                <option value="+64">🇳🇿 +64</option>
+                                <option value="+92">🇵🇰 +92</option>
+                                <option value="+971">🇦🇪 +971</option>
+                            </select>
+                            <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                        <input type="tel" id="phoneNumber" placeholder="488 538 251" 
+                            class="phone-input flex-1 h-14 px-4 bg-zinc-50 border border-zinc-200 rounded-xl text-lg font-medium focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10"
+                            maxlength="15">
+                    </div>
+                    <p class="text-xs text-zinc-400 mt-2">We'll send a verification code to this number</p>
+                </div>
+
+                <button id="sendCodeBtn" onclick="sendVerificationCode()" class="uber-btn w-full text-white py-4 rounded-xl font-semibold text-sm">
+                    Continue
+                </button>
+
+                <div id="phoneError" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <p class="text-sm text-red-600" id="phoneErrorText"></p>
+                </div>
+            </div>
+
+            <div id="captchaStep" class="hidden p-8">
+                <div class="text-center mb-6">
+                    <h3 class="text-lg font-semibold text-zinc-900">Security Check</h3>
+                    <p class="text-sm text-zinc-500 mt-1">Please complete the verification below</p>
+                </div>
+                
+                <div id="captchaContainer" class="mb-6 flex justify-center">
+                    <div id="captchaLoading" class="py-12 text-center">
+                        <svg class="animate-spin h-8 w-8 text-zinc-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <p class="text-sm text-zinc-500">Loading security check...</p>
+                    </div>
+                    <iframe id="captchaFrame" class="hidden" width="320" height="400"></iframe>
+                </div>
+
+                <button id="verifyCaptchaBtn" onclick="verifyCaptcha()" class="uber-btn w-full text-white py-4 rounded-xl font-semibold text-sm" disabled>
+                    Verify & Continue
+                </button>
+            </div>
+
+            <div id="codeStep" class="hidden p-8">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-zinc-900">Enter Verification Code</h3>
+                    <p class="text-sm text-zinc-500 mt-1">We sent a 4-digit code to <span id="sentToNumber" class="font-medium text-zinc-700"></span></p>
+                </div>
+
+                <div class="flex justify-center gap-3 mb-6">
+                    <input type="text" maxlength="1" class="code-input w-14 h-16 text-center text-2xl font-bold bg-zinc-50 border-2 border-zinc-200 rounded-xl focus:outline-none focus:border-black" oninput="handleCodeInput(this, 0)">
+                    <input type="text" maxlength="1" class="code-input w-14 h-16 text-center text-2xl font-bold bg-zinc-50 border-2 border-zinc-200 rounded-xl focus:outline-none focus:border-black" oninput="handleCodeInput(this, 1)">
+                    <input type="text" maxlength="1" class="code-input w-14 h-16 text-center text-2xl font-bold bg-zinc-50 border-2 border-zinc-200 rounded-xl focus:outline-none focus:border-black" oninput="handleCodeInput(this, 2)">
+                    <input type="text" maxlength="1" class="code-input w-14 h-16 text-center text-2xl font-bold bg-zinc-50 border-2 border-zinc-200 rounded-xl focus:outline-none focus:border-black" oninput="handleCodeInput(this, 3)">
+                </div>
+
+                <button id="verifyCodeBtn" onclick="verifyCode()" class="uber-btn w-full text-white py-4 rounded-xl font-semibold text-sm" disabled>
+                    Verify Code
+                </button>
+
+                <button onclick="resendCode()" class="w-full text-zinc-500 hover:text-zinc-700 py-3 text-sm font-medium mt-3">
+                    Didn't receive code? <span class="underline">Resend</span>
+                </button>
+
+                <div id="codeError" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <p class="text-sm text-red-600" id="codeErrorText"></p>
+                </div>
+            </div>
+
+            <div id="successStep" class="hidden p-8 text-center">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-zinc-900 mb-2">Successfully Connected!</h3>
+                <p class="text-sm text-zinc-500 mb-6">Your Uber driver account is now linked to RizTar</p>
+                <a href="{{ url_for('root') }}" class="uber-btn inline-block text-white px-8 py-4 rounded-xl font-semibold text-sm">
+                    Go to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center">
+            <a href="{{ url_for('uber_connect') }}" class="text-sm text-zinc-500 hover:text-zinc-700">
+                Use HAR file instead
+            </a>
+        </div>
+
+        <p class="text-center text-xs text-zinc-400 mt-8">
+            By continuing, you agree to allow RizTar to access your Uber driver account information.
+        </p>
+    </div>
+</div>
+
+<script>
+let authSessionId = null;
+let challengeToken = null;
+
+function formatPhone(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length > 3 && value.length <= 6) {
+        value = value.slice(0, 3) + ' ' + value.slice(3);
+    } else if (value.length > 6) {
+        value = value.slice(0, 3) + ' ' + value.slice(3, 6) + ' ' + value.slice(6);
+    }
+    input.value = value;
+}
+
+document.getElementById('phoneNumber').addEventListener('input', function(e) {
+    formatPhone(e.target);
+});
+
+async function sendVerificationCode() {
+    const btn = document.getElementById('sendCodeBtn');
+    const countryCode = document.getElementById('countryCode').value;
+    const phoneNumber = document.getElementById('phoneNumber').value.replace(/\s/g, '');
+    
+    if (!phoneNumber || phoneNumber.length < 8) {
+        showPhoneError('Please enter a valid phone number');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
+    
+    try {
+        const response = await fetch('/api/uber-send-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                country_code: countryCode, 
+                phone_number: phoneNumber 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.needs_captcha) {
+                showCaptchaStep(data.captcha_url);
+            } else {
+                authSessionId = data.session_id;
+                showCodeStep(countryCode + ' ' + phoneNumber);
+            }
+        } else {
+            showPhoneError(data.error || 'Failed to send verification code');
+            btn.disabled = false;
+            btn.textContent = 'Continue';
+        }
+    } catch (err) {
+        showPhoneError('Connection error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Continue';
+    }
+}
+
+function showCaptchaStep(captchaUrl) {
+    document.getElementById('phoneStep').classList.add('hidden');
+    document.getElementById('captchaStep').classList.remove('hidden');
+    
+    document.getElementById('step1').classList.remove('active');
+    document.getElementById('step1').classList.add('completed');
+    document.getElementById('step2').classList.add('active');
+    
+    setTimeout(() => {
+        document.getElementById('captchaLoading').classList.add('hidden');
+        const frame = document.getElementById('captchaFrame');
+        frame.src = captchaUrl;
+        frame.classList.remove('hidden');
+        document.getElementById('verifyCaptchaBtn').disabled = false;
+    }, 1000);
+}
+
+function showCodeStep(phone) {
+    document.getElementById('phoneStep').classList.add('hidden');
+    document.getElementById('captchaStep').classList.add('hidden');
+    document.getElementById('codeStep').classList.remove('hidden');
+    document.getElementById('sentToNumber').textContent = phone;
+    
+    document.getElementById('step1').classList.remove('active');
+    document.getElementById('step1').classList.add('completed');
+    document.getElementById('step2').classList.remove('active');
+    document.getElementById('step2').classList.add('completed');
+    document.getElementById('step3').classList.add('active');
+    
+    document.querySelectorAll('.code-input')[0].focus();
+}
+
+function handleCodeInput(input, index) {
+    const inputs = document.querySelectorAll('.code-input');
+    input.value = input.value.replace(/\D/g, '');
+    
+    if (input.value && index < 3) {
+        inputs[index + 1].focus();
+    }
+    
+    const code = Array.from(inputs).map(i => i.value).join('');
+    document.getElementById('verifyCodeBtn').disabled = code.length !== 4;
+}
+
+async function verifyCode() {
+    const inputs = document.querySelectorAll('.code-input');
+    const code = Array.from(inputs).map(i => i.value).join('');
+    const btn = document.getElementById('verifyCodeBtn');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
+    
+    try {
+        const response = await fetch('/api/uber-verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                session_id: authSessionId,
+                code: code 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccess();
+        } else {
+            showCodeError(data.error || 'Invalid verification code');
+            btn.disabled = false;
+            btn.textContent = 'Verify Code';
+        }
+    } catch (err) {
+        showCodeError('Connection error. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Verify Code';
+    }
+}
+
+function showSuccess() {
+    document.getElementById('codeStep').classList.add('hidden');
+    document.getElementById('successStep').classList.remove('hidden');
+    
+    document.getElementById('step3').classList.remove('active');
+    document.getElementById('step3').classList.add('completed');
+}
+
+function showPhoneError(message) {
+    document.getElementById('phoneErrorText').textContent = message;
+    document.getElementById('phoneError').classList.remove('hidden');
+}
+
+function showCodeError(message) {
+    document.getElementById('codeErrorText').textContent = message;
+    document.getElementById('codeError').classList.remove('hidden');
+}
+
+async function resendCode() {
+    document.getElementById('codeStep').classList.add('hidden');
+    document.getElementById('phoneStep').classList.remove('hidden');
+    document.getElementById('sendCodeBtn').disabled = false;
+    document.getElementById('sendCodeBtn').textContent = 'Continue';
+    
+    document.getElementById('step1').classList.add('active');
+    document.getElementById('step1').classList.remove('completed');
+    document.getElementById('step2').classList.remove('active', 'completed');
+    document.getElementById('step3').classList.remove('active', 'completed');
+    
+    document.querySelectorAll('.code-input').forEach(i => i.value = '');
+}
+
+async function verifyCaptcha() {
+    showCodeStep(document.getElementById('countryCode').value + ' ' + document.getElementById('phoneNumber').value.replace(/\s/g, ''));
+}
+</script>
+{% endblock %}

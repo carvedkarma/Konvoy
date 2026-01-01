@@ -13,6 +13,12 @@
         </a>
         <h1 class="text-xl font-bold text-zinc-900">Connect Uber Driver Account</h1>
         <p class="text-sm text-zinc-500">Link your Uber driver account to access all features</p>
+        <a href="{{ url_for('uber_phone_connect') }}" class="inline-flex items-center mt-3 px-4 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            Connect with Phone Number
+        </a>
     </div>
 
     {% if current_user.uber_connected %}

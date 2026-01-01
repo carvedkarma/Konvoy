@@ -805,6 +805,82 @@ def test_uber_credentials():
         return jsonify({'success': False, 'error': str(e)})
 
 
+@app.route('/uber-phone-connect')
+@login_required
+def uber_phone_connect():
+    """Phone-based Uber connection page"""
+    return render_template('uber_phone_connect.html')
+
+
+@app.route('/api/uber-send-code', methods=['POST'])
+@login_required
+def uber_send_code():
+    """Send verification code to phone number"""
+    try:
+        data = request.get_json()
+        country_code = data.get('country_code', '+61')
+        phone_number = data.get('phone_number', '')
+        
+        if not phone_number:
+            return jsonify({'success': False, 'error': 'Phone number required'})
+        
+        from objects.uberDev import uberAuth
+        result = uberAuth(country_code, phone_number)
+        
+        if result.get('success'):
+            return jsonify({
+                'success': True,
+                'session_id': result.get('session_id'),
+                'needs_captcha': result.get('needs_captcha', False),
+                'captcha_url': result.get('captcha_url')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Failed to send code'),
+                'needs_captcha': result.get('needs_captcha', False),
+                'captcha_url': result.get('captcha_url')
+            })
+    except Exception as e:
+        print(f"Error in uber_send_code: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/uber-verify-code', methods=['POST'])
+@login_required
+def uber_verify_code():
+    """Verify the SMS code and complete connection"""
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id', '')
+        code = data.get('code', '')
+        
+        if not session_id or not code:
+            return jsonify({'success': False, 'error': 'Session ID and code required'})
+        
+        from objects.uberDev import uberVerifyCode
+        result = uberVerifyCode(session_id, code)
+        
+        if result.get('success'):
+            cookies = result.get('cookies', {})
+            headers = result.get('headers', {})
+            refresh_token = result.get('refresh_token', '')
+            
+            current_user.uber_cookies = encrypt_data(json.dumps(cookies))
+            current_user.uber_headers = encrypt_data(json.dumps(headers))
+            current_user.uber_refresh_token = encrypt_data(refresh_token)
+            current_user.uber_connected = True
+            db.session.commit()
+            cache.invalidate_cache(current_user.id)
+            
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': result.get('error', 'Invalid code')})
+    except Exception as e:
+        print(f"Error in uber_verify_code: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/uber-disconnect', methods=['POST'])
 @login_required
 def uber_disconnect():
