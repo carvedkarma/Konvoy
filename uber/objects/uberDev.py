@@ -40,7 +40,18 @@ def locationTracker(addrs):
     return [response.json()[0]['lat'], response.json()[0]['lon']]
 
 
+_token_cache = {}
+_token_cache_ttl = 55
+
 def refreshToken(cookies, headers, refresh_token):
+    import time
+    cache_key = refresh_token[:20] if refresh_token else 'default'
+    
+    if cache_key in _token_cache:
+        cached = _token_cache[cache_key]
+        if time.time() - cached['time'] < _token_cache_ttl:
+            return cached['token']
+    
     json_data = {
         'request': {
             'scope': [],
@@ -56,15 +67,19 @@ def refreshToken(cookies, headers, refresh_token):
             cookies=cookies,
             headers=headers,
             json=json_data,
-            timeout=15)
+            timeout=10)
         
         data = response.json()
         print(f"refreshToken: Status {response.status_code}, Response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}")
         
         if 'accessToken' in data:
-            return data['accessToken']
+            token = data['accessToken']
+            _token_cache[cache_key] = {'token': token, 'time': time.time()}
+            return token
         elif 'access_token' in data:
-            return data['access_token']
+            token = data['access_token']
+            _token_cache[cache_key] = {'token': token, 'time': time.time()}
+            return token
         else:
             print(f"refreshToken: No accessToken in response: {data}")
             raise KeyError('accessToken not in response')
@@ -512,7 +527,7 @@ def driverInfo(cookies, headers, refresh_token):
         response = requests.get('https://cn-geo1.uber.com/rt/drivers/me',
                                 cookies=cookies,
                                 headers=headers,
-                                timeout=10)
+                                timeout=5)
 
         if response.status_code == 200:
             data = response.json()
@@ -525,7 +540,7 @@ def driverInfo(cookies, headers, refresh_token):
         response2 = requests.get('https://cn-geo1.uber.com/rt/partners/me',
                                  cookies=cookies,
                                  headers=headers,
-                                 timeout=10)
+                                 timeout=5)
 
         if response2.status_code == 200:
             data = response2.json()
@@ -1394,7 +1409,7 @@ def uberProfile(cookies, headers, refresh_token):
             'https://account.uber.com/api/getUserInfo?localeCode=en',
             cookies=cookies,
             headers=headers,
-            timeout=10)
+            timeout=5)
 
         if response.status_code == 200:
             data = response.json()
@@ -1406,7 +1421,7 @@ def uberProfile(cookies, headers, refresh_token):
         response2 = requests.get('https://cn-geo1.uber.com/rt/drivers/me',
                                  cookies=cookies,
                                  headers=headers,
-                                 timeout=10)
+                                 timeout=5)
 
         if response2.status_code == 200:
             return response2.json()
