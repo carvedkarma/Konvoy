@@ -1258,14 +1258,16 @@ def uberAuthention(headers, cookies, session_id, auth_code):
         for cookie in response.cookies:
             response_cookies[cookie.name] = cookie.value
 
-        if 'cookies' in result:
-            for key, value in result.get('cookies', {}).items():
+        result_cookies = result.get('cookies')
+        if result_cookies:
+            for key, value in result_cookies.items():
                 response_cookies[key] = value
 
         headers_from_response = dict(headers) if headers else {}
 
-        access_token = result.get('accessToken')
-        refresh_token = result.get('refreshToken')
+        oauth_info = result.get('oAuthInfo', {})
+        access_token = oauth_info.get('accessToken') if oauth_info else result.get('accessToken')
+        refresh_token = oauth_info.get('refreshToken') if oauth_info else result.get('refreshToken')
 
         if access_token:
             headers_from_response['authorization'] = f'Bearer {access_token}'
