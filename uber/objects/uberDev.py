@@ -1401,6 +1401,7 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             "x-uber-client-user-session-id": generate_uuid(),
             "x-uber-device-ids": generate_device_ids(),
             "x-uber-device": "iphone",
+            "x-uber-device-id": generate_uuid(),
             "x-uber-session-enabled": "TRUE",
             "x-uber-device-v-accuracy": str(round(random.uniform(1, 10), 5)),
             "x-uber-device-h-accuracy": str(round(random.uniform(5, 15), 5)),
