@@ -1306,20 +1306,55 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             for key, value in result_cookies.items():
                 response_cookies[key] = value
 
-        headers_from_response = dict(headers) if headers else {}
-
         oauth_info = result.get('oAuthInfo', {})
         access_token = oauth_info.get('accessToken') if oauth_info else result.get('accessToken')
         refresh_token = oauth_info.get('refreshToken') if oauth_info else result.get('refreshToken')
 
+        driver_api_headers = {
+            "Host": "cn-geo1.uber.com",
+            "x-uber-device-location-latitude": "-32.13434",
+            "accept": "*/*",
+            "x-uber-device-os-build": "Version 26.2 (Build 23C55)",
+            "x-uber-device-location-services-enabled": "0",
+            "x-uber-device-language": "en_AU",
+            "user-agent": "/iphone/3.700.10011",
+            "x-uber-device-width-pixel": "1284",
+            "x-uber-eats-app-installed": "0",
+            "x-uber-app-lifecycle-state": "foreground",
+            "x-uber-device-height-pixel": "2778",
+            "x-uber-device-time-24-format-enabled": "0",
+            "priority": "u=3",
+            "x-uber-device-location-provider": "ios_core",
+            "x-uber-device-timezone": "Australia/Perth",
+            "x-uber-session-swap-mobile": "TRUE",
+            "x-uber-device-scale-factor": "3",
+            "x-uber-device-model": "iPhone14,3",
+            "accept-language": "en-AU;q=1",
+            "x-uber-redirectcount": "0",
+            "x-uber-device-os": "26.2",
+            "x-uber-network-classifier": "fast",
+            "x-uber-client-version": "3.700.10011",
+            "x-uber-device-id-tracking-enabled": "1",
+            "x-uber-client-id": "com.ubercab.UberClient",
+            "content-type": "application/json",
+            "x-uber-device-location-altitude": "-2.80691",
+            "x-uber-client-name": "client",
+            "x-uber-token": "no-token",
+            "x-uber-device": "iphone",
+            "x-uber-session-enabled": "TRUE",
+            "x-uber-device-v-accuracy": "3.56025",
+            "x-uber-device-h-accuracy": "8.90032",
+            "x-uber-device-location-longitude": "115.82197"
+        }
+
         if access_token:
-            headers_from_response['authorization'] = f'Bearer {access_token}'
+            driver_api_headers['authorization'] = f'Bearer {access_token}'
 
         if access_token or refresh_token or response_cookies:
             return {
                 'success': True,
                 'cookies': response_cookies,
-                'headers': headers_from_response,
+                'headers': driver_api_headers,
                 'refresh_token': refresh_token or '',
                 'access_token': access_token or ''
             }
@@ -1332,7 +1367,7 @@ def uberAuthention(headers, cookies, session_id, auth_code):
         return {
             'success': True,
             'cookies': response_cookies,
-            'headers': headers_from_response,
+            'headers': driver_api_headers,
             'refresh_token': '',
             'raw_response': result
         }
