@@ -123,11 +123,31 @@ def vehicleDetails(cookies, headers, refresh_token):
 def appLaunch(cookies, headers, refresh_token):
     global with_ride
 
-    json_data = {
-        'launchParams': {},
-    }
-
     headers = dict(headers)
+    
+    lat = headers.get('x-uber-device-location-latitude', '-31.9505')
+    lon = headers.get('x-uber-device-location-longitude', '115.8605')
+    
+    json_data = {
+        'launchParams': {
+            'latitude': float(lat),
+            'longitude': float(lon),
+            'altitude': float(headers.get('x-uber-device-location-altitude', '0')),
+            'horizontalAccuracy': float(headers.get('x-uber-device-h-accuracy', '10')),
+            'verticalAccuracy': float(headers.get('x-uber-device-v-accuracy', '10')),
+            'speed': 0,
+            'course': 0,
+            'timestamp': int(time.time() * 1000),
+        },
+        'deviceInfo': {
+            'deviceModel': headers.get('x-uber-device-model', 'iPhone14,3'),
+            'deviceOS': headers.get('x-uber-device-os', '18.0'),
+            'appVersion': headers.get('x-uber-client-version', '4.524.10000'),
+        },
+    }
+    
+    print(f"appLaunch: Sending body: {json_data}")
+    
     old_auth = headers.get('authorization', 'none')[:50] if headers.get('authorization') else 'none'
     try:
         new_token = refreshToken(cookies, headers, refresh_token)
@@ -145,6 +165,7 @@ def appLaunch(cookies, headers, refresh_token):
             headers=headers,
             json=json_data)
         # response = requests.get('https://pastebin.com/raw/SYMDNfFL')
+        print(f"appLaunch: Status {response.status_code}, Raw response: {response.text[:1000]}")
         data = response.json()
     except Exception as e:
         print(f"Error fetching app launch data: {e}")
@@ -152,7 +173,7 @@ def appLaunch(cookies, headers, refresh_token):
 
     print(f"appLaunch: Response keys: {list(data.keys())}")
     if 'code' in data and 'message' in data:
-        print(f"appLaunch ERROR: {data.get('code')}: {data.get('message')}")
+        print(f"appLaunch ERROR: {data.get('code')}: {data.get('message')} - Full: {data}")
     if 'vehicles' in data:
         print(f"appLaunch: Found vehicles in response")
     
