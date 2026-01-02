@@ -45,33 +45,64 @@ def refreshToken(cookies, headers, refresh_token):
         'request': {
             'scope': [],
             'grantType': 'REFRESH_TOKEN',
-            'clientID': 'zozycDbnl17oSjKXdw_x_QuNvq5wfRHq',
+            'clientID': 'SCjGHreCKCVv4tDuhi7KTYA4yLZCKgK7',
             'refreshToken': refresh_token,
         },
     }
 
-    response = requests.post(
-        'https://cn-geo1.uber.com/rt/identity/oauth2/token',
-        cookies=cookies,
-        headers=headers,
-        json=json_data)
-
-    return response.json()['accessToken']
+    try:
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/identity/oauth2/token',
+            cookies=cookies,
+            headers=headers,
+            json=json_data,
+            timeout=15)
+        
+        data = response.json()
+        print(f"refreshToken: Status {response.status_code}, Response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}")
+        
+        if 'accessToken' in data:
+            return data['accessToken']
+        elif 'access_token' in data:
+            return data['access_token']
+        else:
+            print(f"refreshToken: No accessToken in response: {data}")
+            raise KeyError('accessToken not in response')
+    except Exception as e:
+        print(f"refreshToken error: {e}")
+        raise
 
 
 def vehicleDetails(cookies, headers, refresh_token):
     params = {'includeInaccessible': 'false'}
 
     headers = dict(headers)
-    headers['authorization'] = 'Bearer ' + refreshToken(
-        cookies, headers, refresh_token)
-
-    response = requests.get('https://cn-geo1.uber.com/rt/drivers/v2/vehicles',
-                            params=params,
-                            cookies=cookies,
-                            headers=headers)
-
-    return response.json()['vehicles']
+    print(f"vehicleDetails: Input headers keys: {list(headers.keys())}")
+    try:
+        token = refreshToken(cookies, headers, refresh_token)
+        headers['authorization'] = 'Bearer ' + token
+    except Exception as e:
+        print(f"vehicleDetails: Token refresh failed: {e}")
+        return []
+    
+    try:
+        response = requests.get('https://cn-geo1.uber.com/rt/drivers/v2/vehicles',
+                                params=params,
+                                cookies=cookies,
+                                headers=headers,
+                                timeout=15)
+        
+        print(f"vehicleDetails: Status {response.status_code}, Response: {response.text[:500]}")
+        
+        if response.status_code != 200:
+            print(f"vehicleDetails: Non-200 status code: {response.status_code}")
+            return []
+            
+        data = response.json()
+        return data.get('vehicles', [])
+    except Exception as e:
+        print(f"vehicleDetails: Error: {e}")
+        return []
 
 
 def appLaunch(cookies, headers, refresh_token):
@@ -82,8 +113,14 @@ def appLaunch(cookies, headers, refresh_token):
     }
 
     headers = dict(headers)
-    headers['authorization'] = 'Bearer ' + refreshToken(
-        cookies, headers, refresh_token)
+    old_auth = headers.get('authorization', 'none')[:50] if headers.get('authorization') else 'none'
+    try:
+        new_token = refreshToken(cookies, headers, refresh_token)
+        headers['authorization'] = 'Bearer ' + new_token
+        print(f"appLaunch: Old auth prefix: {old_auth}..., New token prefix: {new_token[:50]}...")
+    except Exception as e:
+        print(f"appLaunch: Token refresh failed: {e}")
+        return [0, None]
 
     try:
         # dont delete this
@@ -98,6 +135,12 @@ def appLaunch(cookies, headers, refresh_token):
         print(f"Error fetching app launch data: {e}")
         return [0, None]
 
+    print(f"appLaunch: Response keys: {list(data.keys())}")
+    if 'code' in data and 'message' in data:
+        print(f"appLaunch ERROR: {data.get('code')}: {data.get('message')}")
+    if 'vehicles' in data:
+        print(f"appLaunch: Found vehicles in response")
+    
     task_scopes = data.get('driverTasks', {}).get('taskScopes', [])
     if len(task_scopes) == 0:
         print("No Ride Found")
