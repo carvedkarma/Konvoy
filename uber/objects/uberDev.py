@@ -99,6 +99,7 @@ def refreshToken(cookies, headers, refresh_token):
             timeout=10)
 
         data = response.json()
+        print(response.cookies.get_dict())
         print(
             f"refreshToken: Status {response.status_code}, Response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}"
         )
@@ -1495,4 +1496,85 @@ def uberProfile(cookies, headers, refresh_token):
         return None
     except Exception as e:
         print(f"uberProfile error: {e}")
+        return None
+
+
+def uberCookieGrabber(headers, refresh_token):
+    """
+    Get cookies from Uber API using refresh token.
+    Returns dict with cookies and access_token, or None if failed.
+    """
+    json_data = {
+        'request': {
+            'grantType': 'REFRESH_TOKEN',
+            'refreshToken': refresh_token,
+            'clientID': 'zozycDbnl17oSjKXdw_x_QuNvq5wfRHq',
+            'scope': [],
+        },
+    }
+
+    try:
+        response = requests.post(
+            'https://cn-cloudflare.pidetupop.com/rt/identity/oauth2/token',
+            headers=headers,
+            json=json_data,
+            timeout=10)
+        
+        print(f"uberCookieGrabber: Status {response.status_code}")
+        print(f"uberCookieGrabber: Response cookies: {response.cookies.get_dict()}")
+        
+        cookies_dict = response.cookies.get_dict()
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"uberCookieGrabber: Response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}")
+            return {
+                'cookies': cookies_dict,
+                'access_token': data.get('accessToken') or data.get('access_token'),
+                'response_data': data
+            }
+        else:
+            print(f"uberCookieGrabber: Failed with status {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"uberCookieGrabber error: {e}")
+        return None
+
+
+def driverNavigation(cookies, access_token):
+    """
+    Fetch driver profile details from drivers.uber.com/navigation
+    Requires web cookies from uberCookieGrabber
+    """
+    headers = {
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'accept-language': 'en-US,en;q=0.9',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    }
+    
+    if access_token:
+        headers['authorization'] = f'Bearer {access_token}'
+    
+    try:
+        response = requests.get(
+            'https://drivers.uber.com/navigation',
+            cookies=cookies,
+            headers=headers,
+            timeout=10,
+            allow_redirects=True)
+        
+        print(f"driverNavigation: Status {response.status_code}")
+        print(f"driverNavigation: Final URL: {response.url}")
+        print(f"driverNavigation: Response cookies: {response.cookies.get_dict()}")
+        print(f"driverNavigation: Content length: {len(response.text)}")
+        
+        return {
+            'status_code': response.status_code,
+            'url': response.url,
+            'cookies': response.cookies.get_dict(),
+            'content': response.text[:2000] if response.text else None,
+            'headers': dict(response.headers)
+        }
+    except Exception as e:
+        print(f"driverNavigation error: {e}")
         return None

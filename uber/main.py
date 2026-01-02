@@ -848,6 +848,45 @@ def test_uber_credentials():
         return jsonify({'success': False, 'error': str(e)})
 
 
+@app.route('/api/test-driver-navigation', methods=['GET'])
+@login_required
+def test_driver_navigation():
+    """Test the cookie grabber and driver navigation functions"""
+    if not current_user.uber_connected:
+        return jsonify({'success': False, 'error': 'Uber not connected'})
+    
+    try:
+        cookies, headers, refresh_token = current_user.get_uber_credentials()
+        
+        from objects.uberDev import uberCookieGrabber, driverNavigation
+        
+        cookie_result = uberCookieGrabber(headers, refresh_token)
+        
+        if not cookie_result:
+            return jsonify({
+                'success': False, 
+                'error': 'Failed to grab cookies',
+                'step': 'uberCookieGrabber'
+            })
+        
+        web_cookies = cookie_result.get('cookies', {})
+        access_token = cookie_result.get('access_token')
+        
+        nav_result = driverNavigation(web_cookies, access_token)
+        
+        return jsonify({
+            'success': True,
+            'cookie_grabber': {
+                'cookies': web_cookies,
+                'has_access_token': bool(access_token),
+                'response_keys': list(cookie_result.get('response_data', {}).keys()) if cookie_result.get('response_data') else []
+            },
+            'navigation': nav_result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/uber-phone-connect')
 @login_required
 def uber_phone_connect():
