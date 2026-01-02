@@ -209,8 +209,12 @@ def home_data():
         def fetch_ride():
             try:
                 ride_data = appLaunch(cookies, headers, refresh_token)
-                if ride_data and isinstance(ride_data, dict):
-                    return ride_data
+                if ride_data:
+                    # appLaunch returns [0, data] when no ride, or dict when ride exists
+                    if isinstance(ride_data, list) and len(ride_data) >= 2:
+                        return ride_data[1]  # Return the data dict
+                    elif isinstance(ride_data, dict):
+                        return ride_data
                 return None
             except Exception as e:
                 print(f"Error fetching ride: {e}")
