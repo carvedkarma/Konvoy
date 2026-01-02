@@ -1,3 +1,4 @@
+import re
 import requests
 import time
 import json
@@ -469,7 +470,7 @@ def driverInfo(cookies, headers, refresh_token):
                                 cookies=cookies,
                                 headers=headers,
                                 timeout=10)
-        
+
         if response.status_code == 200:
             data = response.json()
             firstname = data.get('firstName', data.get('first_name', 'Driver'))
@@ -477,12 +478,12 @@ def driverInfo(cookies, headers, refresh_token):
             name = f"{firstname} {lastname}".strip()
             photo = data.get('picture', data.get('pictureUrl', None))
             return [name, photo]
-        
+
         response2 = requests.get('https://cn-geo1.uber.com/rt/partners/me',
                                  cookies=cookies,
                                  headers=headers,
                                  timeout=10)
-        
+
         if response2.status_code == 200:
             data = response2.json()
             firstname = data.get('first_name', data.get('firstName', 'Driver'))
@@ -490,8 +491,10 @@ def driverInfo(cookies, headers, refresh_token):
             name = f"{firstname} {lastname}".strip()
             photo = data.get('picture', None)
             return [name, photo]
-        
-        print(f"driverInfo: All API endpoints failed. Status codes: {response.status_code}, {response2.status_code}")
+
+        print(
+            f"driverInfo: All API endpoints failed. Status codes: {response.status_code}, {response2.status_code}"
+        )
         return ['Driver', None]
     except Exception as e:
         print(f"driverInfo error: {e}")
@@ -1141,16 +1144,14 @@ def uberEmailVerify(session_id, OTP):
             response_cookies[cookie.name] = cookie.value
 
         auth_code = None
-        new_session_id = result.get('formContainerResponse',
-                                    {}).get('outAuthSessionID', session_id)
+        new_session_id = result.get('inAuthSessionID', session_id)
 
-        screen_responses = result.get('formContainerResponse',
-                                      {}).get('nextScreens', [])
+        screen_responses = result.get('form', {}).get('screens', [])
         for screen in screen_responses:
             if screen.get('screenType') == 'SESSION_VERIFICATION':
-                for field in screen.get('fieldValues', []):
+                for field in screen.get('fields', []):
                     if field.get('fieldType') == 'SESSION_VERIFICATION_CODE':
-                        auth_code = field.get('sessionVerificationCode')
+                        auth_code = field.get('authCode')
                         break
 
         if auth_code:
@@ -1252,6 +1253,7 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             json=json_data,
             timeout=15)
         result = response.json()
+        print(result)
         print(f"Uber authentication response: {result}")
 
         response_cookies = dict(cookies) if cookies else {}
@@ -1310,25 +1312,30 @@ def uberProfile(cookies, headers, refresh_token):
         if token:
             headers['authorization'] = 'Bearer ' + token
 
-        response = requests.get('https://account.uber.com/api/getUserInfo?localeCode=en',
-                                cookies=cookies,
-                                headers=headers,
-                                timeout=10)
-        
+        response = requests.get(
+            'https://account.uber.com/api/getUserInfo?localeCode=en',
+            cookies=cookies,
+            headers=headers,
+            timeout=10)
+
         if response.status_code == 200:
             data = response.json()
-            print(f"uberProfile: Successfully fetched profile from account.uber.com")
+            print(
+                f"uberProfile: Successfully fetched profile from account.uber.com"
+            )
             return data
-        
+
         response2 = requests.get('https://cn-geo1.uber.com/rt/drivers/me',
-                                cookies=cookies,
-                                headers=headers,
-                                timeout=10)
-        
+                                 cookies=cookies,
+                                 headers=headers,
+                                 timeout=10)
+
         if response2.status_code == 200:
             return response2.json()
-        
-        print(f"uberProfile: All API endpoints failed. Status: {response.status_code}, {response2.status_code}")
+
+        print(
+            f"uberProfile: All API endpoints failed. Status: {response.status_code}, {response2.status_code}"
+        )
         return None
     except Exception as e:
         print(f"uberProfile error: {e}")
