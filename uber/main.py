@@ -246,15 +246,32 @@ def home_data():
             else:
                 full_ride_data = cached_ride
 
+        driver_status = None
         if full_ride_data and isinstance(full_ride_data, dict):
-            active_ride = {
-                'full_name': full_ride_data.get('full_name', 'Rider'),
-                'rating': full_ride_data.get('rating', '--'),
-                'trip_distance': full_ride_data.get('trip_distance'),
-                'ride_type': full_ride_data.get('ride_type', 'UberX')
+            driver_tasks = full_ride_data.get('driverTasks', {})
+            driver_state = driver_tasks.get('driverState', {})
+            task_scopes = driver_tasks.get('taskScopes', [])
+            
+            driver_status = {
+                'online': driver_state.get('online', False),
+                'available': driver_state.get('available', False),
+                'dispatchable': driver_state.get('dispatchable', False),
+                'onboarding_status': full_ride_data.get('driverOnboardingStatus', 'UNKNOWN')
             }
+            
+            if task_scopes and len(task_scopes) > 0:
+                first_task = task_scopes[0]
+                active_ride = {
+                    'full_name': first_task.get('rider', {}).get('firstName', 'Rider'),
+                    'rating': first_task.get('rider', {}).get('rating', '--'),
+                    'trip_distance': first_task.get('tripDistance'),
+                    'ride_type': first_task.get('vehicleViewName', 'UberX')
+                }
+            else:
+                active_ride = None
         else:
             active_ride = None
+            driver_status = None
 
         for v in vehicles:
             if v.get('isDefault'):
@@ -265,7 +282,8 @@ def home_data():
                    vehicles=vehicles,
                    driver_info=driver_info,
                    default_vehicle=default_vehicle,
-                   active_ride=active_ride)
+                   active_ride=active_ride,
+                   driver_status=driver_status)
 
 
 @app.route('/api/active-ride')

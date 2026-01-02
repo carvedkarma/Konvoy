@@ -333,6 +333,7 @@ fetch('/api/home-data')
         const vehicles = data.vehicles || [];
         const defaultVehicle = data.default_vehicle;
         const activeRide = data.active_ride;
+        const driverStatus = data.driver_status;
         const isOwner = {{ 'true' if current_user.is_owner() else 'false' }};
         const hasLocationPerm = {{ 'true' if current_user.has_permission('can_change_location') else 'false' }};
         const hasRidePerm = {{ 'true' if current_user.has_permission('can_fetch_ride') else 'false' }};
@@ -374,6 +375,29 @@ fetch('/api/home-data')
                             </svg>
                         </button>
                     </div>
+                    ${driverStatus ? `
+                    <div class="mt-4 pt-4 border-t border-zinc-100">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-zinc-500 font-medium">Driver Status</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="flex items-center ${driverStatus.online ? 'text-emerald-600' : 'text-zinc-400'}">
+                                    <span class="w-2 h-2 rounded-full ${driverStatus.online ? 'bg-emerald-500' : 'bg-zinc-300'} mr-1.5"></span>
+                                    <span class="text-xs font-medium">${driverStatus.online ? 'Online' : 'Offline'}</span>
+                                </div>
+                                <span class="text-zinc-300">|</span>
+                                <div class="flex items-center ${driverStatus.available ? 'text-blue-600' : 'text-zinc-400'}">
+                                    <span class="w-2 h-2 rounded-full ${driverStatus.available ? 'bg-blue-500' : 'bg-zinc-300'} mr-1.5"></span>
+                                    <span class="text-xs font-medium">${driverStatus.available ? 'Available' : 'Busy'}</span>
+                                </div>
+                                <span class="text-zinc-300">|</span>
+                                <div class="flex items-center ${driverStatus.dispatchable ? 'text-purple-600' : 'text-zinc-400'}">
+                                    <span class="w-2 h-2 rounded-full ${driverStatus.dispatchable ? 'bg-purple-500' : 'bg-zinc-300'} mr-1.5"></span>
+                                    <span class="text-xs font-medium">${driverStatus.dispatchable ? 'Dispatchable' : 'Not Dispatchable'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             `;
         } else {
