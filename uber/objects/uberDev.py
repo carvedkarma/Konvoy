@@ -22,8 +22,9 @@ def generate_device_ids():
     advertiser_id = generate_uuid()
     uber_id = generate_uuid()
     vendor_id = generate_uuid()
-    icloud_bytes = ''.join(random.choice('0123456789abcdef') for _ in range(40))
-    
+    icloud_bytes = ''.join(
+        random.choice('0123456789abcdef') for _ in range(40))
+
     return f"advertiserId:{advertiser_id},advertiserTrackingEnabled:1,uberId:{uber_id},vendorId:{vendor_id},iCloudToken:{{length = 20, bytes = 0x{icloud_bytes}}}"
 
 
@@ -70,15 +71,16 @@ def locationTracker(addrs):
 _token_cache = {}
 _token_cache_ttl = 55
 
+
 def refreshToken(cookies, headers, refresh_token):
     import time
     cache_key = refresh_token[:20] if refresh_token else 'default'
-    
+
     if cache_key in _token_cache:
         cached = _token_cache[cache_key]
         if time.time() - cached['time'] < _token_cache_ttl:
             return cached['token']
-    
+
     json_data = {
         'request': {
             'scope': [],
@@ -95,10 +97,12 @@ def refreshToken(cookies, headers, refresh_token):
             headers=headers,
             json=json_data,
             timeout=10)
-        
+
         data = response.json()
-        print(f"refreshToken: Status {response.status_code}, Response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}")
-        
+        print(
+            f"refreshToken: Status {response.status_code}, Response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}"
+        )
+
         if 'accessToken' in data:
             token = data['accessToken']
             _token_cache[cache_key] = {'token': token, 'time': time.time()}
@@ -126,20 +130,24 @@ def vehicleDetails(cookies, headers, refresh_token):
     except Exception as e:
         print(f"vehicleDetails: Token refresh failed: {e}")
         return []
-    
+
     try:
-        response = requests.get('https://cn-geo1.uber.com/rt/drivers/v2/vehicles',
-                                params=params,
-                                cookies=cookies,
-                                headers=headers,
-                                timeout=15)
-        
-        print(f"vehicleDetails: Status {response.status_code}, Response: {response.text[:500]}")
-        
+        response = requests.get(
+            'https://cn-geo1.uber.com/rt/drivers/v2/vehicles',
+            params=params,
+            cookies=cookies,
+            headers=headers,
+            timeout=15)
+
+        print(
+            f"vehicleDetails: Status {response.status_code}, Response: {response.text[:500]}"
+        )
+
         if response.status_code != 200:
-            print(f"vehicleDetails: Non-200 status code: {response.status_code}")
+            print(
+                f"vehicleDetails: Non-200 status code: {response.status_code}")
             return []
-            
+
         data = response.json()
         return data.get('vehicles', [])
     except Exception as e:
@@ -151,25 +159,29 @@ def appLaunch(cookies, headers, refresh_token):
     global with_ride
 
     headers = dict(headers)
-    
+
     headers['x-uber-device-epoch'] = str(int(time.time() * 1000))
     headers['x-uber-request-uuid'] = generate_uuid()
     headers['x-uber-client-session'] = generate_uuid()
     headers['x-uber-call-uuid'] = generate_uuid()
     headers['x-uber-client-user-session-id'] = generate_uuid()
-    
+
     if 'x-uber-device-ids' not in headers:
         headers['x-uber-device-ids'] = generate_device_ids()
-    
+
     json_data = {
         'launchParams': {},
     }
-    
-    old_auth = headers.get('authorization', 'none')[:50] if headers.get('authorization') else 'none'
+
+    old_auth = headers.get(
+        'authorization',
+        'none')[:50] if headers.get('authorization') else 'none'
     try:
         new_token = refreshToken(cookies, headers, refresh_token)
         headers['authorization'] = 'Bearer ' + new_token
-        print(f"appLaunch: Old auth prefix: {old_auth}..., New token prefix: {new_token[:50]}...")
+        print(
+            f"appLaunch: Old auth prefix: {old_auth}..., New token prefix: {new_token[:50]}..."
+        )
     except Exception as e:
         print(f"appLaunch: Token refresh failed: {e}")
         return [0, None]
@@ -180,7 +192,9 @@ def appLaunch(cookies, headers, refresh_token):
             cookies=cookies,
             headers=headers,
             json=json_data)
-        print(f"appLaunch: Status {response.status_code}, Raw response: {response.text[:1000]}")
+        print(
+            f"appLaunch: Status {response.status_code}, Raw response: {response.text[:1000]}"
+        )
         data = response.json()
     except Exception as e:
         print(f"Error fetching app launch data: {e}")
@@ -188,10 +202,12 @@ def appLaunch(cookies, headers, refresh_token):
 
     print(f"appLaunch: Response keys: {list(data.keys())}")
     if 'code' in data and 'message' in data:
-        print(f"appLaunch ERROR: {data.get('code')}: {data.get('message')} - Full: {data}")
+        print(
+            f"appLaunch ERROR: {data.get('code')}: {data.get('message')} - Full: {data}"
+        )
     if 'vehicles' in data:
         print(f"appLaunch: Found vehicles in response")
-    
+
     task_scopes = data.get('driverTasks', {}).get('taskScopes', [])
     if len(task_scopes) == 0:
         print("No Ride Found")
@@ -1358,11 +1374,13 @@ def uberAuthention(headers, cookies, session_id, auth_code):
                 response_cookies[key] = value
 
         oauth_info = result.get('oAuthInfo', {})
-        access_token = oauth_info.get('accessToken') if oauth_info else result.get('accessToken')
-        refresh_token = oauth_info.get('refreshToken') if oauth_info else result.get('refreshToken')
+        access_token = oauth_info.get(
+            'accessToken') if oauth_info else result.get('accessToken')
+        refresh_token = oauth_info.get(
+            'refreshToken') if oauth_info else result.get('refreshToken')
 
         rand_lat, rand_lon, rand_alt = generate_random_location()
-        
+
         driver_api_headers = {
             "Host": "cn-geo1.uber.com",
             "x-uber-device-location-latitude": str(rand_lat),
@@ -1401,7 +1419,7 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             "x-uber-client-user-session-id": generate_uuid(),
             "x-uber-device-ids": generate_device_ids(),
             "x-uber-device": "iphone",
-            "x-uber-device-id": generate_uuid(),
+            "x-uber-device-id": "E8B68CCC-9E56-4952-B2BC-DA152E3B4965",
             "x-uber-session-enabled": "TRUE",
             "x-uber-device-v-accuracy": str(round(random.uniform(1, 10), 5)),
             "x-uber-device-h-accuracy": str(round(random.uniform(5, 15), 5)),
