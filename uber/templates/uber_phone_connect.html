@@ -423,15 +423,23 @@ async function verifyCode() {
                 showSuccess();
             }
         } else {
-            showCodeError(data.error || 'Invalid verification code');
-            btn.disabled = false;
+            showCodeError(data.error || 'Invalid verification code. Please try again.');
+            clearCodeInputs();
+            btn.disabled = true;
             btn.textContent = 'Verify Code';
         }
     } catch (err) {
         showCodeError('Connection error. Please try again.');
-        btn.disabled = false;
+        clearCodeInputs();
+        btn.disabled = true;
         btn.textContent = 'Verify Code';
     }
+}
+
+function clearCodeInputs() {
+    const inputs = document.querySelectorAll('.code-input');
+    inputs.forEach(input => input.value = '');
+    inputs[0].focus();
 }
 
 async function verifyEmailCode() {
@@ -457,15 +465,23 @@ async function verifyEmailCode() {
         if (data.success) {
             showSuccess();
         } else {
-            showEmailError(data.error || 'Invalid email code');
-            btn.disabled = false;
+            showEmailError(data.error || 'Invalid email code. Please try again.');
+            clearEmailCodeInputs();
+            btn.disabled = true;
             btn.textContent = 'Verify Email Code';
         }
     } catch (err) {
         showEmailError('Connection error. Please try again.');
-        btn.disabled = false;
+        clearEmailCodeInputs();
+        btn.disabled = true;
         btn.textContent = 'Verify Email Code';
     }
+}
+
+function clearEmailCodeInputs() {
+    const inputs = document.querySelectorAll('.email-code-input');
+    inputs.forEach(input => input.value = '');
+    inputs[0].focus();
 }
 
 function showSuccess() {
