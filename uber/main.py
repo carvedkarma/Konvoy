@@ -10,7 +10,7 @@ try:
     from flask_login import LoginManager, login_user, logout_user, login_required, current_user
     from flask_socketio import SocketIO, emit, join_room, leave_room
     from datetime import datetime, timedelta
-    from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour, uberProfile
+    from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour
     import config
     import cache
     from models import db, User, Role, ChatMessage, create_default_roles, encrypt_data, decrypt_data
@@ -202,39 +202,7 @@ def home_data():
                 return []
 
         def fetch_driver_info():
-            try:
-                from objects.uberDev import driverInfo, uberProfile
-                data = driverInfo(cookies, headers, refresh_token)
-                name = data[0] if data[0] and data[
-                    0] != 'Driver' else user_display_name
-                photo = data[1]
-                driver_data = {'name': name, 'photo': photo}
-
-                try:
-                    profile_data = uberProfile(cookies, headers, refresh_token)
-                    if profile_data:
-                        driver_data['email'] = profile_data.get('email', '')
-                        phone_data = profile_data.get('mobileToken', {})
-                        if phone_data:
-                            driver_data['phone'] = phone_data.get(
-                                'nationalPhoneNumber', '')
-                        if profile_data.get('pictureUrl'):
-                            driver_data['profile_picture'] = profile_data.get(
-                                'pictureUrl')
-                            if not driver_data['photo']:
-                                driver_data['photo'] = driver_data[
-                                    'profile_picture']
-                        if profile_data.get('firstName'):
-                            driver_data[
-                                'name'] = f"{profile_data.get('firstName', '')} {profile_data.get('lastName', '')}".strip(
-                                )
-                except Exception as e:
-                    print(f"Error fetching uber profile: {e}")
-
-                return driver_data
-            except Exception as e:
-                print(f"Error fetching driver info: {e}")
-                return {'name': user_display_name, 'photo': None}
+            return {'name': user_display_name, 'photo': None}
 
         def fetch_ride():
             try:
@@ -1198,23 +1166,7 @@ def location_data():
                 return vehicleDetails(cookies, headers, refresh_token)
 
             def fetch_driver():
-                from objects.uberDev import driverInfo, uberProfile
-                data = driverInfo(cookies, headers, refresh_token)
-                name = data[0] if data[0] and data[
-                    0] != 'Driver' else user_display_name
-                photo = data[1]
-                driver_data = {'name': name, 'photo': photo}
-                try:
-                    profile_data = uberProfile(cookies, headers, refresh_token)
-                    if profile_data:
-                        driver_data['email'] = profile_data.get('email', '')
-                        phone_data = profile_data.get('mobileToken', {})
-                        if phone_data:
-                            driver_data['phone'] = phone_data.get(
-                                'nationalPhoneNumber', '')
-                except Exception:
-                    pass
-                return driver_data
+                return {'name': user_display_name, 'photo': None}
 
             vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
             for v in vehicles:
