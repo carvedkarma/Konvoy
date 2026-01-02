@@ -3,11 +3,38 @@ import requests
 import time
 import json
 import math
+import uuid
+import random
 
 from source.cred import loc_headers, fare_cookies, fare_headers, fare_query, flight_cookies, flight_headers
 import config
 
 with_ride = 0
+
+
+def generate_uuid():
+    """Generate a random UUID in uppercase format"""
+    return str(uuid.uuid4()).upper()
+
+
+def generate_device_ids():
+    """Generate randomized device IDs for Uber API"""
+    advertiser_id = generate_uuid()
+    uber_id = generate_uuid()
+    vendor_id = generate_uuid()
+    icloud_bytes = ''.join(random.choice('0123456789abcdef') for _ in range(40))
+    
+    return f"advertiserId:{advertiser_id},advertiserTrackingEnabled:1,uberId:{uber_id},vendorId:{vendor_id},iCloudToken:{{length = 20, bytes = 0x{icloud_bytes}}}"
+
+
+def generate_random_location():
+    """Generate slightly randomized Perth area coordinates"""
+    base_lat = -31.9505
+    base_lon = 115.8605
+    lat = base_lat + random.uniform(-0.5, 0.5)
+    lon = base_lon + random.uniform(-0.5, 0.5)
+    alt = random.uniform(-5, 50)
+    return round(lat, 5), round(lon, 5), round(alt, 5)
 
 
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -125,28 +152,18 @@ def appLaunch(cookies, headers, refresh_token):
 
     headers = dict(headers)
     
-    lat = headers.get('x-uber-device-location-latitude', '-31.9505')
-    lon = headers.get('x-uber-device-location-longitude', '115.8605')
+    headers['x-uber-device-epoch'] = str(int(time.time() * 1000))
+    headers['x-uber-request-uuid'] = generate_uuid()
+    headers['x-uber-client-session'] = generate_uuid()
+    headers['x-uber-call-uuid'] = generate_uuid()
+    headers['x-uber-client-user-session-id'] = generate_uuid()
+    
+    if 'x-uber-device-ids' not in headers:
+        headers['x-uber-device-ids'] = generate_device_ids()
     
     json_data = {
-        'launchParams': {
-            'latitude': float(lat),
-            'longitude': float(lon),
-            'altitude': float(headers.get('x-uber-device-location-altitude', '0')),
-            'horizontalAccuracy': float(headers.get('x-uber-device-h-accuracy', '10')),
-            'verticalAccuracy': float(headers.get('x-uber-device-v-accuracy', '10')),
-            'speed': 0,
-            'course': 0,
-            'timestamp': int(time.time() * 1000),
-        },
-        'deviceInfo': {
-            'deviceModel': headers.get('x-uber-device-model', 'iPhone14,3'),
-            'deviceOS': headers.get('x-uber-device-os', '18.0'),
-            'appVersion': headers.get('x-uber-client-version', '4.524.10000'),
-        },
+        'launchParams': {},
     }
-    
-    print(f"appLaunch: Sending body: {json_data}")
     
     old_auth = headers.get('authorization', 'none')[:50] if headers.get('authorization') else 'none'
     try:
@@ -158,13 +175,11 @@ def appLaunch(cookies, headers, refresh_token):
         return [0, None]
 
     try:
-        # dont delete this
         response = requests.post(
             'https://cn-geo1.uber.com/rt/drivers/app-launch',
             cookies=cookies,
             headers=headers,
             json=json_data)
-        # response = requests.get('https://pastebin.com/raw/SYMDNfFL')
         print(f"appLaunch: Status {response.status_code}, Raw response: {response.text[:1000]}")
         data = response.json()
     except Exception as e:
@@ -1346,18 +1361,22 @@ def uberAuthention(headers, cookies, session_id, auth_code):
         access_token = oauth_info.get('accessToken') if oauth_info else result.get('accessToken')
         refresh_token = oauth_info.get('refreshToken') if oauth_info else result.get('refreshToken')
 
+        rand_lat, rand_lon, rand_alt = generate_random_location()
+        
         driver_api_headers = {
             "Host": "cn-geo1.uber.com",
-            "x-uber-device-location-latitude": "-32.13434",
+            "x-uber-device-location-latitude": str(rand_lat),
             "accept": "*/*",
             "x-uber-device-os-build": "Version 26.2 (Build 23C55)",
             "x-uber-device-location-services-enabled": "0",
             "x-uber-device-language": "en_AU",
+            "x-uber-device-epoch": str(int(time.time() * 1000)),
             "user-agent": "/iphone/3.700.10011",
             "x-uber-device-width-pixel": "1284",
             "x-uber-eats-app-installed": "0",
             "x-uber-app-lifecycle-state": "foreground",
             "x-uber-device-height-pixel": "2778",
+            "x-uber-request-uuid": generate_uuid(),
             "x-uber-device-time-24-format-enabled": "0",
             "priority": "u=3",
             "x-uber-device-location-provider": "ios_core",
@@ -1366,21 +1385,25 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             "x-uber-device-scale-factor": "3",
             "x-uber-device-model": "iPhone14,3",
             "accept-language": "en-AU;q=1",
+            "x-uber-device-location-longitude": str(rand_lon),
             "x-uber-redirectcount": "0",
             "x-uber-device-os": "26.2",
+            "x-uber-client-session": generate_uuid(),
             "x-uber-network-classifier": "fast",
             "x-uber-client-version": "3.700.10011",
             "x-uber-device-id-tracking-enabled": "1",
-            "x-uber-client-id": "com.ubercab.UberPartner",
+            "x-uber-client-id": "com.ubercab.UberClient",
             "content-type": "application/json",
-            "x-uber-device-location-altitude": "-2.80691",
-            "x-uber-client-name": "driver",
+            "x-uber-device-location-altitude": str(rand_alt),
+            "x-uber-client-name": "client",
+            "x-uber-call-uuid": generate_uuid(),
             "x-uber-token": "no-token",
+            "x-uber-client-user-session-id": generate_uuid(),
+            "x-uber-device-ids": generate_device_ids(),
             "x-uber-device": "iphone",
             "x-uber-session-enabled": "TRUE",
-            "x-uber-device-v-accuracy": "3.56025",
-            "x-uber-device-h-accuracy": "8.90032",
-            "x-uber-device-location-longitude": "115.82197"
+            "x-uber-device-v-accuracy": str(round(random.uniform(1, 10), 5)),
+            "x-uber-device-h-accuracy": str(round(random.uniform(5, 15), 5)),
         }
 
         if access_token:
