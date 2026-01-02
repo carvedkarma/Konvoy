@@ -1028,7 +1028,6 @@ def uber_verify_email():
                 new_session_id = result.get('session_id', session_id)
                 cookies = result.get('cookies', {})
                 headers = result.get('headers', {})
-                print(result)
                 auth_result = uberAuthention(headers, cookies, new_session_id,
                                              auth_code)
 
