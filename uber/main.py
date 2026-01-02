@@ -1,4 +1,5 @@
 import eventlet
+
 eventlet.monkey_patch()
 
 import os
@@ -23,12 +24,15 @@ except Exception as e:
 
 app = Flask(__name__)
 
-flask_secret = os.environ.get("FLASK_SECRET_KEY") or os.environ.get("SESSION_SECRET")
+flask_secret = os.environ.get("FLASK_SECRET_KEY") or os.environ.get(
+    "SESSION_SECRET")
 if not flask_secret:
     import secrets
     flask_secret = secrets.token_hex(32)
-    print("WARNING: FLASK_SECRET_KEY not set. Using generated key for this session.", flush=True)
-    
+    print(
+        "WARNING: FLASK_SECRET_KEY not set. Using generated key for this session.",
+        flush=True)
+
 app.secret_key = flask_secret
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.config['SESSION_COOKIE_SECURE'] = False
@@ -37,6 +41,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
 app.config['REMEMBER_COOKIE_SECURE'] = False
 app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+
 
 def get_database_url():
     db_url = os.environ.get("DATABASE_URL")
@@ -50,18 +55,24 @@ def get_database_url():
             db_url = db_url.replace('postgres://', 'postgresql://', 1)
     return db_url
 
+
 database_url = get_database_url()
 if not database_url:
-    print("ERROR: DATABASE_URL is not set. Please configure your database.", flush=True)
+    print("ERROR: DATABASE_URL is not set. Please configure your database.",
+          flush=True)
     sys.exit(1)
 else:
-    print(f"Database configured: {'production (neon)' if 'neon' in database_url else 'development'}", flush=True)
+    print(
+        f"Database configured: {'production (neon)' if 'neon' in database_url else 'development'}",
+        flush=True)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
-    "connect_args": {"connect_timeout": 10}
+    "connect_args": {
+        "connect_timeout": 10
+    }
 }
 
 db.init_app(app)
@@ -84,7 +95,8 @@ def load_user(user_id):
 @app.after_request
 def add_no_cache_headers(response):
     if request.endpoint in ['login', 'register', 'logout', 'root']:
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers[
+            'Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
     return response
@@ -95,7 +107,7 @@ try:
         print("Initializing database...", flush=True)
         db.create_all()
         create_default_roles()
-        
+
         users_without_roles = User.query.filter(~User.roles.any()).all()
         for user in users_without_roles:
             if user.role_id:
@@ -103,41 +115,41 @@ try:
                 if custom_role:
                     user.roles.append(custom_role)
                     user.role_id = None
-            
+
             system_role = Role.query.filter_by(name=user.role).first()
             if system_role and system_role not in user.roles:
                 user.roles.append(system_role)
-        
+
         if users_without_roles:
             db.session.commit()
-            print(f"Migrated {len(users_without_roles)} users to multi-role system.", flush=True)
-        
+            print(
+                f"Migrated {len(users_without_roles)} users to multi-role system.",
+                flush=True)
+
         owner_email = os.environ.get("RIZTAR_OWNER_EMAIL")
         owner_password = os.environ.get("RIZTAR_OWNER_PASSWORD")
-        
+
         if owner_email and owner_password:
             owner = User.query.filter_by(email=owner_email).first()
             if not owner:
                 owner_role = Role.query.filter_by(name='owner').first()
-                owner = User(
-                    email=owner_email,
-                    username=owner_email.split('@')[0],
-                    role='owner'
-                )
+                owner = User(email=owner_email,
+                             username=owner_email.split('@')[0],
+                             role='owner')
                 owner.set_password(owner_password)
                 if owner_role:
                     owner.roles.append(owner_role)
                 db.session.add(owner)
                 db.session.commit()
-                print("Owner account configured from environment variables.", flush=True)
-        
+                print("Owner account configured from environment variables.",
+                      flush=True)
+
         print("Database initialization complete.", flush=True)
 except Exception as e:
     print(f"Database initialization error: {e}", flush=True)
     import traceback
     traceback.print_exc()
     sys.exit(1)
-
 
 stop_signal = 0
 stored_destination = None
@@ -146,8 +158,13 @@ stored_destination = None
 @app.route('/')
 def root():
     if current_user.is_authenticated:
-        disconnect_form = UberDisconnectForm() if current_user.uber_connected else None
-        return render_template('home.html', loading=current_user.uber_connected, vehicles=[], driver_info=None, disconnect_form=disconnect_form)
+        disconnect_form = UberDisconnectForm(
+        ) if current_user.uber_connected else None
+        return render_template('home.html',
+                               loading=current_user.uber_connected,
+                               vehicles=[],
+                               driver_info=None,
+                               disconnect_form=disconnect_form)
     return redirect(url_for('login'))
 
 
@@ -158,56 +175,67 @@ def home_data():
     driver_info = None
     default_vehicle = None
     active_ride = None
-    
+
     if current_user.uber_connected:
         try:
-            cookies, headers, refresh_token = current_user.get_uber_credentials()
+            cookies, headers, refresh_token = current_user.get_uber_credentials(
+            )
         except Exception as e:
             print(f"Error getting credentials: {e}")
-            return jsonify(success=True, vehicles=[], driver_info=None, default_vehicle=None, active_ride=None)
-        
+            return jsonify(success=True,
+                           vehicles=[],
+                           driver_info=None,
+                           default_vehicle=None,
+                           active_ride=None)
+
         cached_vehicles = cache.get_cached(current_user.id, 'vehicles')
         cached_driver = cache.get_cached(current_user.id, 'driver_info')
         cached_ride = cache.get_cached(current_user.id, 'active_ride')
-        
+
         user_display_name = current_user.get_display_name()
-        
+
         def fetch_vehicles():
             try:
                 return vehicleDetails(cookies, headers, refresh_token)
             except Exception as e:
                 print(f"Error fetching vehicles: {e}")
                 return []
-        
+
         def fetch_driver_info():
             try:
                 from objects.uberDev import driverInfo, uberProfile
                 data = driverInfo(cookies, headers, refresh_token)
-                name = data[0] if data[0] and data[0] != 'Driver' else user_display_name
+                name = data[0] if data[0] and data[
+                    0] != 'Driver' else user_display_name
                 photo = data[1]
                 driver_data = {'name': name, 'photo': photo}
-                
+
                 try:
                     profile_data = uberProfile(cookies, headers, refresh_token)
                     if profile_data:
                         driver_data['email'] = profile_data.get('email', '')
                         phone_data = profile_data.get('mobileToken', {})
                         if phone_data:
-                            driver_data['phone'] = phone_data.get('nationalPhoneNumber', '')
+                            driver_data['phone'] = phone_data.get(
+                                'nationalPhoneNumber', '')
                         if profile_data.get('pictureUrl'):
-                            driver_data['profile_picture'] = profile_data.get('pictureUrl')
+                            driver_data['profile_picture'] = profile_data.get(
+                                'pictureUrl')
                             if not driver_data['photo']:
-                                driver_data['photo'] = driver_data['profile_picture']
+                                driver_data['photo'] = driver_data[
+                                    'profile_picture']
                         if profile_data.get('firstName'):
-                            driver_data['name'] = f"{profile_data.get('firstName', '')} {profile_data.get('lastName', '')}".strip()
+                            driver_data[
+                                'name'] = f"{profile_data.get('firstName', '')} {profile_data.get('lastName', '')}".strip(
+                                )
                 except Exception as e:
                     print(f"Error fetching uber profile: {e}")
-                
+
                 return driver_data
             except Exception as e:
                 print(f"Error fetching driver info: {e}")
                 return {'name': user_display_name, 'photo': None}
-        
+
         def fetch_ride():
             try:
                 ride_data = appLaunch(cookies, headers, refresh_token)
@@ -217,7 +245,7 @@ def home_data():
             except Exception as e:
                 print(f"Error fetching ride: {e}")
                 return None
-        
+
         if cached_vehicles is not None and cached_driver is not None and cached_ride is not None:
             vehicles = cached_vehicles
             driver_info = cached_driver
@@ -230,25 +258,26 @@ def home_data():
                 tasks['driver'] = eventlet.spawn(fetch_driver_info)
             if cached_ride is None:
                 tasks['ride'] = eventlet.spawn(fetch_ride)
-            
+
             if 'vehicles' in tasks:
                 vehicles = tasks['vehicles'].wait()
                 cache.set_cached(current_user.id, 'vehicles', vehicles)
             else:
                 vehicles = cached_vehicles
-            
+
             if 'driver' in tasks:
                 driver_info = tasks['driver'].wait()
                 cache.set_cached(current_user.id, 'driver_info', driver_info)
             else:
                 driver_info = cached_driver
-            
+
             if 'ride' in tasks:
                 full_ride_data = tasks['ride'].wait()
-                cache.set_cached(current_user.id, 'active_ride', full_ride_data)
+                cache.set_cached(current_user.id, 'active_ride',
+                                 full_ride_data)
             else:
                 full_ride_data = cached_ride
-        
+
         if full_ride_data and isinstance(full_ride_data, dict):
             active_ride = {
                 'full_name': full_ride_data.get('full_name', 'Rider'),
@@ -258,13 +287,17 @@ def home_data():
             }
         else:
             active_ride = None
-        
+
         for v in vehicles:
             if v.get('isDefault'):
                 default_vehicle = v
                 break
-    
-    return jsonify(success=True, vehicles=vehicles, driver_info=driver_info, default_vehicle=default_vehicle, active_ride=active_ride)
+
+    return jsonify(success=True,
+                   vehicles=vehicles,
+                   driver_info=driver_info,
+                   default_vehicle=default_vehicle,
+                   active_ride=active_ride)
 
 
 @app.route('/api/active-ride')
@@ -272,36 +305,43 @@ def home_data():
 def get_active_ride():
     if not current_user.uber_connected:
         return jsonify(success=True, active_ride=None)
-    
+
     cached_ride = cache.get_cached(current_user.id, 'active_ride')
     if cached_ride is not None:
         if isinstance(cached_ride, dict):
-            return jsonify(success=True, active_ride={
-                'full_name': cached_ride.get('full_name', 'Rider'),
-                'rating': cached_ride.get('rating', '--'),
-                'trip_distance': cached_ride.get('trip_distance'),
-                'ride_type': cached_ride.get('ride_type', 'UberX')
-            })
+            return jsonify(success=True,
+                           active_ride={
+                               'full_name':
+                               cached_ride.get('full_name', 'Rider'),
+                               'rating': cached_ride.get('rating', '--'),
+                               'trip_distance':
+                               cached_ride.get('trip_distance'),
+                               'ride_type':
+                               cached_ride.get('ride_type', 'UberX')
+                           })
         return jsonify(success=True, active_ride=None)
-    
+
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
     except Exception as e:
         return jsonify(success=True, active_ride=None)
-    
+
     try:
         ride_data = appLaunch(cookies, headers, refresh_token)
         cache.set_cached(current_user.id, 'active_ride', ride_data)
         if ride_data and isinstance(ride_data, dict):
-            return jsonify(success=True, active_ride={
-                'full_name': ride_data.get('full_name', 'Rider'),
-                'rating': ride_data.get('rating', '--'),
-                'trip_distance': ride_data.get('trip_distance'),
-                'ride_type': ride_data.get('ride_type', 'UberX')
-            })
+            return jsonify(success=True,
+                           active_ride={
+                               'full_name':
+                               ride_data.get('full_name', 'Rider'),
+                               'rating': ride_data.get('rating', '--'),
+                               'trip_distance': ride_data.get('trip_distance'),
+                               'ride_type':
+                               ride_data.get('ride_type', 'UberX')
+                           })
     except Exception as e:
         print(f"Error fetching active ride: {e}")
-    
+
     return jsonify(success=True, active_ride=None)
 
 
@@ -309,7 +349,7 @@ def get_active_ride():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('root'))
-    
+
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
@@ -321,7 +361,7 @@ def login():
             return redirect(next_page if next_page else url_for('root'))
         else:
             flash('Invalid email or password.', 'error')
-    
+
     return render_template('login.html', form=form)
 
 
@@ -329,22 +369,20 @@ def login():
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('root'))
-    
+
     form = RegisterForm()
     if form.validate_on_submit():
-        user = User(
-            email=form.email.data,
-            username=form.username.data,
-            first_name=form.first_name.data,
-            last_name=form.last_name.data,
-            role='user'
-        )
+        user = User(email=form.email.data,
+                    username=form.username.data,
+                    first_name=form.first_name.data,
+                    last_name=form.last_name.data,
+                    role='user')
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
         flash('Account created successfully! Please sign in.', 'success')
         return redirect(url_for('login'))
-    
+
     return render_template('register.html', form=form)
 
 
@@ -362,7 +400,7 @@ def admin():
     if not current_user.can_manage_users():
         flash('Access denied. Owner privileges required.', 'error')
         return redirect(url_for('root'))
-    
+
     users = User.query.all()
     roles = Role.query.all()
     return render_template('admin.html', users=users, roles=roles)
@@ -373,10 +411,10 @@ def admin():
 def update_roles(user_id):
     if not current_user.can_manage_users():
         return jsonify(status="error", message="Access denied"), 403
-    
+
     user = User.query.get_or_404(user_id)
     role_ids = request.form.getlist('role_ids')
-    
+
     new_roles = []
     for role_id in role_ids:
         try:
@@ -385,26 +423,26 @@ def update_roles(user_id):
                 new_roles.append(role)
         except (ValueError, TypeError):
             pass
-    
+
     if not new_roles:
         default_role = Role.query.filter_by(name='user').first()
         if default_role:
             new_roles = [default_role]
-    
+
     user.roles = new_roles
     user.role_id = None
-    
+
     if new_roles:
         primary = user.get_primary_role()
         if primary:
             user.role = primary.name
     else:
         user.role = 'user'
-    
+
     db.session.commit()
     role_names = ', '.join([r.display_name for r in new_roles])
     flash(f'Roles updated for {user.username}: {role_names}', 'success')
-    
+
     return redirect(url_for('admin'))
 
 
@@ -413,13 +451,13 @@ def update_roles(user_id):
 def delete_user(user_id):
     if not current_user.can_manage_users():
         return jsonify(status="error", message="Access denied"), 403
-    
+
     user = User.query.get_or_404(user_id)
-    
+
     if user.id == current_user.id:
         flash('You cannot delete your own account.', 'error')
         return redirect(url_for('admin'))
-    
+
     db.session.delete(user)
     db.session.commit()
     flash(f'User {user.username} has been deleted.', 'success')
@@ -432,37 +470,41 @@ def edit_user(user_id):
     if not current_user.can_manage_users():
         flash('Access denied.', 'error')
         return redirect(url_for('root'))
-    
+
     user = User.query.get_or_404(user_id)
     all_roles = Role.query.all()
-    
+
     if request.method == 'POST':
         first_name = request.form.get('first_name', '').strip()
         last_name = request.form.get('last_name', '').strip()
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
-        
+
         if email != user.email:
             existing = User.query.filter_by(email=email).first()
             if existing:
                 flash('Email already in use.', 'error')
-                return render_template('edit_user.html', user=user, roles=all_roles)
-        
+                return render_template('edit_user.html',
+                                       user=user,
+                                       roles=all_roles)
+
         if username != user.username:
             existing = User.query.filter_by(username=username).first()
             if existing:
                 flash('Username already taken.', 'error')
-                return render_template('edit_user.html', user=user, roles=all_roles)
-        
+                return render_template('edit_user.html',
+                                       user=user,
+                                       roles=all_roles)
+
         user.first_name = first_name
         user.last_name = last_name
         user.username = username
         user.email = email
-        
+
         new_password = request.form.get('new_password', '').strip()
         if new_password:
             user.set_password(new_password)
-        
+
         role_ids = request.form.getlist('role_ids')
         new_roles = []
         for role_id in role_ids:
@@ -472,12 +514,12 @@ def edit_user(user_id):
                     new_roles.append(role)
             except (ValueError, TypeError):
                 pass
-        
+
         if not new_roles:
             default_role = Role.query.filter_by(name='user').first()
             if default_role:
                 new_roles = [default_role]
-        
+
         user.roles = new_roles
         user.role_id = None
         if new_roles:
@@ -486,11 +528,11 @@ def edit_user(user_id):
                 user.role = primary.name
         else:
             user.role = 'user'
-        
+
         db.session.commit()
         flash(f'User {user.username} updated successfully.', 'success')
         return redirect(url_for('admin'))
-    
+
     return render_template('edit_user.html', user=user, roles=all_roles)
 
 
@@ -500,13 +542,13 @@ def admin_uber_credentials(user_id):
     if not current_user.is_owner():
         flash('Access denied. Owner privileges required.', 'error')
         return redirect(url_for('root'))
-    
+
     user = User.query.get_or_404(user_id)
-    
+
     current_cookies = None
     current_headers = None
     current_refresh_token = None
-    
+
     if user.uber_connected:
         try:
             current_cookies = decrypt_data(user.uber_cookies)
@@ -514,14 +556,14 @@ def admin_uber_credentials(user_id):
             current_refresh_token = decrypt_data(user.uber_refresh_token)
         except:
             pass
-    
+
     form = EmptyForm()
-    return render_template('uber_credentials.html', 
-                         user=user,
-                         form=form,
-                         current_cookies=current_cookies,
-                         current_headers=current_headers,
-                         current_refresh_token=current_refresh_token)
+    return render_template('uber_credentials.html',
+                           user=user,
+                           form=form,
+                           current_cookies=current_cookies,
+                           current_headers=current_headers,
+                           current_refresh_token=current_refresh_token)
 
 
 @app.route('/admin/uber-credentials/<int:user_id>/set', methods=['POST'])
@@ -530,17 +572,17 @@ def admin_set_uber_credentials(user_id):
     if not current_user.is_owner():
         flash('Access denied. Owner privileges required.', 'error')
         return redirect(url_for('root'))
-    
+
     user = User.query.get_or_404(user_id)
-    
+
     cookies = request.form.get('cookies', '').strip()
     headers = request.form.get('headers', '').strip()
     refresh_token = request.form.get('refresh_token', '').strip()
-    
+
     if not cookies or not headers or not refresh_token:
         flash('All credential fields are required.', 'error')
         return redirect(url_for('admin_uber_credentials', user_id=user_id))
-    
+
     import json
     try:
         json.loads(cookies)
@@ -548,36 +590,37 @@ def admin_set_uber_credentials(user_id):
     except json.JSONDecodeError:
         flash('Cookies and Headers must be valid JSON.', 'error')
         return redirect(url_for('admin_uber_credentials', user_id=user_id))
-    
+
     user.uber_cookies = encrypt_data(cookies)
     user.uber_headers = encrypt_data(headers)
     user.uber_refresh_token = encrypt_data(refresh_token)
     user.uber_connected = True
-    
+
     db.session.commit()
     cache.invalidate_cache(user.id)
-    
+
     flash(f'Uber credentials saved for {user.username}.', 'success')
     return redirect(url_for('admin_uber_credentials', user_id=user_id))
 
 
-@app.route('/admin/uber-credentials/<int:user_id>/disconnect', methods=['POST'])
+@app.route('/admin/uber-credentials/<int:user_id>/disconnect',
+           methods=['POST'])
 @login_required
 def admin_disconnect_uber(user_id):
     if not current_user.is_owner():
         flash('Access denied. Owner privileges required.', 'error')
         return redirect(url_for('root'))
-    
+
     user = User.query.get_or_404(user_id)
-    
+
     user.uber_cookies = None
     user.uber_headers = None
     user.uber_refresh_token = None
     user.uber_connected = False
-    
+
     db.session.commit()
     cache.invalidate_cache(user.id)
-    
+
     flash(f'Uber account disconnected for {user.username}.', 'success')
     return redirect(url_for('admin_uber_credentials', user_id=user_id))
 
@@ -588,8 +631,9 @@ def roles():
     if not current_user.is_owner():
         flash('Access denied. Owner privileges required.', 'error')
         return redirect(url_for('root'))
-    
-    all_roles = Role.query.order_by(Role.is_system.desc(), Role.created_at.asc()).all()
+
+    all_roles = Role.query.order_by(Role.is_system.desc(),
+                                    Role.created_at.asc()).all()
     return render_template('roles.html', roles=all_roles)
 
 
@@ -599,20 +643,20 @@ def create_role():
     if not current_user.is_owner():
         flash('Access denied. Owner privileges required.', 'error')
         return redirect(url_for('root'))
-    
+
     name = request.form.get('name', '').lower().strip().replace(' ', '_')
     display_name = request.form.get('display_name', '').strip()
     color = request.form.get('color', 'gray')
-    
+
     if not name or not display_name:
         flash('Role name and display name are required.', 'error')
         return redirect(url_for('roles'))
-    
+
     existing = Role.query.filter_by(name=name).first()
     if existing:
         flash(f'A role with name "{name}" already exists.', 'error')
         return redirect(url_for('roles'))
-    
+
     role = Role(
         name=name,
         display_name=display_name,
@@ -622,9 +666,8 @@ def create_role():
         can_fetch_ride=request.form.get('can_fetch_ride') == '1',
         can_access_admin=request.form.get('can_access_admin') == '1',
         can_manage_users=request.form.get('can_manage_users') == '1',
-        can_manage_roles=request.form.get('can_manage_roles') == '1'
-    )
-    
+        can_manage_roles=request.form.get('can_manage_roles') == '1')
+
     db.session.add(role)
     db.session.commit()
     flash(f'Role "{display_name}" created successfully!', 'success')
@@ -637,29 +680,30 @@ def edit_role(role_id):
     if not current_user.is_owner():
         flash('Access denied. Owner privileges required.', 'error')
         return redirect(url_for('root'))
-    
+
     role = Role.query.get_or_404(role_id)
-    
+
     if request.method == 'POST':
         display_name = request.form.get('display_name', '').strip()
         color = request.form.get('color', 'gray')
-        
+
         if not display_name:
             flash('Display name is required.', 'error')
             return redirect(url_for('edit_role', role_id=role_id))
-        
+
         role.display_name = display_name
         role.color = color
-        role.can_change_location = request.form.get('can_change_location') == '1'
+        role.can_change_location = request.form.get(
+            'can_change_location') == '1'
         role.can_fetch_ride = request.form.get('can_fetch_ride') == '1'
         role.can_access_admin = request.form.get('can_access_admin') == '1'
         role.can_manage_users = request.form.get('can_manage_users') == '1'
         role.can_manage_roles = request.form.get('can_manage_roles') == '1'
-        
+
         db.session.commit()
         flash(f'Role "{display_name}" updated successfully!', 'success')
         return redirect(url_for('roles'))
-    
+
     return render_template('edit_role.html', role=role)
 
 
@@ -669,15 +713,18 @@ def delete_role(role_id):
     if not current_user.is_owner():
         flash('Access denied. Owner privileges required.', 'error')
         return redirect(url_for('root'))
-    
+
     role = Role.query.get_or_404(role_id)
-    
+
     if role.is_system:
         flash('System roles cannot be deleted.', 'error')
         return redirect(url_for('roles'))
-    
-    User.query.filter_by(role_id=role_id).update({'role_id': None, 'role': 'user'})
-    
+
+    User.query.filter_by(role_id=role_id).update({
+        'role_id': None,
+        'role': 'user'
+    })
+
     db.session.delete(role)
     db.session.commit()
     flash(f'Role "{role.display_name}" has been deleted.', 'success')
@@ -689,20 +736,25 @@ def delete_role(role_id):
 def profile():
     form = ProfileForm()
     disconnect_form = UberDisconnectForm()
-    
+
     if form.validate_on_submit():
         if form.email.data != current_user.email:
             existing = User.query.filter_by(email=form.email.data).first()
             if existing:
                 flash('Email already in use.', 'error')
-                return render_template('profile.html', form=form, disconnect_form=disconnect_form)
-        
+                return render_template('profile.html',
+                                       form=form,
+                                       disconnect_form=disconnect_form)
+
         if form.username.data != current_user.username:
-            existing = User.query.filter_by(username=form.username.data).first()
+            existing = User.query.filter_by(
+                username=form.username.data).first()
             if existing:
                 flash('Username already taken.', 'error')
-                return render_template('profile.html', form=form, disconnect_form=disconnect_form)
-        
+                return render_template('profile.html',
+                                       form=form,
+                                       disconnect_form=disconnect_form)
+
         current_user.first_name = form.first_name.data
         current_user.last_name = form.last_name.data
         current_user.username = form.username.data
@@ -710,12 +762,14 @@ def profile():
         db.session.commit()
         flash('Profile updated successfully.', 'success')
         return redirect(url_for('profile'))
-    
+
     form.first_name.data = current_user.first_name
     form.last_name.data = current_user.last_name
     form.username.data = current_user.username
     form.email.data = current_user.email
-    return render_template('profile.html', form=form, disconnect_form=disconnect_form)
+    return render_template('profile.html',
+                           form=form,
+                           disconnect_form=disconnect_form)
 
 
 @app.route('/uber-connect', methods=['GET'])
@@ -730,12 +784,12 @@ def uber_callback():
     """Callback page for bookmarklet - receives cookies and displays confirmation form"""
     form = UberConnectForm()
     disconnect_form = UberDisconnectForm()
-    
+
     if request.method == 'POST':
         cookies_json = request.form.get('cookies', '').strip()
         headers_json = request.form.get('headers', '').strip()
         refresh_token = request.form.get('refresh_token', '').strip()
-        
+
         if cookies_json:
             try:
                 import json
@@ -745,7 +799,7 @@ def uber_callback():
             except json.JSONDecodeError:
                 flash('Invalid JSON format.', 'error')
                 return redirect(url_for('uber_connect'))
-            
+
             current_user.uber_cookies = encrypt_data(cookies_json)
             if headers_json:
                 current_user.uber_headers = encrypt_data(headers_json)
@@ -756,13 +810,13 @@ def uber_callback():
             cache.invalidate_cache(current_user.id)
             flash('Uber cookies captured successfully!', 'success')
             return redirect(url_for('root'))
-    
+
     cookies_from_url = request.args.get('cookies', '')
-    
-    return render_template('uber_callback.html', 
-                          form=form, 
-                          cookies=cookies_from_url,
-                          disconnect_form=disconnect_form)
+
+    return render_template('uber_callback.html',
+                           form=form,
+                           cookies=cookies_from_url,
+                           disconnect_form=disconnect_form)
 
 
 @app.route('/api/test-uber-credentials', methods=['POST'])
@@ -774,20 +828,26 @@ def test_uber_credentials():
         headers_json = data.get('headers', '')
         cookies_json = data.get('cookies', '')
         refresh_token = data.get('refresh_token', '')
-        
+
         if not all([headers_json, cookies_json, refresh_token]):
             return jsonify({'success': False, 'error': 'All fields required'})
-        
+
         headers = json.loads(headers_json)
         cookies = json.loads(cookies_json)
-        
+
         from objects.uberDev import refreshToken
         try:
             new_token = refreshToken(cookies, headers, refresh_token)
             if new_token:
-                return jsonify({'success': True, 'message': 'Credentials valid'})
+                return jsonify({
+                    'success': True,
+                    'message': 'Credentials valid'
+                })
             else:
-                return jsonify({'success': False, 'error': 'Could not refresh token'})
+                return jsonify({
+                    'success': False,
+                    'error': 'Could not refresh token'
+                })
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)})
     except json.JSONDecodeError:
@@ -811,13 +871,16 @@ def uber_send_code():
         data = request.get_json()
         country_code = data.get('country_code', '+61')
         phone_number = data.get('phone_number', '')
-        
+
         if not phone_number:
-            return jsonify({'success': False, 'error': 'Phone number required'})
-        
+            return jsonify({
+                'success': False,
+                'error': 'Phone number required'
+            })
+
         from objects.uberDev import uberAuth
         result = uberAuth(country_code, phone_number)
-        
+
         if result.get('success'):
             return jsonify({
                 'success': True,
@@ -827,16 +890,26 @@ def uber_send_code():
             })
         else:
             return jsonify({
-                'success': False,
-                'error': result.get('error', 'Failed to send code'),
-                'needs_captcha': result.get('needs_captcha', False),
-                'captcha_url': result.get('captcha_url'),
-                'can_request_voice': result.get('can_request_voice', True),
-                'session_id': result.get('session_id', '')
+                'success':
+                False,
+                'error':
+                result.get('error', 'Failed to send code'),
+                'needs_captcha':
+                result.get('needs_captcha', False),
+                'captcha_url':
+                result.get('captcha_url'),
+                'can_request_voice':
+                result.get('can_request_voice', True),
+                'session_id':
+                result.get('session_id', '')
             })
     except Exception as e:
         print(f"Error in uber_send_code: {e}")
-        return jsonify({'success': False, 'error': str(e), 'can_request_voice': True})
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'can_request_voice': True
+        })
 
 
 @app.route('/api/uber-request-voice-otp', methods=['POST'])
@@ -848,23 +921,31 @@ def uber_request_voice_otp():
         session_id = data.get('session_id', '')
         country_code = data.get('country_code', '+61')
         phone_number = data.get('phone_number', '')
-        
+
         if not phone_number:
-            return jsonify({'success': False, 'error': 'Phone number required'})
-        
+            return jsonify({
+                'success': False,
+                'error': 'Phone number required'
+            })
+
         from objects.uberDev import uberVoiceOTP
         result = uberVoiceOTP(session_id, country_code, phone_number)
-        
+
         if result.get('success'):
             return jsonify({
-                'success': True,
-                'session_id': result.get('session_id'),
-                'message': 'Voice call initiated - you will receive a call shortly'
+                'success':
+                True,
+                'session_id':
+                result.get('session_id'),
+                'message':
+                'Voice call initiated - you will receive a call shortly'
             })
         else:
             return jsonify({
-                'success': False,
-                'error': result.get('error', 'Failed to initiate voice call')
+                'success':
+                False,
+                'error':
+                result.get('error', 'Failed to initiate voice call')
             })
     except Exception as e:
         print(f"Error in uber_request_voice_otp: {e}")
@@ -879,13 +960,16 @@ def uber_verify_code():
         data = request.get_json()
         session_id = data.get('session_id', '')
         code = data.get('code', '')
-        
+
         if not session_id or not code:
-            return jsonify({'success': False, 'error': 'Session ID and code required'})
-        
+            return jsonify({
+                'success': False,
+                'error': 'Session ID and code required'
+            })
+
         from objects.uberDev import uberVerifyCode
         result = uberVerifyCode(session_id, code)
-        
+
         if result.get('success'):
             if result.get('needs_email_otp'):
                 return jsonify({
@@ -894,22 +978,27 @@ def uber_verify_code():
                     'session_id': result.get('session_id'),
                     'email_hint': result.get('email_hint', '')
                 })
-            
+
             cookies = result.get('cookies', {})
             headers = result.get('headers', {})
             refresh_token = result.get('refresh_token', '')
-            
+
             current_user.uber_cookies = encrypt_data(json.dumps(cookies))
             current_user.uber_headers = encrypt_data(json.dumps(headers))
             current_user.uber_refresh_token = encrypt_data(refresh_token)
             current_user.uber_connected = True
             db.session.commit()
             cache.invalidate_cache(current_user.id)
-            print(f"Uber credentials saved for user {current_user.id} ({current_user.email})")
-            
+            print(
+                f"Uber credentials saved for user {current_user.id} ({current_user.email})"
+            )
+
             return jsonify({'success': True, 'needs_email_otp': False})
         else:
-            return jsonify({'success': False, 'error': result.get('error', 'Invalid code')})
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Invalid code')
+            })
     except Exception as e:
         print(f"Error in uber_verify_code: {e}")
         return jsonify({'success': False, 'error': str(e)})
@@ -923,54 +1012,73 @@ def uber_verify_email():
         data = request.get_json()
         session_id = data.get('session_id', '')
         code = data.get('code', '')
-        
+
         if not session_id or not code:
-            return jsonify({'success': False, 'error': 'Session ID and code required'})
-        
+            return jsonify({
+                'success': False,
+                'error': 'Session ID and code required'
+            })
+
         from objects.uberDev import uberEmailVerify, uberAuthention
         result = uberEmailVerify(session_id, code)
-        
+
         if result.get('success'):
             if result.get('needs_authentication'):
                 auth_code = result.get('auth_code')
                 new_session_id = result.get('session_id', session_id)
                 cookies = result.get('cookies', {})
                 headers = result.get('headers', {})
-                
-                auth_result = uberAuthention(headers, cookies, new_session_id, auth_code)
-                
+                print(result)
+                auth_result = uberAuthention(headers, cookies, new_session_id,
+                                             auth_code)
+
                 if auth_result.get('success'):
                     final_cookies = auth_result.get('cookies', {})
                     final_headers = auth_result.get('headers', {})
                     refresh_token = auth_result.get('refresh_token', '')
-                    
-                    current_user.uber_cookies = encrypt_data(json.dumps(final_cookies))
-                    current_user.uber_headers = encrypt_data(json.dumps(final_headers))
-                    current_user.uber_refresh_token = encrypt_data(refresh_token)
+
+                    current_user.uber_cookies = encrypt_data(
+                        json.dumps(final_cookies))
+                    current_user.uber_headers = encrypt_data(
+                        json.dumps(final_headers))
+                    current_user.uber_refresh_token = encrypt_data(
+                        refresh_token)
                     current_user.uber_connected = True
                     db.session.commit()
                     cache.invalidate_cache(current_user.id)
-                    print(f"Uber credentials saved (email+auth) for user {current_user.id} ({current_user.email})")
-                    
+                    print(
+                        f"Uber credentials saved (email+auth) for user {current_user.id} ({current_user.email})"
+                    )
+
                     return jsonify({'success': True})
                 else:
-                    return jsonify({'success': False, 'error': auth_result.get('error', 'Authentication failed')})
+                    return jsonify({
+                        'success':
+                        False,
+                        'error':
+                        auth_result.get('error', 'Authentication failed')
+                    })
             else:
                 cookies = result.get('cookies', {})
                 headers = result.get('headers', {})
                 refresh_token = result.get('refresh_token', '')
-                
+
                 current_user.uber_cookies = encrypt_data(json.dumps(cookies))
                 current_user.uber_headers = encrypt_data(json.dumps(headers))
                 current_user.uber_refresh_token = encrypt_data(refresh_token)
                 current_user.uber_connected = True
                 db.session.commit()
                 cache.invalidate_cache(current_user.id)
-                print(f"Uber credentials saved (email only) for user {current_user.id} ({current_user.email})")
-                
+                print(
+                    f"Uber credentials saved (email only) for user {current_user.id} ({current_user.email})"
+                )
+
                 return jsonify({'success': True})
         else:
-            return jsonify({'success': False, 'error': result.get('error', 'Invalid code')})
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Invalid code')
+            })
     except Exception as e:
         print(f"Error in uber_verify_email: {e}")
         return jsonify({'success': False, 'error': str(e)})
@@ -995,17 +1103,17 @@ def uber_disconnect():
 @login_required
 def change_password():
     form = ChangePasswordForm()
-    
+
     if form.validate_on_submit():
         if not current_user.check_password(form.current_password.data):
             flash('Current password is incorrect.', 'error')
             return render_template('change_password.html', form=form)
-        
+
         current_user.set_password(form.new_password.data)
         db.session.commit()
         flash('Password updated successfully.', 'success')
         return redirect(url_for('profile'))
-    
+
     return render_template('change_password.html', form=form)
 
 
@@ -1013,9 +1121,9 @@ def change_password():
 def forgot_password():
     if current_user.is_authenticated:
         return redirect(url_for('root'))
-    
+
     form = ForgotPasswordForm()
-    
+
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
@@ -1023,11 +1131,15 @@ def forgot_password():
             user.reset_token = token
             user.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
             db.session.commit()
-            flash(f'Password reset link: /reset-password/{token} (valid for 1 hour)', 'success')
+            flash(
+                f'Password reset link: /reset-password/{token} (valid for 1 hour)',
+                'success')
         else:
-            flash('If an account with that email exists, a reset link has been generated.', 'info')
+            flash(
+                'If an account with that email exists, a reset link has been generated.',
+                'info')
         return redirect(url_for('forgot_password'))
-    
+
     return render_template('forgot_password.html', form=form)
 
 
@@ -1035,15 +1147,16 @@ def forgot_password():
 def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('root'))
-    
+
     user = User.query.filter_by(reset_token=token).first()
-    
-    if not user or not user.reset_token_expiry or user.reset_token_expiry < datetime.utcnow():
+
+    if not user or not user.reset_token_expiry or user.reset_token_expiry < datetime.utcnow(
+    ):
         flash('Invalid or expired reset link.', 'error')
         return redirect(url_for('login'))
-    
+
     form = ResetPasswordForm()
-    
+
     if form.validate_on_submit():
         user.set_password(form.password.data)
         user.reset_token = None
@@ -1051,7 +1164,7 @@ def reset_password(token):
         db.session.commit()
         flash('Password has been reset. Please sign in.', 'success')
         return redirect(url_for('login'))
-    
+
     return render_template('reset_password.html', form=form)
 
 
@@ -1060,14 +1173,15 @@ def reset_password(token):
 def home():
     has_permission = current_user.has_permission('can_change_location')
     loading = current_user.uber_connected and has_permission
-    disconnect_form = UberDisconnectForm() if current_user.uber_connected else None
-    return render_template('index.html', 
-                          has_permission=has_permission, 
-                          default_vehicle=None, 
-                          loading=loading,
-                          uber_connected=current_user.uber_connected,
-                          username=current_user.get_display_name(),
-                          disconnect_form=disconnect_form)
+    disconnect_form = UberDisconnectForm(
+    ) if current_user.uber_connected else None
+    return render_template('index.html',
+                           has_permission=has_permission,
+                           default_vehicle=None,
+                           loading=loading,
+                           uber_connected=current_user.uber_connected,
+                           username=current_user.get_display_name(),
+                           disconnect_form=disconnect_form)
 
 
 @app.route('/api/location-data')
@@ -1077,16 +1191,18 @@ def location_data():
     driver_info = None
     if current_user.uber_connected:
         try:
-            cookies, headers, refresh_token = current_user.get_uber_credentials()
+            cookies, headers, refresh_token = current_user.get_uber_credentials(
+            )
             user_display_name = current_user.get_display_name()
-            
+
             def fetch_vehicles():
                 return vehicleDetails(cookies, headers, refresh_token)
-            
+
             def fetch_driver():
                 from objects.uberDev import driverInfo, uberProfile
                 data = driverInfo(cookies, headers, refresh_token)
-                name = data[0] if data[0] and data[0] != 'Driver' else user_display_name
+                name = data[0] if data[0] and data[
+                    0] != 'Driver' else user_display_name
                 photo = data[1]
                 driver_data = {'name': name, 'photo': photo}
                 try:
@@ -1095,17 +1211,18 @@ def location_data():
                         driver_data['email'] = profile_data.get('email', '')
                         phone_data = profile_data.get('mobileToken', {})
                         if phone_data:
-                            driver_data['phone'] = phone_data.get('nationalPhoneNumber', '')
+                            driver_data['phone'] = phone_data.get(
+                                'nationalPhoneNumber', '')
                 except Exception:
                     pass
                 return driver_data
-            
+
             vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
             for v in vehicles:
                 if v.get('isDefault'):
                     default_vehicle = v
                     break
-            
+
             cached_driver = cache.get_cached(current_user.id, 'driver_info')
             if cached_driver:
                 driver_info = cached_driver
@@ -1114,22 +1231,32 @@ def location_data():
                 cache.set_cached(current_user.id, 'driver_info', driver_info)
         except Exception as e:
             print(f"Error fetching location data: {e}")
-    return jsonify(success=True, default_vehicle=default_vehicle, driver_info=driver_info)
+    return jsonify(success=True,
+                   default_vehicle=default_vehicle,
+                   driver_info=driver_info)
 
 
 @app.route('/fetch-ride')
 @login_required
 def fetch_ride():
     has_permission = current_user.has_permission('can_fetch_ride')
-    
+
     if not has_permission:
-        return render_template('ride_details.html', has_permission=False, ride_data=None, default_vehicle=None, loading=False)
-    
+        return render_template('ride_details.html',
+                               has_permission=False,
+                               ride_data=None,
+                               default_vehicle=None,
+                               loading=False)
+
     if not current_user.uber_connected:
         flash('Please connect your Uber account first.', 'error')
         return redirect(url_for('uber_connect'))
-    
-    return render_template('ride_details.html', has_permission=True, ride_data=None, default_vehicle=None, loading=True)
+
+    return render_template('ride_details.html',
+                           has_permission=True,
+                           ride_data=None,
+                           default_vehicle=None,
+                           loading=True)
 
 
 @app.route('/api/fetch-ride-data')
@@ -1137,17 +1264,17 @@ def fetch_ride():
 def fetch_ride_data():
     if not current_user.has_permission('can_fetch_ride'):
         return jsonify(error="No permission"), 403
-    
+
     if not current_user.uber_connected:
         return jsonify(error="Uber not connected"), 400
-    
+
     default_vehicle = None
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
-        
+
         def fetch_vehicles():
             return vehicleDetails(cookies, headers, refresh_token)
-        
+
         vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
         for v in vehicles:
             if v.get('isDefault'):
@@ -1155,21 +1282,27 @@ def fetch_ride_data():
                 break
     except Exception as e:
         print(f"Error fetching vehicle: {e}")
-    
+
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
-        
+
         def fetch_ride():
             return appLaunch(cookies, headers, refresh_token)
-        
+
         ride_data = cache.get_active_ride(current_user.id, fetch_ride)
         if ride_data and isinstance(ride_data, dict):
-            return jsonify(success=True, ride_data=ride_data, default_vehicle=default_vehicle)
+            return jsonify(success=True,
+                           ride_data=ride_data,
+                           default_vehicle=default_vehicle)
         else:
-            return jsonify(success=True, ride_data=None, default_vehicle=default_vehicle)
+            return jsonify(success=True,
+                           ride_data=None,
+                           default_vehicle=default_vehicle)
     except Exception as e:
         print(f"Error fetching ride data: {e}")
-        return jsonify(success=True, ride_data=None, default_vehicle=default_vehicle)
+        return jsonify(success=True,
+                       ride_data=None,
+                       default_vehicle=default_vehicle)
 
 
 @app.route('/api/cancel-ride-simulation', methods=['POST'])
@@ -1177,42 +1310,54 @@ def fetch_ride_data():
 def cancel_ride_simulation():
     if not current_user.has_permission('can_fetch_ride'):
         return jsonify(error="No permission"), 403
-    
+
     if not current_user.uber_connected:
         return jsonify(error="Uber not connected"), 400
-    
+
     data = request.get_json()
     step = data.get('step', 'start')
     pickup_lat = data.get('pickup_lat')
     pickup_lng = data.get('pickup_lng')
     dropoff_lat = data.get('dropoff_lat')
     dropoff_lng = data.get('dropoff_lng')
-    
+
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
-        
+
         if step == 'start':
-            result = updateLocationOnce(pickup_lat, pickup_lng, cookies, headers, refresh_token)
-            return jsonify(success=True, step='pickup', message='Moved to pickup location')
-        
+            result = updateLocationOnce(pickup_lat, pickup_lng, cookies,
+                                        headers, refresh_token)
+            return jsonify(success=True,
+                           step='pickup',
+                           message='Moved to pickup location')
+
         elif step == 'intermediate':
             lat = data.get('lat')
             lng = data.get('lng')
             point_num = data.get('point_num', 1)
-            result = updateLocationOnce(lat, lng, cookies, headers, refresh_token)
-            return jsonify(success=True, step='intermediate', message=f'Route point {point_num}')
-        
+            result = updateLocationOnce(lat, lng, cookies, headers,
+                                        refresh_token)
+            return jsonify(success=True,
+                           step='intermediate',
+                           message=f'Route point {point_num}')
+
         elif step == 'dropoff':
-            result = updateLocationOnce(dropoff_lat, dropoff_lng, cookies, headers, refresh_token)
-            return jsonify(success=True, step='dropoff', message='Arrived at dropoff')
-        
+            result = updateLocationOnce(dropoff_lat, dropoff_lng, cookies,
+                                        headers, refresh_token)
+            return jsonify(success=True,
+                           step='dropoff',
+                           message='Arrived at dropoff')
+
         elif step == 'hold_dropoff':
-            result = updateLocationOnce(dropoff_lat, dropoff_lng, cookies, headers, refresh_token)
-            return jsonify(success=True, step='hold_dropoff', message='Holding at dropoff')
-        
+            result = updateLocationOnce(dropoff_lat, dropoff_lng, cookies,
+                                        headers, refresh_token)
+            return jsonify(success=True,
+                           step='hold_dropoff',
+                           message='Holding at dropoff')
+
         else:
             return jsonify(error="Invalid step"), 400
-            
+
     except Exception as e:
         print(f"Error in cancel ride simulation: {e}")
         return jsonify(error=str(e)), 500
@@ -1223,14 +1368,15 @@ def cancel_ride_simulation():
 def submit():
     if not current_user.uber_connected:
         return jsonify(status="error", message="Uber account not connected")
-    
+
     import json
     cookies = json.loads(decrypt_data(current_user.uber_cookies))
     headers = json.loads(decrypt_data(current_user.uber_headers))
     refresh_token = decrypt_data(current_user.uber_refresh_token)
-    
+
     config.stored_destination = request.form.get('destination')
-    response = driverLocation(config.stored_destination, cookies, headers, refresh_token)
+    response = driverLocation(config.stored_destination, cookies, headers,
+                              refresh_token)
     print(f"Destination Saved: {config.stored_destination}")
     return jsonify(status="success")
 
@@ -1239,7 +1385,9 @@ def submit():
 @login_required
 def stop():
     config.stop_signal = 1
-    print(f"Stop signal received. Variable 'stop_signal' set to: {config.stop_signal}")
+    print(
+        f"Stop signal received. Variable 'stop_signal' set to: {config.stop_signal}"
+    )
     return jsonify(status="success", value=config.stop_signal)
 
 
@@ -1254,52 +1402,51 @@ def flight_center():
 def api_flight_details():
     from datetime import datetime, timezone, timedelta
     from collections import defaultdict
-    
+
     try:
         terminal = request.args.get('terminal', None)
         response = flightArrivals(terminal)
-        
+
         if response is None:
-            return jsonify({
-                'success': False,
-                'message': 'API unavailable'
-            })
-        
+            return jsonify({'success': False, 'message': 'API unavailable'})
+
         data = response.json()
         flights = data.get('flights', [])
         terminals = data.get('terminals', [])
-        
+
         perth_tz = timezone(timedelta(hours=8))
         perth_now = datetime.now(perth_tz)
         current_time = perth_now.strftime('%H:%M')
-        
+
         flights_by_terminal = defaultdict(list)
         next_arrival = None
         upcoming_count = 0
         landed_count = 0
-        
+
         for flight in flights:
             term = flight.get('terminal', 'Unknown')
             flight_time = flight.get('time', '')
             is_landed = flight.get('landed', False)
-            
+
             if is_landed:
                 landed_count += 1
                 continue
-            
+
             upcoming_count += 1
             flights_by_terminal[term].append(flight)
-            
+
             if next_arrival is None and flight_time >= current_time:
                 next_arrival = flight_time
-        
-        print(f"Flight filter: {upcoming_count} upcoming, {landed_count} already landed")
-        
+
+        print(
+            f"Flight filter: {upcoming_count} upcoming, {landed_count} already landed"
+        )
+
         for term in flights_by_terminal:
             flights_by_terminal[term].sort(key=lambda x: x.get('time', ''))
-        
+
         total_flights = sum(len(f) for f in flights_by_terminal.values())
-        
+
         return jsonify({
             'success': True,
             'flights_by_terminal': dict(flights_by_terminal),
@@ -1312,20 +1459,17 @@ def api_flight_details():
         print(f"Error fetching flight details: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        })
+        return jsonify({'success': False, 'message': str(e)})
 
 
 @app.route('/api/flight-arrivals')
 @login_required
 def api_flight_arrivals():
     from datetime import datetime, timezone, timedelta
-    
+
     try:
         terminal = request.args.get('terminal', None)
-        
+
         def fetch_flights():
             response = flightArrivals(terminal)
             if response is None:
@@ -1334,7 +1478,7 @@ def api_flight_arrivals():
                 return response.json()
             except:
                 return {'flights': [], 'terminals': [], 'error': True}
-        
+
         cache_key = f"flights_{terminal or 'all'}"
         data = cache.get_cached('global', cache_key)
         if data is None:
@@ -1343,7 +1487,7 @@ def api_flight_arrivals():
             print(f"Flight data fetched from API for terminal: {terminal}")
         else:
             print(f"Flight data served from cache for terminal: {terminal}")
-        
+
         if data.get('error'):
             hourly_data = parseFlightsByHour({})
             return jsonify({
@@ -1352,17 +1496,19 @@ def api_flight_arrivals():
                 'total_flights': 0,
                 'message': 'API unavailable'
             })
-        
+
         hourly_data = parseFlightsByHour(data)
         terminals = data.get('terminals', [])
-        
+
         perth_tz = timezone(timedelta(hours=8))
         perth_now = datetime.now(perth_tz)
         current_hour = perth_now.hour
-        print(f"Perth time: {perth_now.strftime('%H:%M')}, current_hour: {current_hour}")
+        print(
+            f"Perth time: {perth_now.strftime('%H:%M')}, current_hour: {current_hour}"
+        )
         filtered_hours = [h for h in hourly_data if h['hour'] >= current_hour]
         total_flights = sum(h['count'] for h in filtered_hours)
-        
+
         return jsonify({
             'success': True,
             'hourly_flights': filtered_hours,
@@ -1387,22 +1533,34 @@ def api_flight_arrivals():
 @login_required
 def heartbeat():
     user_data = {
-        'id': current_user.id,
-        'username': current_user.username,
-        'display_name': current_user.get_display_name(),
-        'initials': current_user.get_initials(),
-        'roles': [{'name': r.display_name, 'color': r.color} for r in current_user.roles],
-        'last_seen': datetime.utcnow().isoformat(),
-        'current_page': request.json.get('page', 'unknown') if request.json else 'unknown'
+        'id':
+        current_user.id,
+        'username':
+        current_user.username,
+        'display_name':
+        current_user.get_display_name(),
+        'initials':
+        current_user.get_initials(),
+        'roles': [{
+            'name': r.display_name,
+            'color': r.color
+        } for r in current_user.roles],
+        'last_seen':
+        datetime.utcnow().isoformat(),
+        'current_page':
+        request.json.get('page', 'unknown') if request.json else 'unknown'
     }
     active_users[current_user.id] = user_data
-    
+
     now = datetime.utcnow()
-    expired_ids = [uid for uid, data in active_users.items() 
-                   if datetime.fromisoformat(data['last_seen']) < now - timedelta(seconds=60)]
+    expired_ids = [
+        uid for uid, data in active_users.items()
+        if datetime.fromisoformat(data['last_seen']) < now -
+        timedelta(seconds=60)
+    ]
     for uid in expired_ids:
         active_users.pop(uid, None)
-    
+
     return jsonify({'success': True, 'active_count': len(active_users)})
 
 
@@ -1410,8 +1568,11 @@ def heartbeat():
 @login_required
 def get_active_users():
     now = datetime.utcnow()
-    expired_ids = [uid for uid, data in active_users.items() 
-                   if datetime.fromisoformat(data['last_seen']) < now - timedelta(seconds=60)]
+    expired_ids = [
+        uid for uid, data in active_users.items()
+        if datetime.fromisoformat(data['last_seen']) < now -
+        timedelta(seconds=60)
+    ]
     for uid in expired_ids:
         active_users.pop(uid, None)
     return jsonify({'success': True, 'users': list(active_users.values())})
@@ -1426,7 +1587,8 @@ def chat_lobby():
 @app.route('/api/chat-messages')
 @login_required
 def get_chat_messages():
-    messages = ChatMessage.query.order_by(ChatMessage.created_at.desc()).limit(100).all()
+    messages = ChatMessage.query.order_by(
+        ChatMessage.created_at.desc()).limit(100).all()
     return jsonify({
         'success': True,
         'messages': [m.to_dict() for m in reversed(messages)]
@@ -1438,24 +1600,39 @@ def get_chat_messages():
 def get_chat_users():
     users = User.query.all()
     return jsonify({
-        'success': True,
-        'users': [{'id': u.id, 'username': u.username, 'display_name': u.get_display_name()} for u in users]
+        'success':
+        True,
+        'users': [{
+            'id': u.id,
+            'username': u.username,
+            'display_name': u.get_display_name()
+        } for u in users]
     })
 
 
 @socketio.on('connect')
 def handle_connect():
-    print(f"Socket connect - authenticated: {current_user.is_authenticated}", flush=True)
+    print(f"Socket connect - authenticated: {current_user.is_authenticated}",
+          flush=True)
     if current_user.is_authenticated:
         user_data = {
-            'id': current_user.id,
-            'username': current_user.username,
-            'display_name': current_user.get_display_name(),
-            'initials': current_user.get_initials(),
-            'roles': [{'name': r.display_name, 'color': r.color} for r in current_user.roles]
+            'id':
+            current_user.id,
+            'username':
+            current_user.username,
+            'display_name':
+            current_user.get_display_name(),
+            'initials':
+            current_user.get_initials(),
+            'roles': [{
+                'name': r.display_name,
+                'color': r.color
+            } for r in current_user.roles]
         }
         online_users[current_user.id] = user_data
-        print(f"User connected: {current_user.username}, online users: {len(online_users)}", flush=True)
+        print(
+            f"User connected: {current_user.username}, online users: {len(online_users)}",
+            flush=True)
         emit('user_joined', user_data, broadcast=True)
         emit('online_users', list(online_users.values()), broadcast=True)
 
@@ -1471,36 +1648,39 @@ def handle_disconnect():
 
 @socketio.on('send_message')
 def handle_send_message(data):
-    print(f"Received send_message event, authenticated: {current_user.is_authenticated}", flush=True)
+    print(
+        f"Received send_message event, authenticated: {current_user.is_authenticated}",
+        flush=True)
     if not current_user.is_authenticated:
         print("User not authenticated, ignoring message", flush=True)
         return
-    
+
     message_text = data.get('message', '').strip()
     reply_to_id = data.get('reply_to_id')
     mentioned_username = data.get('mentioned_user')
-    
+
     if not message_text:
         print("Empty message, ignoring", flush=True)
         return
-    
-    print(f"Processing message from {current_user.username}: {message_text[:50]}", flush=True)
-    
+
+    print(
+        f"Processing message from {current_user.username}: {message_text[:50]}",
+        flush=True)
+
     mentioned_user_id = None
     if mentioned_username:
-        mentioned_user = User.query.filter_by(username=mentioned_username).first()
+        mentioned_user = User.query.filter_by(
+            username=mentioned_username).first()
         if mentioned_user:
             mentioned_user_id = mentioned_user.id
-    
-    chat_msg = ChatMessage(
-        user_id=current_user.id,
-        message=message_text,
-        reply_to_id=reply_to_id if reply_to_id else None,
-        mentioned_user_id=mentioned_user_id
-    )
+
+    chat_msg = ChatMessage(user_id=current_user.id,
+                           message=message_text,
+                           reply_to_id=reply_to_id if reply_to_id else None,
+                           mentioned_user_id=mentioned_user_id)
     db.session.add(chat_msg)
     db.session.commit()
-    
+
     print(f"Message saved with id {chat_msg.id}, broadcasting...", flush=True)
     emit('new_message', chat_msg.to_dict(), broadcast=True)
     print("Broadcast complete", flush=True)

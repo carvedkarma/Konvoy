@@ -1244,7 +1244,6 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             'inAuthSessionID': session_id,
         },
     }
-
     try:
         response = requests.post(
             'https://cn-geo1.uber.com/rt/silk-screen/submit-form',
@@ -1253,7 +1252,6 @@ def uberAuthention(headers, cookies, session_id, auth_code):
             json=json_data,
             timeout=15)
         result = response.json()
-        print(result)
         print(f"Uber authentication response: {result}")
 
         response_cookies = dict(cookies) if cookies else {}
