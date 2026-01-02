@@ -175,6 +175,7 @@ def home_data():
     driver_info = None
     default_vehicle = None
     active_ride = None
+    driver_status = None
 
     if current_user.uber_connected:
         try:
@@ -186,7 +187,8 @@ def home_data():
                            vehicles=[],
                            driver_info=None,
                            default_vehicle=None,
-                           active_ride=None)
+                           active_ride=None,
+                           driver_status=None)
 
         cached_vehicles = cache.get_cached(current_user.id, 'vehicles')
         cached_driver = cache.get_cached(current_user.id, 'driver_info')
@@ -253,9 +255,9 @@ def home_data():
             task_scopes = driver_tasks.get('taskScopes', [])
             
             driver_status = {
-                'online': driver_state.get('online', False),
-                'available': driver_state.get('available', False),
-                'dispatchable': driver_state.get('dispatchable', False),
+                'online': bool(driver_state.get('online', False)),
+                'available': bool(driver_state.get('available', False)),
+                'dispatchable': bool(driver_state.get('dispatchable', False)),
                 'onboarding_status': full_ride_data.get('driverOnboardingStatus', 'UNKNOWN')
             }
             
