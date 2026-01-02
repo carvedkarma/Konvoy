@@ -1176,6 +1176,7 @@ def home():
 def location_data():
     default_vehicle = None
     driver_info = None
+    driver_status = None
     if current_user.uber_connected:
         try:
             cookies, headers, refresh_token = current_user.get_uber_credentials(
@@ -1187,6 +1188,13 @@ def location_data():
 
             def fetch_driver():
                 return {'name': user_display_name, 'photo': None}
+
+            def fetch_ride():
+                try:
+                    return appLaunch(cookies, headers, refresh_token)
+                except Exception as e:
+                    print(f"Error fetching appLaunch: {e}")
+                    return None
 
             vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
             for v in vehicles:
@@ -1200,11 +1208,27 @@ def location_data():
             else:
                 driver_info = fetch_driver()
                 cache.set_cached(current_user.id, 'driver_info', driver_info)
+
+            cached_ride = cache.get_cached(current_user.id, 'active_ride')
+            if cached_ride is None:
+                cached_ride = fetch_ride()
+                cache.set_cached(current_user.id, 'active_ride', cached_ride)
+            
+            if cached_ride and isinstance(cached_ride, dict):
+                driver_tasks = cached_ride.get('driverTasks', {})
+                driver_state = driver_tasks.get('driverState', {})
+                driver_status = {
+                    'online': bool(driver_state.get('online', False)),
+                    'available': bool(driver_state.get('available', False)),
+                    'dispatchable': bool(driver_state.get('dispatchable', False)),
+                    'onboarding_status': cached_ride.get('driverOnboardingStatus', 'UNKNOWN')
+                }
         except Exception as e:
             print(f"Error fetching location data: {e}")
     return jsonify(success=True,
                    default_vehicle=default_vehicle,
-                   driver_info=driver_info)
+                   driver_info=driver_info,
+                   driver_status=driver_status)
 
 
 @app.route('/fetch-ride')

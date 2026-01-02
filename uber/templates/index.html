@@ -282,6 +282,26 @@ fetch('/api/location-data')
         const loadingEl = document.getElementById('loading-skeleton');
         const contentEl = document.getElementById('location-content');
         const v = data.default_vehicle;
+        const ds = data.driver_status;
+        
+        const driverStatusHtml = ds ? `
+            <div class="flex items-center justify-center gap-3 mt-3 pt-3 border-t border-zinc-700">
+                <div class="flex items-center ${ds.online ? 'text-emerald-400' : 'text-zinc-500'}">
+                    <span class="w-2 h-2 rounded-full ${ds.online ? 'bg-emerald-400' : 'bg-zinc-500'} mr-1.5"></span>
+                    <span class="text-xs font-medium">${ds.online ? 'Online' : 'Offline'}</span>
+                </div>
+                <span class="text-zinc-600">|</span>
+                <div class="flex items-center ${ds.available ? 'text-blue-400' : 'text-zinc-500'}">
+                    <span class="w-2 h-2 rounded-full ${ds.available ? 'bg-blue-400' : 'bg-zinc-500'} mr-1.5"></span>
+                    <span class="text-xs font-medium">${ds.available ? 'Available' : 'Busy'}</span>
+                </div>
+                <span class="text-zinc-600">|</span>
+                <div class="flex items-center ${ds.dispatchable ? 'text-purple-400' : 'text-zinc-500'}">
+                    <span class="w-2 h-2 rounded-full ${ds.dispatchable ? 'bg-purple-400' : 'bg-zinc-500'} mr-1.5"></span>
+                    <span class="text-xs font-medium">${ds.dispatchable ? 'Dispatchable' : 'Not Dispatchable'}</span>
+                </div>
+            </div>
+        ` : '';
         
         const vehicleHeader = v ? `
             <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-6 text-center">
@@ -295,13 +315,18 @@ fetch('/api/location-data')
                 </div>
                 <p class="text-white font-semibold mt-3">${escapeHtml(v.make)} ${escapeHtml(v.model)}</p>
                 <p class="text-zinc-400 text-xs">${escapeHtml(v.year)} · ${escapeHtml(v.licensePlate)}</p>
+                ${driverStatusHtml}
             </div>
-        ` : '';
+        ` : (ds ? `
+            <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-4">
+                ${driverStatusHtml}
+            </div>
+        ` : '');
         
         contentEl.innerHTML = `
             <div id="searchState">
                 ${vehicleHeader}
-                <div class="bg-white ${v ? 'rounded-b-2xl' : 'rounded-2xl'} shadow-xl p-6">
+                <div class="bg-white ${(v || ds) ? 'rounded-b-2xl' : 'rounded-2xl'} shadow-xl p-6">
                     <div class="flex items-center mb-5">
                         <div class="w-10 h-10 bg-black rounded-full flex items-center justify-center mr-3">
                             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -336,7 +361,7 @@ fetch('/api/location-data')
                     <p class="text-white font-semibold mt-2">${escapeHtml(v.make)} ${escapeHtml(v.model)}</p>
                 </div>
                 ` : ''}
-                <div class="bg-white ${v ? 'rounded-b-2xl' : 'rounded-2xl'} shadow-xl p-8">
+                <div class="bg-white ${(v || ds) ? 'rounded-b-2xl' : 'rounded-2xl'} shadow-xl p-8">
                     <div class="flex flex-col items-center justify-center">
                         <div class="relative flex items-center justify-center mb-6">
                             <div class="pulse-ring absolute w-24 h-24 bg-black rounded-full opacity-20"></div>
