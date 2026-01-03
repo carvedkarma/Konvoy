@@ -3,8 +3,12 @@
 {% block title %}RizTar | Sign In{% endblock %}
 
 {% block content %}
-<div class="min-h-[90vh] flex items-center justify-center px-4 py-8 bg-zinc-50">
-    <div class="w-full max-w-sm">
+<div class="min-h-[90vh] flex items-center justify-center px-4 py-8 relative overflow-hidden">
+    <div class="fixed inset-0 z-0">
+        <img src="{{ url_for('static', filename='images/login-abstract.png') }}" alt="Background" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+    </div>
+    <div class="w-full max-w-sm relative z-10">
         <div class="text-center mb-6">
             <div class="w-16 h-16 flex items-center justify-center mx-auto mb-4">
                 <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-full h-full object-contain">
