@@ -396,13 +396,33 @@ fetch('/api/home-data')
 
             if (!banner) return;
             if (localStorage.getItem('permissionBannerDismissed')) return;
+            
+            // Check if both permissions already granted
+            const locationGranted = localStorage.getItem('locationPermissionGranted') === 'true';
+            const notifyGranted = 'Notification' in window && Notification.permission === 'granted';
+            
+            if (locationGranted && notifyGranted) {
+                banner.classList.add('hidden');
+                return;
+            }
 
             const geoPromise = new Promise(resolve => {
+                // First check localStorage
+                if (localStorage.getItem('locationPermissionGranted') === 'true') {
+                    if (locationBtn) locationBtn.classList.add('hidden');
+                    resolve(false);
+                    return;
+                }
+                // Then check browser permission
                 if (navigator.permissions && navigator.permissions.query) {
                     navigator.permissions.query({ name: 'geolocation' }).then(result => {
                         const granted = result.state === 'granted';
-                        if (granted) locationBtn.classList.add('hidden');
-                        else locationBtn.classList.remove('hidden');
+                        if (granted) {
+                            localStorage.setItem('locationPermissionGranted', 'true');
+                            if (locationBtn) locationBtn.classList.add('hidden');
+                        } else if (locationBtn) {
+                            locationBtn.classList.remove('hidden');
+                        }
                         resolve(!granted);
                     }).catch(() => resolve(true));
                 } else resolve(true);
@@ -410,8 +430,11 @@ fetch('/api/home-data')
 
             const notifyPromise = new Promise(resolve => {
                 const granted = 'Notification' in window && Notification.permission === 'granted';
-                if (granted) notificationBtn.classList.add('hidden');
-                else notificationBtn.classList.remove('hidden');
+                if (granted) {
+                    if (notificationBtn) notificationBtn.classList.add('hidden');
+                } else if (notificationBtn) {
+                    notificationBtn.classList.remove('hidden');
+                }
                 resolve(!granted);
             });
 
@@ -425,6 +448,15 @@ fetch('/api/home-data')
                     else messageEl.textContent = 'Enable notifications to stay updated.';
                 }
             });
+            
+            // Wire up notification button to use same logic as bell icon
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', () => {
+                    if (typeof subscribeToPush === 'function') {
+                        subscribeToPush();
+                    }
+                });
+            }
         }
 
         updatePermissionUI();
@@ -1664,63 +1696,10 @@ document.addEventListener('DOMContentLoaded', function() {
         );
     });
     
-    notificationBtn.addEventListener('click', async () => {
-        if (!('Notification' in window)) {
-            alert('Notifications not supported in this browser.');
-            return;
-        }
-        
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            needsNotification = false;
-            notificationBtn.classList.add('hidden');
-            
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                try {
-                    const keyRes = await fetch('/api/push/vapid-public-key');
-                    const keyData = await keyRes.json();
-                    if (keyData.success) {
-                        const registration = await navigator.serviceWorker.register('/static/service-worker.js');
-                        await navigator.serviceWorker.ready;
-                        
-                        function urlBase64ToUint8Array(base64String) {
-                            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-                            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-                            const rawData = window.atob(base64);
-                            const outputArray = new Uint8Array(rawData.length);
-                            for (let i = 0; i < rawData.length; ++i) {
-                                outputArray[i] = rawData.charCodeAt(i);
-                            }
-                            return outputArray;
-                        }
-                        
-                        const subscription = await registration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
-                        });
-                        
-                        await fetch('/api/push/subscribe', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify(subscription.toJSON())
-                        });
-                        
-                        const pushDot = document.getElementById('push-notification-dot');
-                        const pushBtn = document.getElementById('push-notification-btn');
-                        if (pushDot) pushDot.classList.remove('hidden');
-                        if (pushBtn) {
-                            pushBtn.classList.remove('text-zinc-400');
-                            pushBtn.classList.add('text-emerald-500');
-                        }
-                    }
-                } catch (e) {
-                    console.error('Push subscription error:', e);
-                }
-            }
-            
-            updateBanner();
-        } else {
-            alert('Notification permission denied.');
+    notificationBtn.addEventListener('click', () => {
+        // Use the same subscribeToPush function from base.html for consistency
+        if (typeof subscribeToPush === 'function') {
+            subscribeToPush();
         }
     });
     
