@@ -939,19 +939,10 @@ def profile():
                                        form=form,
                                        disconnect_form=disconnect_form)
 
-        if form.username.data != current_user.username:
-            existing = User.query.filter_by(
-                username=form.username.data).first()
-            if existing:
-                flash('Username already taken.', 'error')
-                return render_template('profile.html',
-                                       form=form,
-                                       disconnect_form=disconnect_form)
-
         current_user.first_name = form.first_name.data
         current_user.last_name = form.last_name.data
-        current_user.username = form.username.data
         current_user.email = form.email.data
+        current_user.profile_image = form.profile_image.data
         db.session.commit()
         flash('Profile updated successfully.', 'success')
         return redirect(url_for('profile'))
@@ -960,6 +951,7 @@ def profile():
     form.last_name.data = current_user.last_name
     form.username.data = current_user.username
     form.email.data = current_user.email
+    form.profile_image.data = current_user.profile_image
     return render_template('profile.html',
                            form=form,
                            disconnect_form=disconnect_form)

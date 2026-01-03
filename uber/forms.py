@@ -42,8 +42,9 @@ class RoleForm(FlaskForm):
 class ProfileForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired(), Length(min=1, max=80)])
     last_name = StringField('Last Name', validators=[DataRequired(), Length(min=1, max=80)])
-    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=80)])
+    username = StringField('Username', render_kw={'disabled': True})
     email = StringField('Email', validators=[DataRequired(), Email()])
+    profile_image = StringField('Profile Image URL', validators=[Optional()])
     submit = SubmitField('Save Changes')
 
 
