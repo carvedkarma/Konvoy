@@ -640,7 +640,7 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        user = User.query.filter_by(email=form.email.data.lower().strip()).first()
         if user and user.check_password(form.password.data):
             user.last_login = datetime.utcnow()
             db.session.commit()
@@ -660,10 +660,25 @@ def register():
 
     form = RegisterForm()
     if form.validate_on_submit():
-        user = User(email=form.email.data,
-                    username=form.username.data,
-                    first_name=form.first_name.data,
-                    last_name=form.last_name.data,
+        profile_image_path = None
+        if form.profile_image.data:
+            import uuid
+            from werkzeug.utils import secure_filename
+            file = form.profile_image.data
+            filename = secure_filename(file.filename)
+            ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else 'jpg'
+            unique_filename = f"{uuid.uuid4().hex}.{ext}"
+            upload_folder = os.path.join(app.root_path, 'static', 'uploads', 'profiles')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, unique_filename)
+            file.save(file_path)
+            profile_image_path = f"/static/uploads/profiles/{unique_filename}"
+        
+        user = User(email=form.email.data.lower().strip(),
+                    username=form.username.data.lower().strip(),
+                    first_name=form.first_name.data.strip(),
+                    last_name=form.last_name.data.strip(),
+                    profile_image=profile_image_path,
                     role='user')
         user.set_password(form.password.data)
         db.session.add(user)
