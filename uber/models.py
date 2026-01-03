@@ -256,6 +256,7 @@ class ChatMessage(db.Model):
             'user_id': self.user_id,
             'user_name': self.user.get_display_name(),
             'user_initials': self.user.get_initials(),
+            'user_image': self.user.profile_image,
             'username': self.user.username,
             'roles': [{'name': r.display_name, 'color': r.color} for r in self.user.roles],
             'message': self.message,

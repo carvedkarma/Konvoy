@@ -1831,7 +1831,22 @@ def get_active_users():
     ]
     for uid in expired_ids:
         active_users.pop(uid, None)
-    return jsonify({'success': True, 'users': list(active_users.values())})
+    
+    users = []
+    for uid, data in active_users.items():
+        user = db.session.get(User, int(uid))
+        if user:
+            users.append({
+                'id': user.id,
+                'username': user.username,
+                'display_name': user.get_display_name(),
+                'initials': user.get_initials(),
+                'profile_image': user.profile_image,
+                'roles': [{'name': r.display_name, 'color': r.color} for r in user.roles],
+                'current_page': data.get('page', '/')
+            })
+            
+    return jsonify({'success': True, 'users': users})
 
 
 @app.route('/chat-lobby')
@@ -1880,6 +1895,8 @@ def handle_connect():
             current_user.get_display_name(),
             'initials':
             current_user.get_initials(),
+            'profile_image':
+            current_user.profile_image,
             'roles': [{
                 'name': r.display_name,
                 'color': r.color

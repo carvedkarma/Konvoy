@@ -74,9 +74,13 @@
                     
                     <div class="dropdown relative">
                         <button class="flex items-center space-x-2">
+                            {% if current_user.profile_image %}
+                            <img src="{{ current_user.profile_image }}" alt="Profile" class="w-8 h-8 rounded-full object-cover">
+                            {% else %}
                             <div class="w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-600 text-sm font-semibold">
                                 {{ current_user.get_initials() }}
                             </div>
+                            {% endif %}
                         </button>
                         <div class="dropdown-menu absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-zinc-100 py-1">
                             <div class="px-3 py-2 border-b border-zinc-100">

@@ -264,12 +264,15 @@ function renderOnlineUsers(users) {
     users.forEach(user => {
         const gradient = getRoleGradient(user.roles);
         const pageLabel = getPageLabel(user.current_page);
+        const avatarHtml = user.profile_image 
+            ? `<img src="${escapeHtml(user.profile_image)}" class="w-5 h-5 rounded-full object-cover">`
+            : `<div class="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-white text-[9px] font-bold">
+                    ${escapeHtml(user.initials)}
+                </div>`;
         html += `
             <div class="user-chip flex items-center px-2 py-1 rounded-full bg-gradient-to-r ${gradient} cursor-pointer shadow-sm"
                  onclick="mentionUser('${escapeHtml(user.username)}')" title="${escapeHtml(user.display_name)} - ${pageLabel}">
-                <div class="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-white text-[9px] font-bold">
-                    ${escapeHtml(user.initials)}
-                </div>
+                ${avatarHtml}
                 <span class="text-white text-[10px] font-medium ml-1.5 max-w-[60px] truncate">${escapeHtml(user.display_name.split(' ')[0])}</span>
                 <span class="text-white/70 text-[8px] ml-1 hidden sm:inline">${pageLabel}</span>
             </div>
@@ -286,13 +289,19 @@ function renderMessage(msg, prepend = false) {
     const gradient = getRoleGradient(msg.roles);
     
     const rolesJson = JSON.stringify(msg.roles || []).replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const messageHtml = `
-        <div class="message-enter flex items-start gap-1.5 ${isMentioned ? 'mention-highlight rounded-lg p-1.5 -mx-1.5' : ''}" data-message-id="${msg.id}">
-            <div class="avatar-click w-6 h-6 rounded-full bg-gradient-to-r ${gradient} flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-zinc-300 transition-all mt-0.5"
+    const avatarHtml = msg.user_image
+        ? `<img src="${escapeHtml(msg.user_image)}" class="w-6 h-6 rounded-full object-cover avatar-click cursor-pointer hover:ring-2 hover:ring-zinc-300 transition-all mt-0.5"
+                 onclick="showUserCard(event, ${msg.user_id}, '${escapeHtml(msg.username || '')}', '${escapeHtml(msg.user_name)}', '${escapeHtml(msg.user_initials)}', JSON.parse(this.dataset.roles), '${escapeHtml(msg.user_image)}')"
+                 data-roles="${rolesJson}">`
+        : `<div class="avatar-click w-6 h-6 rounded-full bg-gradient-to-r ${gradient} flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-zinc-300 transition-all mt-0.5"
                  onclick="showUserCard(event, ${msg.user_id}, '${escapeHtml(msg.username || '')}', '${escapeHtml(msg.user_name)}', '${escapeHtml(msg.user_initials)}', JSON.parse(this.dataset.roles))"
                  data-roles="${rolesJson}">
                 ${escapeHtml(msg.user_initials)}
-            </div>
+            </div>`;
+
+    const messageHtml = `
+        <div class="message-enter flex items-start gap-1.5 ${isMentioned ? 'mention-highlight rounded-lg p-1.5 -mx-1.5' : ''}" data-message-id="${msg.id}">
+            ${avatarHtml}
             <div class="bg-zinc-100 text-zinc-800 px-2.5 py-1.5 rounded-xl rounded-tl-sm text-[13px] max-w-[85%]">
                 ${formatMessageText(msg.message)}
             </div>
@@ -329,7 +338,7 @@ function mentionUser(username) {
 
 let userDataCache = {};
 
-function showUserCard(event, userId, username, displayName, initials, roles) {
+function showUserCard(event, userId, username, displayName, initials, roles, userImage) {
     event.stopPropagation();
     const card = document.getElementById('user-card');
     const avatar = document.getElementById('card-avatar');
@@ -339,8 +348,13 @@ function showUserCard(event, userId, username, displayName, initials, roles) {
     const statusEl = document.getElementById('card-status');
     
     const gradient = getRoleGradient(roles);
-    avatar.className = `w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3 bg-gradient-to-r ${gradient}`;
-    avatar.textContent = initials;
+    if (userImage) {
+        avatar.className = 'w-10 h-10 rounded-full object-cover mr-3';
+        avatar.innerHTML = `<img src="${escapeHtml(userImage)}" class="w-full h-full rounded-full object-cover">`;
+    } else {
+        avatar.className = `w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3 bg-gradient-to-r ${gradient}`;
+        avatar.textContent = initials;
+    }
     nameEl.textContent = displayName;
     usernameEl.textContent = '@' + username;
     
