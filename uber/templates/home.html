@@ -389,7 +389,38 @@ fetch('/api/home-data')
         const roleDisplay = "{{ current_user.get_role_display()|e }}";
         const roleBadgeClasses = "{{ current_user.get_role_badge_classes()|e }}";
         const userProfileImage = "{{ current_user.profile_image or '' }}";
-        const unreadCount = data.unread_chat_count || 0;
+        // Check location permission and status
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'geolocation' }).then(result => {
+                updateLocationUI(result.state);
+                result.onchange = () => updateLocationUI(result.state);
+            });
+        } else {
+            // Fallback for browsers that don't support permissions.query
+            navigator.geolocation.getCurrentPosition(
+                () => updateLocationUI('granted'),
+                (err) => {
+                    if (err.code === 1) updateLocationUI('denied');
+                    else updateLocationUI('prompt');
+                }
+            );
+        }
+
+        function updateLocationUI(state) {
+            const banner = document.getElementById('permission-banner');
+            const locBtn = document.getElementById('enable-location-btn');
+            
+            if (state === 'granted') {
+                locBtn.classList.add('hidden');
+                // Check if we still need the banner for notifications
+                if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+                    banner.classList.add('hidden');
+                }
+            } else {
+                banner.classList.remove('hidden');
+                locBtn.classList.remove('hidden');
+            }
+        }
         
         let driverSection = '';
         if (di) {

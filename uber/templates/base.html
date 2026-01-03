@@ -257,6 +257,14 @@
             } catch (e) {}
         }
         
+        async function markChatAsRead() {
+            try {
+                await fetch('/api/chat-mark-read', {method: 'POST'});
+                const badge = document.getElementById('unread-badge-container');
+                if (badge) badge.innerHTML = '';
+            } catch (e) {}
+        }
+        
         async function subscribeToPush() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
