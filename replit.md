@@ -90,6 +90,19 @@ Preferred communication style: Simple, everyday language.
   - XSS protection via `|tojson` filter and `escapeHtml()` function
 - **Events**: `connect`, `disconnect`, `send_message`, `get_online_users`
 
+### Web Push Notifications
+- **VAPID Authentication**: Uses VAPID keys stored in environment variables (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`)
+- **PushSubscription Model**: Stores user subscriptions with endpoint, p256dh key, and auth key
+- **Service Worker**: Located at `/static/service-worker.js` for background push handling
+- **API Endpoints**:
+  - `/api/push/vapid-public-key`: Returns public VAPID key for client registration
+  - `/api/push/subscribe`: Registers a push subscription for the current user
+  - `/api/push/unsubscribe`: Removes push subscription
+  - `/api/push/status`: Checks if current user has active subscription
+  - `/api/push/test`: Sends a test notification to current user
+- **UI**: Notification bell icon in header with green indicator when subscribed
+- **Browser Support**: Works with Chrome, Firefox, Edge; iOS Safari requires PWA installation
+
 ### Configuration Management
 - Environment variables for sensitive data (Flask secret key, database URL, owner credentials)
 - Global state stored in `config.py` for ride/stop signals and destination tracking
@@ -119,7 +132,8 @@ uber/
 │   ├── uber_connect.html # Uber account connection page
 │   └── chat_lobby.html  # Real-time chat with online users
 └── static/
-    └── images/          # Static assets
+    ├── images/          # Static assets
+    └── service-worker.js # Push notification handler
 ```
 
 ## External Dependencies
@@ -136,6 +150,8 @@ uber/
 - `FLASK_SECRET_KEY`: Session encryption key
 - `RIZTAR_OWNER_EMAIL`: Auto-create owner account email
 - `RIZTAR_OWNER_PASSWORD`: Auto-create owner account password
+- `VAPID_PUBLIC_KEY`: Web push notification public key
+- `VAPID_PRIVATE_KEY`: Web push notification private key
 
 ### Python Dependencies
 - Flask, Flask-Login, Flask-SQLAlchemy, Flask-WTF
@@ -146,3 +162,4 @@ uber/
 - Gunicorn (production server)
 - cryptography (Fernet encryption for Uber credentials)
 - Flask-SocketIO, eventlet (real-time chat)
+- pywebpush, py-vapid (web push notifications)
