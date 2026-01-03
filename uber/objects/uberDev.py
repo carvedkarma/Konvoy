@@ -188,12 +188,12 @@ def appLaunch(cookies, headers, refresh_token):
         return [0, None]
 
     try:
-        # response = requests.post(
-        #     'https://cn-geo1.uber.com/rt/drivers/app-launch',
-        #     cookies=cookies,
-        #     headers=headers,
-        #     json=json_data)
-        response = requests.get('https://pastebin.com/raw/SYMDNfFL')
+        response = requests.post(
+            'https://cn-geo1.uber.com/rt/drivers/app-launch',
+            cookies=cookies,
+            headers=headers,
+            json=json_data)
+        # response = requests.get('https://pastebin.com/raw/SYMDNfFL')
         print(
             f"appLaunch: Status {response.status_code}, Raw response: {response.text[:1000]}"
         )
