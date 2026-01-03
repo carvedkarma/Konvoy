@@ -13,8 +13,9 @@ try:
     from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour, uberRidersNearby
     import config
     import cache
-    from models import db, User, Role, ChatMessage, create_default_roles, encrypt_data, decrypt_data
+    from models import db, User, Role, ChatMessage, PushSubscription, create_default_roles, encrypt_data, decrypt_data
     from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm, UberConnectForm, UberDisconnectForm, EmptyForm
+    from pywebpush import webpush, WebPushException
     import secrets
     import json
     print("All imports successful", flush=True)
@@ -352,6 +353,141 @@ def get_nearby_drivers():
     except Exception as e:
         print(f"Error fetching nearby drivers: {e}", flush=True)
         return jsonify(success=False, error=str(e), nearby_drivers=0)
+
+
+# VAPID keys for push notifications - loaded from environment
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_CLAIMS = {"sub": "mailto:admin@riztar.com"}
+
+
+@app.route('/api/push/vapid-public-key')
+@login_required
+def get_vapid_public_key():
+    """Return the VAPID public key for client-side push subscription"""
+    if not VAPID_PUBLIC_KEY:
+        return jsonify(success=False, error='Push notifications not configured')
+    return jsonify(success=True, publicKey=VAPID_PUBLIC_KEY)
+
+
+@app.route('/api/push/subscribe', methods=['POST'])
+@login_required
+def push_subscribe():
+    """Subscribe user to push notifications"""
+    if not VAPID_PUBLIC_KEY or not VAPID_PRIVATE_KEY:
+        return jsonify(success=False, error='Push notifications not configured')
+    
+    data = request.json
+    if not data:
+        return jsonify(success=False, error='No data provided')
+    
+    endpoint = data.get('endpoint')
+    keys = data.get('keys', {})
+    p256dh = keys.get('p256dh')
+    auth = keys.get('auth')
+    
+    if not all([endpoint, p256dh, auth]):
+        return jsonify(success=False, error='Invalid subscription data')
+    
+    existing = PushSubscription.query.filter_by(
+        user_id=current_user.id,
+        endpoint=endpoint
+    ).first()
+    
+    if existing:
+        existing.p256dh_key = p256dh
+        existing.auth_key = auth
+        existing.is_active = True
+    else:
+        subscription = PushSubscription(
+            user_id=current_user.id,
+            endpoint=endpoint,
+            p256dh_key=p256dh,
+            auth_key=auth
+        )
+        db.session.add(subscription)
+    
+    db.session.commit()
+    return jsonify(success=True, message='Subscribed to push notifications')
+
+
+@app.route('/api/push/unsubscribe', methods=['POST'])
+@login_required
+def push_unsubscribe():
+    """Unsubscribe user from push notifications"""
+    data = request.json
+    endpoint = data.get('endpoint') if data else None
+    
+    if endpoint:
+        PushSubscription.query.filter_by(
+            user_id=current_user.id,
+            endpoint=endpoint
+        ).delete()
+    else:
+        PushSubscription.query.filter_by(user_id=current_user.id).delete()
+    
+    db.session.commit()
+    return jsonify(success=True, message='Unsubscribed from push notifications')
+
+
+@app.route('/api/push/status')
+@login_required
+def push_status():
+    """Check if user has active push subscriptions"""
+    has_subscription = PushSubscription.query.filter_by(
+        user_id=current_user.id,
+        is_active=True
+    ).first() is not None
+    configured = bool(VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)
+    return jsonify(success=True, subscribed=has_subscription, configured=configured)
+
+
+def send_push_notification(user_id, title, body, url='/', tag='default', require_interaction=False):
+    """Send push notification to a specific user"""
+    if not VAPID_PRIVATE_KEY:
+        return 0
+        
+    subscriptions = PushSubscription.query.filter_by(user_id=user_id, is_active=True).all()
+    
+    payload = json.dumps({
+        'title': title,
+        'body': body,
+        'url': url,
+        'tag': tag,
+        'requireInteraction': require_interaction
+    })
+    
+    sent = 0
+    for sub in subscriptions:
+        try:
+            webpush(
+                subscription_info=sub.to_subscription_info(),
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims=VAPID_CLAIMS
+            )
+            sent += 1
+        except WebPushException as e:
+            if e.response and e.response.status_code in [404, 410]:
+                sub.is_active = False
+                db.session.commit()
+            print(f"Push notification failed: {e}")
+    
+    return sent
+
+
+@app.route('/api/push/test', methods=['POST'])
+@login_required
+def test_push_notification():
+    """Send a test push notification to the current user"""
+    sent = send_push_notification(
+        current_user.id,
+        'Test Notification',
+        'Push notifications are working!',
+        url='/',
+        tag='test'
+    )
+    return jsonify(success=True, sent=sent)
 
 
 @app.route('/api/active-ride')

@@ -266,6 +266,32 @@ class ChatMessage(db.Model):
         }
 
 
+class PushSubscription(db.Model):
+    __tablename__ = 'push_subscriptions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    endpoint = db.Column(db.Text, nullable=False)
+    p256dh_key = db.Column(db.Text, nullable=False)
+    auth_key = db.Column(db.Text, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('push_subscriptions', lazy=True))
+    
+    def to_subscription_info(self):
+        return {
+            'endpoint': self.endpoint,
+            'keys': {
+                'p256dh': self.p256dh_key,
+                'auth': self.auth_key
+            }
+        }
+    
+    def __repr__(self):
+        return f'<PushSubscription {self.id} for user {self.user_id}>'
+
+
 def create_default_roles():
     default_roles = [
         {

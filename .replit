@@ -37,3 +37,9 @@ externalPort = 80
 [deployment]
 deploymentTarget = "autoscale"
 run = ["python", "uber/main.py"]
+
+[userenv]
+
+[userenv.shared]
+VAPID_PUBLIC_KEY = "BPZ9Q2nM1-GUE37l7sOWOXNdBa3rJxhbrJ44wc_CU5ZSdtnbde9AEyvKplD8swx8DjYvC9-jAI3l0cKiKb15cYc"
+VAPID_PRIVATE_KEY = "ZGMXQGDen9ByjXvKrCthvPAfvoVoLpO-fJvoo8kEAg0"
