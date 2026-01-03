@@ -994,7 +994,7 @@ fetch('/api/home-data')
             });
         }
         
-        // Fetch nearby drivers using browser geolocation
+        // Fetch nearby drivers using browser geolocation with auto-refresh every 19 seconds
         if (uberConnected && navigator.geolocation) {
             const nearbyCountEl = document.getElementById('nearby-count');
             const nearbyDotEl = document.getElementById('nearby-dot');
@@ -1002,77 +1002,108 @@ fetch('/api/home-data')
             const nearbyStatusEl = document.getElementById('nearby-status');
             const userCoordsEl = document.getElementById('user-coords');
             
+            let userLat = null;
+            let userLng = null;
+            let nearbyRefreshInterval = null;
+            
+            // Function to fetch nearby drivers count
+            function fetchNearbyDrivers(lat, lng, isRefresh = false) {
+                if (!isRefresh && nearbyCountEl) nearbyCountEl.textContent = 'Fetching...';
+                
+                fetch(`/api/nearby-drivers?lat=${lat}&lng=${lng}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const count = parseInt(data.nearby_drivers) || 0;
+                        const countColor = count > 10 ? 'text-emerald-600' : count > 5 ? 'text-amber-600' : 'text-red-500';
+                        const bgColor = count > 10 ? 'bg-emerald-50 border-emerald-200' : count > 5 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+                        const dotColor = count > 10 ? 'bg-emerald-500' : count > 5 ? 'bg-amber-500' : 'bg-red-500';
+                        
+                        if (nearbyCountEl) {
+                            nearbyCountEl.innerHTML = `${count} <span class="text-sm font-normal text-zinc-500">vehicles</span>`;
+                            nearbyCountEl.className = `text-lg font-bold ${countColor}`;
+                        }
+                        if (nearbySectionEl) {
+                            nearbySectionEl.className = `glass-panel rounded-xl premium-shadow p-4 mb-6 ${bgColor} border`;
+                        }
+                        if (nearbyDotEl) {
+                            nearbyDotEl.innerHTML = `
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 ${dotColor}"></span>
+                            `;
+                        }
+                        if (nearbyStatusEl) {
+                            nearbyStatusEl.textContent = 'Live';
+                            nearbyStatusEl.className = 'ml-2 text-xs text-zinc-500';
+                        }
+                    })
+                    .catch(err => {
+                        if (nearbyCountEl) nearbyCountEl.textContent = 'Error loading';
+                    });
+            }
+            
+            // Function to update location display
+            function updateLocationDisplay(lat, lng) {
+                if (!userCoordsEl) return;
+                
+                userCoordsEl.innerHTML = `<span class="text-zinc-500">Finding your location...</span>`;
+                
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
+                    headers: { 'User-Agent': 'RizTar/1.0' }
+                })
+                .then(res => res.json())
+                .then(geoData => {
+                    const addr = geoData.address || {};
+                    let locationParts = [];
+                    if (addr.road) locationParts.push(addr.road);
+                    if (addr.suburb) locationParts.push(addr.suburb);
+                    else if (addr.neighbourhood) locationParts.push(addr.neighbourhood);
+                    else if (addr.city) locationParts.push(addr.city);
+                    else if (addr.town) locationParts.push(addr.town);
+                    
+                    const locationName = locationParts.length > 0 
+                        ? locationParts.join(', ') 
+                        : geoData.display_name?.split(',').slice(0, 2).join(',') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    
+                    userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600 font-semibold">${locationName}</span>`;
+                    userCoordsEl.parentElement.classList.remove('text-zinc-400');
+                    userCoordsEl.parentElement.classList.add('text-blue-600');
+                })
+                .catch(() => {
+                    userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>`;
+                    userCoordsEl.parentElement.classList.remove('text-zinc-400');
+                    userCoordsEl.parentElement.classList.add('text-blue-600');
+                });
+            }
+            
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
+                    userLat = position.coords.latitude;
+                    userLng = position.coords.longitude;
                     
-                    // Display user's current location with reverse geocoding
-                    if (userCoordsEl) {
-                        userCoordsEl.innerHTML = `<span class="text-zinc-500">Finding your location...</span>`;
-                        
-                        // Reverse geocode to get street/suburb name
-                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
-                            headers: { 'User-Agent': 'RizTar/1.0' }
-                        })
-                        .then(res => res.json())
-                        .then(geoData => {
-                            const addr = geoData.address || {};
-                            // Build a short location string: street, suburb/city
-                            let locationParts = [];
-                            if (addr.road) locationParts.push(addr.road);
-                            if (addr.suburb) locationParts.push(addr.suburb);
-                            else if (addr.neighbourhood) locationParts.push(addr.neighbourhood);
-                            else if (addr.city) locationParts.push(addr.city);
-                            else if (addr.town) locationParts.push(addr.town);
-                            
-                            const locationName = locationParts.length > 0 
-                                ? locationParts.join(', ') 
-                                : geoData.display_name?.split(',').slice(0, 2).join(',') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-                            
-                            userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600 font-semibold">${locationName}</span>`;
-                            userCoordsEl.parentElement.classList.remove('text-zinc-400');
-                            userCoordsEl.parentElement.classList.add('text-blue-600');
-                        })
-                        .catch(() => {
-                            // Fallback to coordinates if geocoding fails
-                            userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>`;
-                            userCoordsEl.parentElement.classList.remove('text-zinc-400');
-                            userCoordsEl.parentElement.classList.add('text-blue-600');
-                        });
-                    }
+                    // Display location name
+                    updateLocationDisplay(userLat, userLng);
                     
-                    if (nearbyCountEl) nearbyCountEl.textContent = 'Fetching...';
+                    // Fetch nearby drivers initially
+                    fetchNearbyDrivers(userLat, userLng, false);
                     
-                    fetch(`/api/nearby-drivers?lat=${lat}&lng=${lng}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            const count = parseInt(data.nearby_drivers) || 0;
-                            const countColor = count > 10 ? 'text-emerald-600' : count > 5 ? 'text-amber-600' : 'text-red-500';
-                            const bgColor = count > 10 ? 'bg-emerald-50 border-emerald-200' : count > 5 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
-                            const dotColor = count > 10 ? 'bg-emerald-500' : count > 5 ? 'bg-amber-500' : 'bg-red-500';
-                            
-                            if (nearbyCountEl) {
-                                nearbyCountEl.innerHTML = `${count} <span class="text-sm font-normal text-zinc-500">vehicles</span>`;
-                                nearbyCountEl.className = `text-lg font-bold ${countColor}`;
-                            }
-                            if (nearbySectionEl) {
-                                nearbySectionEl.className = `glass-panel rounded-xl premium-shadow p-4 mb-6 ${bgColor} border`;
-                            }
-                            if (nearbyDotEl) {
-                                nearbyDotEl.innerHTML = `
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-3 w-3 ${dotColor}"></span>
-                                `;
-                            }
-                            if (nearbyStatusEl) {
-                                nearbyStatusEl.textContent = 'Live';
-                                nearbyStatusEl.className = 'ml-2 text-xs text-zinc-500';
-                            }
-                        })
-                        .catch(err => {
-                            if (nearbyCountEl) nearbyCountEl.textContent = 'Error loading';
-                        });
+                    // Auto-refresh every 19 seconds
+                    nearbyRefreshInterval = setInterval(() => {
+                        // Update location each refresh for accuracy
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                userLat = pos.coords.latitude;
+                                userLng = pos.coords.longitude;
+                                fetchNearbyDrivers(userLat, userLng, true);
+                            },
+                            () => {
+                                // Use last known location if current fails
+                                if (userLat && userLng) {
+                                    fetchNearbyDrivers(userLat, userLng, true);
+                                }
+                            },
+                            { enableHighAccuracy: true, timeout: 5000 }
+                        );
+                    }, 19000);
                 },
                 (error) => {
                     if (nearbyCountEl) {
