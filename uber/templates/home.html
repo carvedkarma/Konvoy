@@ -416,6 +416,36 @@ fetch('/api/home-data')
                 if (Notification.permission === 'granted' || Notification.permission === 'denied') {
                     banner.classList.add('hidden');
                 }
+                
+                // Get current location and display it
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const { latitude, longitude } = position.coords;
+                    // Wait for nearby drivers section to be rendered if it's dynamic
+                    const checkInterval = setInterval(() => {
+                        const nearbyGrid = document.getElementById('nearby-drivers-grid');
+                        if (nearbyGrid) {
+                            clearInterval(checkInterval);
+                            // Check if location info already exists
+                            let locInfo = document.getElementById('user-location-info');
+                            if (!locInfo) {
+                                locInfo = document.createElement('div');
+                                locInfo.id = 'user-location-info';
+                                locInfo.className = 'col-span-full p-2 mb-2 bg-blue-50 border border-blue-100 rounded-lg text-center';
+                                nearbyGrid.prepend(locInfo);
+                            }
+                            locInfo.innerHTML = `
+                                <p class="text-[10px] font-bold text-blue-600 flex items-center justify-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    </svg>
+                                    YOUR LOCATION: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}
+                                </p>
+                            `;
+                        }
+                    }, 100);
+                    // Timeout after 5 seconds
+                    setTimeout(() => clearInterval(checkInterval), 5000);
+                });
             } else {
                 banner.classList.remove('hidden');
                 locBtn.classList.remove('hidden');
