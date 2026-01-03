@@ -172,7 +172,13 @@ def root():
                                vehicles=[],
                                driver_info=None,
                                disconnect_form=disconnect_form)
-    return redirect(url_for('login'))
+    return redirect(url_for('landing'))
+
+@app.route('/welcome')
+def landing():
+    if current_user.is_authenticated:
+        return redirect(url_for('root'))
+    return render_template('landing.html')
 
 
 @app.route('/api/home-data')
