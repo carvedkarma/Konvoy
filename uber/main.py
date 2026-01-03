@@ -295,7 +295,16 @@ def home_data():
             nearby_data = cached_nearby
         else:
             try:
-                nearby_result = uberRidersNearby(cookies, headers, refresh_token)
+                # Extract user's current location from their Uber headers
+                user_lat = headers.get('x-uber-device-location-latitude')
+                user_lng = headers.get('x-uber-device-location-longitude')
+                
+                if user_lat and user_lng:
+                    nearby_result = uberRidersNearby(cookies, headers, refresh_token, 
+                                                     lat=float(user_lat), lng=float(user_lng))
+                else:
+                    nearby_result = uberRidersNearby(cookies, headers, refresh_token)
+                    
                 if nearby_result:
                     nearby_data = nearby_result.get('nearby_vehicles', 0)
                     if isinstance(nearby_data, int):
