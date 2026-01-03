@@ -449,11 +449,66 @@ fetch('/api/home-data')
                 }
             });
             
-            // Wire up notification button to use same logic as bell icon
+            // Wire up notification button for direct notification enabling
             if (notificationBtn) {
-                notificationBtn.addEventListener('click', () => {
-                    if (typeof subscribeToPush === 'function') {
-                        subscribeToPush();
+                notificationBtn.addEventListener('click', async () => {
+                    if (!('Notification' in window)) {
+                        alert('Notifications not supported in this browser.');
+                        return;
+                    }
+                    
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        notificationBtn.classList.add('hidden');
+                        
+                        // Subscribe to push notifications
+                        if ('serviceWorker' in navigator && 'PushManager' in window) {
+                            try {
+                                const keyRes = await fetch('/api/push/vapid-public-key');
+                                const keyData = await keyRes.json();
+                                if (keyData.success) {
+                                    const registration = await navigator.serviceWorker.register('/static/service-worker.js');
+                                    await navigator.serviceWorker.ready;
+                                    
+                                    function urlBase64ToUint8Array(base64String) {
+                                        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                                        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                                        const rawData = window.atob(base64);
+                                        const outputArray = new Uint8Array(rawData.length);
+                                        for (let i = 0; i < rawData.length; ++i) {
+                                            outputArray[i] = rawData.charCodeAt(i);
+                                        }
+                                        return outputArray;
+                                    }
+                                    
+                                    const subscription = await registration.pushManager.subscribe({
+                                        userVisibleOnly: true,
+                                        applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+                                    });
+                                    
+                                    await fetch('/api/push/subscribe', {
+                                        method: 'POST',
+                                        headers: {'Content-Type': 'application/json'},
+                                        body: JSON.stringify(subscription.toJSON())
+                                    });
+                                    
+                                    const pushDot = document.getElementById('push-notification-dot');
+                                    const pushBtn = document.getElementById('push-notification-btn');
+                                    if (pushDot) pushDot.classList.remove('hidden');
+                                    if (pushBtn) {
+                                        pushBtn.classList.remove('text-zinc-400');
+                                        pushBtn.classList.add('text-emerald-500');
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Push subscription error:', e);
+                            }
+                        }
+                        
+                        // Update banner
+                        updatePermissionUI();
+                    } else {
+                        alert('Notification permission denied.');
                     }
                 });
             }
@@ -1696,10 +1751,63 @@ document.addEventListener('DOMContentLoaded', function() {
         );
     });
     
-    notificationBtn.addEventListener('click', () => {
-        // Use the same subscribeToPush function from base.html for consistency
-        if (typeof subscribeToPush === 'function') {
-            subscribeToPush();
+    notificationBtn.addEventListener('click', async () => {
+        if (!('Notification' in window)) {
+            alert('Notifications not supported in this browser.');
+            return;
+        }
+        
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            needsNotification = false;
+            notificationBtn.classList.add('hidden');
+            
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                try {
+                    const keyRes = await fetch('/api/push/vapid-public-key');
+                    const keyData = await keyRes.json();
+                    if (keyData.success) {
+                        const registration = await navigator.serviceWorker.register('/static/service-worker.js');
+                        await navigator.serviceWorker.ready;
+                        
+                        function urlBase64ToUint8Array(base64String) {
+                            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                            const rawData = window.atob(base64);
+                            const outputArray = new Uint8Array(rawData.length);
+                            for (let i = 0; i < rawData.length; ++i) {
+                                outputArray[i] = rawData.charCodeAt(i);
+                            }
+                            return outputArray;
+                        }
+                        
+                        const subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+                        });
+                        
+                        await fetch('/api/push/subscribe', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(subscription.toJSON())
+                        });
+                        
+                        const pushDot = document.getElementById('push-notification-dot');
+                        const pushBtn = document.getElementById('push-notification-btn');
+                        if (pushDot) pushDot.classList.remove('hidden');
+                        if (pushBtn) {
+                            pushBtn.classList.remove('text-zinc-400');
+                            pushBtn.classList.add('text-emerald-500');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Push subscription error:', e);
+                }
+            }
+            
+            updateBanner();
+        } else {
+            alert('Notification permission denied.');
         }
     });
     
