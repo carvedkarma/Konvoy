@@ -334,6 +334,7 @@ fetch('/api/home-data')
         const defaultVehicle = data.default_vehicle;
         const activeRide = data.active_ride;
         const driverStatus = data.driver_status;
+        const nearbyDrivers = data.nearby_drivers;
         const isOwner = {{ 'true' if current_user.is_owner() else 'false' }};
         const hasLocationPerm = {{ 'true' if current_user.has_permission('can_change_location') else 'false' }};
         const hasRidePerm = {{ 'true' if current_user.has_permission('can_fetch_ride') else 'false' }};
@@ -410,6 +411,39 @@ fetch('/api/home-data')
                     </div>
                     <span class="inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full border ${roleBadgeClasses}">${roleDisplay}</span>
                     <p class="text-sm text-zinc-500 mt-2">Connect your Uber account to get started</p>
+                </div>
+            `;
+        }
+        
+        let nearbySection = '';
+        if (nearbyDrivers !== null && nearbyDrivers !== undefined) {
+            const count = parseInt(nearbyDrivers) || 0;
+            const countColor = count > 10 ? 'text-emerald-600' : count > 5 ? 'text-amber-600' : 'text-red-500';
+            const bgColor = count > 10 ? 'bg-emerald-50 border-emerald-200' : count > 5 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+            const dotColor = count > 10 ? 'bg-emerald-500' : count > 5 ? 'bg-amber-500' : 'bg-red-500';
+            nearbySection = `
+                <div class="glass-panel rounded-xl premium-shadow p-4 mb-6 ${bgColor} border">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center mr-3">
+                                <svg class="w-5 h-5 ${countColor}" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                                    <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-3a1 1 0 00-.293-.707l-3-3A1 1 0 0016 6h-1V5a1 1 0 00-1-1H3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs text-zinc-500 font-medium">Drivers Nearby</p>
+                                <p class="text-lg font-bold ${countColor}">${count} <span class="text-sm font-normal text-zinc-500">vehicles</span></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="relative flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 ${dotColor}"></span>
+                            </span>
+                            <span class="ml-2 text-xs text-zinc-500">Live</span>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -503,6 +537,7 @@ fetch('/api/home-data')
         
         contentEl.innerHTML = `
             ${driverSection}
+            ${nearbySection}
             ${activeRideSection}
             <div class="glass-panel p-5 rounded-xl premium-shadow space-y-3">
                 ${hasLocationPerm ? `

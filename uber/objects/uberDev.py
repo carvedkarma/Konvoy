@@ -1519,22 +1519,29 @@ def uberCookieGrabber(headers, refresh_token):
             headers=headers,
             json=json_data,
             timeout=10)
-        
+
         print(f"uberCookieGrabber: Status {response.status_code}")
-        print(f"uberCookieGrabber: Response cookies: {response.cookies.get_dict()}")
-        
+        print(
+            f"uberCookieGrabber: Response cookies: {response.cookies.get_dict()}"
+        )
+
         cookies_dict = response.cookies.get_dict()
-        
+
         if response.status_code == 200:
             data = response.json()
-            print(f"uberCookieGrabber: Response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}")
+            print(
+                f"uberCookieGrabber: Response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}"
+            )
             return {
                 'cookies': cookies_dict,
-                'access_token': data.get('accessToken') or data.get('access_token'),
+                'access_token': data.get('accessToken')
+                or data.get('access_token'),
                 'response_data': data
             }
         else:
-            print(f"uberCookieGrabber: Failed with status {response.status_code}")
+            print(
+                f"uberCookieGrabber: Failed with status {response.status_code}"
+            )
             return None
     except Exception as e:
         print(f"uberCookieGrabber error: {e}")
@@ -1547,27 +1554,31 @@ def driverNavigation(cookies, access_token):
     Requires web cookies from uberCookieGrabber
     """
     headers = {
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'accept-language': 'en-US,en;q=0.9',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'accept':
+        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'accept-language':
+        'en-US,en;q=0.9',
+        'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     }
-    
+
     if access_token:
         headers['authorization'] = f'Bearer {access_token}'
-    
+
     try:
-        response = requests.get(
-            'https://drivers.uber.com/navigation',
-            cookies=cookies,
-            headers=headers,
-            timeout=10,
-            allow_redirects=True)
-        
+        response = requests.get('https://drivers.uber.com/navigation',
+                                cookies=cookies,
+                                headers=headers,
+                                timeout=10,
+                                allow_redirects=True)
+
         print(f"driverNavigation: Status {response.status_code}")
         print(f"driverNavigation: Final URL: {response.url}")
-        print(f"driverNavigation: Response cookies: {response.cookies.get_dict()}")
+        print(
+            f"driverNavigation: Response cookies: {response.cookies.get_dict()}"
+        )
         print(f"driverNavigation: Content length: {len(response.text)}")
-        
+
         return {
             'status_code': response.status_code,
             'url': response.url,
@@ -1577,4 +1588,57 @@ def driverNavigation(cookies, access_token):
         }
     except Exception as e:
         print(f"driverNavigation error: {e}")
+        return None
+
+
+def uberRidersNearby(cookies, headers, refresh_token, lat=-32.134338, lng=115.899974):
+    """
+    Get nearby drivers/vehicles count from Uber rider API.
+    Returns dict with nearby_vehicles count or None if failed.
+    """
+    try:
+        new_token = refreshToken(cookies, headers, refresh_token)
+        
+        api_headers = dict(headers)
+        api_headers['Host'] = 'cn-cloudflare.pidetupop.com'
+        api_headers['authorization'] = f'Bearer {new_token}'
+        api_headers['x-uber-device-location-latitude'] = str(lat)
+        api_headers['x-uber-device-location-longitude'] = str(lng)
+        api_headers['content-type'] = 'application/json'
+        api_headers['x-uber-token'] = 'no-token'
+        api_headers['x-uber-client-id'] = 'com.ubercab.UberClient'
+        api_headers['x-uber-client-name'] = 'client'
+
+        data = json.dumps({
+            "targetLocationSynced": {"latitude": lat, "longitude": lng},
+            "cachedMessages": {},
+            "targetLocation": {"longitude": lng, "latitude": lat},
+            "destination": {"latitude": -31.952412, "longitude": 115.8923454}
+        })
+
+        response = requests.post(
+            'https://cn-cloudflare.pidetupop.com/rt/riders/me/status',
+            cookies=cookies,
+            headers=api_headers,
+            data=data,
+            timeout=10)
+        
+        print(f"uberRidersNearby: Status {response.status_code}")
+        
+        if response.status_code == 200:
+            result = response.json()
+            eyeball = result.get('eyeball', {})
+            nearby_vehicles = eyeball.get('nearbyVehicles', 0)
+            print(f"uberRidersNearby: Nearby vehicles = {nearby_vehicles}")
+            return {
+                'nearby_vehicles': nearby_vehicles,
+                'eyeball': eyeball,
+                'raw_response': result
+            }
+        else:
+            print(f"uberRidersNearby: Failed with status {response.status_code}")
+            print(f"uberRidersNearby: Response: {response.text[:500]}")
+            return None
+    except Exception as e:
+        print(f"uberRidersNearby error: {e}")
         return None

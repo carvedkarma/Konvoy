@@ -10,7 +10,7 @@ try:
     from flask_login import LoginManager, login_user, logout_user, login_required, current_user
     from flask_socketio import SocketIO, emit, join_room, leave_room
     from datetime import datetime, timedelta
-    from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour
+    from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour, uberRidersNearby
     import config
     import cache
     from models import db, User, Role, ChatMessage, create_default_roles, encrypt_data, decrypt_data
@@ -284,12 +284,26 @@ def home_data():
                 default_vehicle = v
                 break
 
+        nearby_data = None
+        cached_nearby = cache.get_cached(current_user.id, 'nearby_vehicles')
+        if cached_nearby is not None:
+            nearby_data = cached_nearby
+        else:
+            try:
+                nearby_result = uberRidersNearby(cookies, headers, refresh_token)
+                if nearby_result:
+                    nearby_data = nearby_result.get('nearby_vehicles', 0)
+                    cache.set_cached(current_user.id, 'nearby_vehicles', nearby_data)
+            except Exception as e:
+                print(f"Error fetching nearby vehicles: {e}")
+
     return jsonify(success=True,
                    vehicles=vehicles,
                    driver_info=driver_info,
                    default_vehicle=default_vehicle,
                    active_ride=active_ride,
-                   driver_status=driver_status)
+                   driver_status=driver_status,
+                   nearby_drivers=nearby_data)
 
 
 @app.route('/api/active-ride')
