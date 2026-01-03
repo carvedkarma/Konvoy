@@ -1623,21 +1623,28 @@ def uberRidersNearby(cookies, headers, refresh_token, lat=-32.134338, lng=115.89
             data=data,
             timeout=10)
         
-        print(f"uberRidersNearby: Status {response.status_code}")
-        
         if response.status_code == 200:
             result = response.json()
+            
             eyeball = result.get('eyeball', {})
-            nearby_vehicles = eyeball.get('nearbyVehicles', 0)
-            print(f"uberRidersNearby: Nearby vehicles = {nearby_vehicles}")
+            nearby_vehicles_data = eyeball.get('nearbyVehicles', {})
+            
+            total_vehicles = 0
+            if isinstance(nearby_vehicles_data, dict):
+                for key, value in nearby_vehicles_data.items():
+                    if isinstance(value, dict) and 'vehiclePaths' in value:
+                        vehicle_paths = value.get('vehiclePaths', {})
+                        total_vehicles += len(vehicle_paths)
+            elif isinstance(nearby_vehicles_data, int):
+                total_vehicles = nearby_vehicles_data
             return {
-                'nearby_vehicles': nearby_vehicles,
+                'nearby_vehicles': total_vehicles,
                 'eyeball': eyeball,
                 'raw_response': result
             }
         else:
-            print(f"uberRidersNearby: Failed with status {response.status_code}")
-            print(f"uberRidersNearby: Response: {response.text[:500]}")
+            print(f"uberRidersNearby: Failed with status {response.status_code}", flush=True)
+            print(f"uberRidersNearby: Response: {response.text[:500]}", flush=True)
             return None
     except Exception as e:
         print(f"uberRidersNearby error: {e}")

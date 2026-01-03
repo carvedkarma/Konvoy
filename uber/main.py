@@ -220,11 +220,14 @@ def home_data():
                 print(f"Error fetching ride: {e}")
                 return None
 
+        print(f"DEBUG: Starting home_data, caches: v={cached_vehicles is not None}, d={cached_driver is not None}, r={cached_ride is not None}", flush=True)
         if cached_vehicles is not None and cached_driver is not None and cached_ride is not None:
             vehicles = cached_vehicles
             driver_info = cached_driver
             full_ride_data = cached_ride
+            print("DEBUG: Using all cached data", flush=True)
         else:
+            print("DEBUG: Spawning API tasks", flush=True)
             tasks = {}
             if cached_vehicles is None:
                 tasks['vehicles'] = eventlet.spawn(fetch_vehicles)
@@ -251,7 +254,9 @@ def home_data():
                                  full_ride_data)
             else:
                 full_ride_data = cached_ride
+            print("DEBUG: All API tasks completed", flush=True)
 
+        print("DEBUG: Processing driver status", flush=True)
         driver_status = None
         if full_ride_data and isinstance(full_ride_data, dict):
             driver_tasks = full_ride_data.get('driverTasks', {})
@@ -284,7 +289,7 @@ def home_data():
                 default_vehicle = v
                 break
 
-        nearby_data = None
+        nearby_data = 0
         cached_nearby = cache.get_cached(current_user.id, 'nearby_vehicles')
         if cached_nearby is not None:
             nearby_data = cached_nearby
@@ -293,9 +298,12 @@ def home_data():
                 nearby_result = uberRidersNearby(cookies, headers, refresh_token)
                 if nearby_result:
                     nearby_data = nearby_result.get('nearby_vehicles', 0)
-                    cache.set_cached(current_user.id, 'nearby_vehicles', nearby_data)
+                    if isinstance(nearby_data, int):
+                        cache.set_cached(current_user.id, 'nearby_vehicles', nearby_data)
+                    else:
+                        nearby_data = 0
             except Exception as e:
-                print(f"Error fetching nearby vehicles: {e}")
+                print(f"Error fetching nearby vehicles: {e}", flush=True)
 
     return jsonify(success=True,
                    vehicles=vehicles,
