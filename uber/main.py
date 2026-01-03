@@ -607,13 +607,13 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        # Send welcome email
+        # Send welcome email using Replit Mail service
         try:
-            from replitmail import send_email
-            send_email(
+            from replitmail import send_email as replit_send_email
+            replit_send_email(
                 to=user.email,
                 subject=f"Welcome to RizTar, {user.first_name}!",
-                body=f"Hi {user.first_name},\n\nWelcome to RizTar, the premium driver management system. We're excited to have you on board!\n\nBest regards,\nThe RizTar Team"
+                body=f"Hi {user.first_name},\n\nWelcome to RizTar, the premium driver management system.\n\nWe're excited to have you on board! With RizTar, you'll have access to powerful tools designed to help you maximize your earnings and streamline your driving experience.\n\nIf you have any questions, feel free to reach out to our support team.\n\nBest regards,\nThe RizTar Team\ninfo@riztar.com"
             )
             print(f"Welcome email sent to {user.email}", flush=True)
         except Exception as e:
