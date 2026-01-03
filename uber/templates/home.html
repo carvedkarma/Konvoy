@@ -1560,8 +1560,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function checkLocationDirectly() {
-        // For iOS Safari - try a quick geolocation request with short timeout
-        // If it succeeds quickly, permission was already granted
+        // For iOS Safari - check localStorage first before making geolocation request
+        // This prevents the banner from showing when permission was already granted
+        if (localStorage.getItem('locationPermissionGranted') === 'true') {
+            needsLocation = false;
+            locationBtn.classList.add('hidden');
+            updateBanner();
+            return;
+        }
+        
+        // Try a geolocation request with longer timeout for iOS
         navigator.geolocation.getCurrentPosition(
             () => {
                 needsLocation = false;
@@ -1574,14 +1582,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Already denied - don't show button
                     needsLocation = false;
                     locationBtn.classList.add('hidden');
+                    localStorage.setItem('locationPermissionDenied', 'true');
+                } else if (error.code === error.TIMEOUT) {
+                    // Timeout on iOS might mean permission dialog is pending or granted
+                    // Check if we have cached location from maximumAge
+                    if (localStorage.getItem('locationPermissionGranted') === 'true') {
+                        needsLocation = false;
+                        locationBtn.classList.add('hidden');
+                    } else {
+                        // Assume not yet asked
+                        needsLocation = true;
+                        locationBtn.classList.remove('hidden');
+                    }
                 } else {
-                    // Not yet asked or other error - show button
+                    // Position unavailable or other error - show button
                     needsLocation = true;
                     locationBtn.classList.remove('hidden');
                 }
                 updateBanner();
             },
-            { timeout: 100, maximumAge: Infinity }
+            { timeout: 3000, maximumAge: 60000 }
         );
     }
     
