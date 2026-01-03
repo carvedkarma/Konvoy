@@ -143,6 +143,13 @@
                 </div>
             </div>
             <div class="flex items-center space-x-2 flex-shrink-0">
+                {% if current_user.is_owner() %}
+                <button onclick="clearChatHistory()" class="px-2 py-1 text-xs bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Clear all messages">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+                {% endif %}
                 <div class="w-2 h-2 bg-green-500 rounded-full online-pulse"></div>
                 <span id="online-count" class="text-xs sm:text-sm text-zinc-600">0 online</span>
             </div>
@@ -202,6 +209,7 @@ const socket = io({
     timeout: 10000
 });
 const currentUserId = {{ current_user.id|tojson }};
+const isOwner = {{ 'true' if current_user.is_owner() else 'false' }};
 const currentUsername = {{ current_user.username|tojson }};
 let allUsers = [];
 
@@ -299,13 +307,22 @@ function renderMessage(msg, prepend = false) {
                 ${escapeHtml(msg.user_initials)}
             </div>`;
 
+    const deleteBtn = isOwner ? `
+        <button onclick="deleteMessage(${msg.id})" class="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-all flex-shrink-0" title="Delete message">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+        </button>
+    ` : '';
+
     const messageHtml = `
-        <div class="message-enter flex items-start gap-1.5 ${isMentioned ? 'mention-highlight rounded-lg p-1.5 -mx-1.5' : ''}" data-message-id="${msg.id}">
+        <div class="message-enter flex items-start gap-1.5 group ${isMentioned ? 'mention-highlight rounded-lg p-1.5 -mx-1.5' : ''}" data-message-id="${msg.id}">
             ${avatarHtml}
             <div class="bg-zinc-100 text-zinc-800 px-2.5 py-1.5 rounded-xl rounded-tl-sm text-[13px] max-w-[85%]">
                 ${formatMessageText(msg.message)}
             </div>
             <span class="text-[9px] text-zinc-400 flex-shrink-0 mt-1">${formatTime(msg.created_at)}</span>
+            ${deleteBtn}
         </div>
     `;
     
@@ -492,6 +509,65 @@ socket.on('new_message', function(msg) {
     console.log('Received new message:', msg.id);
     renderMessage(msg);
 });
+
+socket.on('message_deleted', function(data) {
+    const msgEl = document.querySelector(`[data-message-id="${data.message_id}"]`);
+    if (msgEl) {
+        msgEl.style.opacity = '0';
+        msgEl.style.transform = 'translateX(-10px)';
+        setTimeout(() => msgEl.remove(), 200);
+    }
+});
+
+socket.on('chat_cleared', function() {
+    const container = document.getElementById('messages');
+    container.innerHTML = `
+        <div class="flex items-center justify-center py-8">
+            <div class="text-center">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-zinc-500">Chat cleared. Start a new conversation!</p>
+            </div>
+        </div>
+    `;
+});
+
+async function deleteMessage(messageId) {
+    if (!confirm('Delete this message?')) return;
+    
+    try {
+        const res = await fetch(`/api/chat/delete-message/${messageId}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(data.error || 'Failed to delete message');
+        }
+    } catch (e) {
+        console.error('Delete message error:', e);
+        alert('Failed to delete message');
+    }
+}
+
+async function clearChatHistory() {
+    if (!confirm('Clear ALL chat messages? This cannot be undone.')) return;
+    
+    try {
+        const res = await fetch('/api/chat/clear-history', {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(data.error || 'Failed to clear chat');
+        }
+    } catch (e) {
+        console.error('Clear chat error:', e);
+        alert('Failed to clear chat history');
+    }
+}
 
 fetch('/api/chat-messages')
     .then(r => r.json())

@@ -319,11 +319,17 @@ def home_data():
             except Exception as e:
                 print(f"Error fetching nearby vehicles: {e}", flush=True)
 
-    # Unread messages count
-    unread_chat_count = ChatMessage.query.filter(
-        ChatMessage.created_at > current_user.last_chat_read_at,
-        ChatMessage.user_id != current_user.id
-    ).count()
+    # Unread messages count - handle NULL last_chat_read_at
+    if current_user.last_chat_read_at:
+        unread_chat_count = ChatMessage.query.filter(
+            ChatMessage.created_at > current_user.last_chat_read_at,
+            ChatMessage.user_id != current_user.id
+        ).count()
+    else:
+        # If never read, count all messages from others
+        unread_chat_count = ChatMessage.query.filter(
+            ChatMessage.user_id != current_user.id
+        ).count()
 
     return jsonify(success=True,
                    vehicles=vehicles,
@@ -1979,6 +1985,42 @@ def get_chat_users():
             'display_name': u.get_display_name()
         } for u in users]
     })
+
+
+@app.route('/api/chat/delete-message/<int:message_id>', methods=['DELETE'])
+@login_required
+def delete_chat_message(message_id):
+    """Delete a specific chat message (owner only)"""
+    if not current_user.is_owner():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    message = ChatMessage.query.get(message_id)
+    if not message:
+        return jsonify({'success': False, 'error': 'Message not found'}), 404
+    
+    db.session.delete(message)
+    db.session.commit()
+    
+    # Emit socket event to remove message for all clients
+    socketio.emit('message_deleted', {'message_id': message_id}, broadcast=True)
+    
+    return jsonify({'success': True})
+
+
+@app.route('/api/chat/clear-history', methods=['DELETE'])
+@login_required
+def clear_chat_history():
+    """Clear all chat messages (owner only)"""
+    if not current_user.is_owner():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    ChatMessage.query.delete()
+    db.session.commit()
+    
+    # Emit socket event to clear messages for all clients
+    socketio.emit('chat_cleared', broadcast=True)
+    
+    return jsonify({'success': True})
 
 
 @socketio.on('connect')
