@@ -60,6 +60,23 @@
         .feature-card:hover {
             transform: translateY(-4px);
         }
+        .logo-gradient {
+            position: relative;
+            overflow: hidden;
+        }
+        .logo-gradient::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+        }
+        .logo-gradient::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("{{ url_for('static', filename='images/logo.png') }}") center/contain no-repeat;
+            mix-blend-mode: multiply;
+        }
     </style>
 </head>
 <body class="bg-zinc-50">
@@ -67,7 +84,7 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex items-center justify-between h-14">
                 <a href="{{ url_for('landing') }}" class="flex items-center space-x-2">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-8 h-8">
+                    <div class="w-8 h-8 logo-gradient"></div>
                     <span class="text-lg font-bold text-zinc-900">RizTar</span>
                 </a>
                 <div class="flex items-center space-x-4">
@@ -322,7 +339,7 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex flex-col md:flex-row items-center justify-between">
                 <div class="flex items-center space-x-2 mb-4 md:mb-0">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-7 h-7">
+                    <div class="w-7 h-7 logo-gradient"></div>
                     <span class="text-lg font-bold text-zinc-900">RizTar</span>
                 </div>
                 <div class="flex items-center space-x-6 text-zinc-500 text-sm">
