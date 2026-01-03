@@ -312,19 +312,27 @@ def get_active_ride():
     if not current_user.uber_connected:
         return jsonify(success=True, active_ride=None)
 
+    def extract_active_ride(data):
+        """Extract active ride from appLaunch response if one exists"""
+        if not data or not isinstance(data, dict):
+            return None
+        driver_tasks = data.get('driverTasks', {})
+        task_scopes = driver_tasks.get('taskScopes', [])
+        if task_scopes and len(task_scopes) > 0:
+            first_task = task_scopes[0]
+            return {
+                'full_name': first_task.get('rider', {}).get('firstName', 'Rider'),
+                'rating': first_task.get('rider', {}).get('rating', '--'),
+                'trip_distance': first_task.get('tripDistance'),
+                'ride_type': first_task.get('vehicleViewName', 'UberX')
+            }
+        return None
+
     cached_ride = cache.get_cached(current_user.id, 'active_ride')
     if cached_ride is not None:
         if isinstance(cached_ride, dict):
-            return jsonify(success=True,
-                           active_ride={
-                               'full_name':
-                               cached_ride.get('full_name', 'Rider'),
-                               'rating': cached_ride.get('rating', '--'),
-                               'trip_distance':
-                               cached_ride.get('trip_distance'),
-                               'ride_type':
-                               cached_ride.get('ride_type', 'UberX')
-                           })
+            active_ride = extract_active_ride(cached_ride)
+            return jsonify(success=True, active_ride=active_ride)
         return jsonify(success=True, active_ride=None)
 
     try:
@@ -334,17 +342,12 @@ def get_active_ride():
 
     try:
         ride_data = appLaunch(cookies, headers, refresh_token)
-        cache.set_cached(current_user.id, 'active_ride', ride_data)
-        if ride_data and isinstance(ride_data, dict):
-            return jsonify(success=True,
-                           active_ride={
-                               'full_name':
-                               ride_data.get('full_name', 'Rider'),
-                               'rating': ride_data.get('rating', '--'),
-                               'trip_distance': ride_data.get('trip_distance'),
-                               'ride_type':
-                               ride_data.get('ride_type', 'UberX')
-                           })
+        if ride_data:
+            if isinstance(ride_data, list) and len(ride_data) >= 2:
+                ride_data = ride_data[1]
+            cache.set_cached(current_user.id, 'active_ride', ride_data)
+            active_ride = extract_active_ride(ride_data)
+            return jsonify(success=True, active_ride=active_ride)
     except Exception as e:
         print(f"Error fetching active ride: {e}")
 
