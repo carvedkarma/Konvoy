@@ -571,6 +571,11 @@ def terms():
     return render_template('terms.html')
 
 
+@app.route('/subscription')
+def subscription():
+    return render_template('subscription.html')
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
