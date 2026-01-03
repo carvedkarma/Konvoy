@@ -880,53 +880,69 @@ document.addEventListener('DOMContentLoaded', initCancelRideButton);
     
     if (!banner) return;
     
-    const dismissed = sessionStorage.getItem('permissionBannerDismissed');
-    if (dismissed) return;
+    if (localStorage.getItem('permissionBannerDismissed') === 'true') return;
+    if (localStorage.getItem('locationPermissionGranted') === 'true' && Notification.permission === 'granted') return;
     
     let needsLocation = false;
     let needsNotification = false;
     
     function checkPermissions() {
-        needsLocation = false;
-        needsNotification = false;
+        if (localStorage.getItem('locationPermissionGranted') === 'true') {
+            needsLocation = false;
+            locationBtn.classList.add('hidden');
+            checkNotifications();
+            return;
+        }
         
-        const geoPromise = new Promise((resolve) => {
-            if ('geolocation' in navigator && 'permissions' in navigator) {
-                navigator.permissions.query({name: 'geolocation'}).then(result => {
-                    if (result.state !== 'granted') {
-                        needsLocation = true;
-                        locationBtn.classList.remove('hidden');
-                    } else {
-                        needsLocation = false;
-                        locationBtn.classList.add('hidden');
-                    }
-                    resolve();
-                }).catch(() => {
+        if ('geolocation' in navigator && 'permissions' in navigator) {
+            navigator.permissions.query({name: 'geolocation'}).then(result => {
+                if (result.state === 'granted') {
+                    needsLocation = false;
+                    locationBtn.classList.add('hidden');
+                    localStorage.setItem('locationPermissionGranted', 'true');
+                } else if (result.state === 'prompt') {
                     needsLocation = true;
                     locationBtn.classList.remove('hidden');
-                    resolve();
-                });
-            } else {
-                resolve();
-            }
-        });
-
-        const notifyPromise = new Promise((resolve) => {
-            if ('Notification' in window) {
-                if (Notification.permission !== 'granted') {
-                    needsNotification = true;
-                    notificationBtn.classList.remove('hidden');
                 } else {
-                    needsNotification = false;
-                    notificationBtn.classList.add('hidden');
+                    needsLocation = false;
+                    locationBtn.classList.add('hidden');
                 }
+                checkNotifications();
+                
+                result.onchange = function() {
+                    if (this.state === 'granted') {
+                        needsLocation = false;
+                        locationBtn.classList.add('hidden');
+                        localStorage.setItem('locationPermissionGranted', 'true');
+                        updateBanner();
+                    }
+                };
+            }).catch(() => {
+                needsLocation = false;
+                locationBtn.classList.add('hidden');
+                checkNotifications();
+            });
+        } else {
+            needsLocation = false;
+            locationBtn.classList.add('hidden');
+            checkNotifications();
+        }
+    }
+    
+    function checkNotifications() {
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                needsNotification = false;
+                notificationBtn.classList.add('hidden');
+            } else if (Notification.permission === 'default') {
+                needsNotification = true;
+                notificationBtn.classList.remove('hidden');
+            } else {
+                needsNotification = false;
+                notificationBtn.classList.add('hidden');
             }
-            resolve();
-        });
-
-        Promise.all([geoPromise, notifyPromise]).then(() => {
-            updateBanner();
-        });
+        }
+        updateBanner();
     }
     
     function updateBanner() {
@@ -955,6 +971,7 @@ document.addEventListener('DOMContentLoaded', initCancelRideButton);
             () => {
                 needsLocation = false;
                 locationBtn.classList.add('hidden');
+                localStorage.setItem('locationPermissionGranted', 'true');
                 updateBanner();
             },
             () => {
@@ -1025,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', initCancelRideButton);
     });
     
     dismissBtn.addEventListener('click', () => {
-        sessionStorage.setItem('permissionBannerDismissed', 'true');
+        localStorage.setItem('permissionBannerDismissed', 'true');
         banner.classList.add('hidden');
     });
     

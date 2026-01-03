@@ -1488,60 +1488,56 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (!banner) return;
     
-    // Check if already dismissed or location already granted (persisted in localStorage)
-    const dismissed = localStorage.getItem('permissionBannerDismissed');
-    const locationGranted = localStorage.getItem('locationPermissionGranted');
-    if (dismissed) return;
+    if (localStorage.getItem('permissionBannerDismissed') === 'true') return;
+    if (localStorage.getItem('locationPermissionGranted') === 'true' && Notification.permission === 'granted') return;
     
     let needsLocation = false;
     let needsNotification = false;
     
     function checkPermissions() {
-        needsLocation = false;
-        needsNotification = false;
-        
-        // If we already have location permission stored, skip the location check
-        if (locationGranted === 'true') {
+        if (localStorage.getItem('locationPermissionGranted') === 'true') {
             needsLocation = false;
             locationBtn.classList.add('hidden');
-        } else if ('geolocation' in navigator) {
-            // Try permissions API first (works on Android Chrome, desktop browsers)
-            if ('permissions' in navigator) {
-                navigator.permissions.query({name: 'geolocation'}).then(result => {
-                    if (result.state === 'granted') {
+            checkNotifications();
+            return;
+        }
+        
+        if ('geolocation' in navigator && 'permissions' in navigator) {
+            navigator.permissions.query({name: 'geolocation'}).then(result => {
+                if (result.state === 'granted') {
+                    needsLocation = false;
+                    locationBtn.classList.add('hidden');
+                    localStorage.setItem('locationPermissionGranted', 'true');
+                } else if (result.state === 'prompt') {
+                    needsLocation = true;
+                    locationBtn.classList.remove('hidden');
+                } else {
+                    needsLocation = false;
+                    locationBtn.classList.add('hidden');
+                }
+                checkNotifications();
+                
+                result.onchange = function() {
+                    if (this.state === 'granted') {
                         needsLocation = false;
                         locationBtn.classList.add('hidden');
                         localStorage.setItem('locationPermissionGranted', 'true');
-                    } else if (result.state === 'prompt') {
-                        needsLocation = true;
-                        locationBtn.classList.remove('hidden');
-                    } else {
-                        // denied - don't show button, they need to change in settings
-                        needsLocation = false;
-                        locationBtn.classList.add('hidden');
+                        updateBanner();
                     }
-                    updateBanner();
-                    
-                    // Listen for permission changes
-                    result.onchange = function() {
-                        if (this.state === 'granted') {
-                            needsLocation = false;
-                            locationBtn.classList.add('hidden');
-                            localStorage.setItem('locationPermissionGranted', 'true');
-                            updateBanner();
-                        }
-                    };
-                }).catch(() => {
-                    // Permissions API failed (iOS Safari) - try direct geolocation check
-                    checkLocationDirectly();
-                });
-            } else {
-                // No permissions API (iOS Safari) - try direct geolocation check
-                checkLocationDirectly();
-            }
+                };
+            }).catch(() => {
+                needsLocation = false;
+                locationBtn.classList.add('hidden');
+                checkNotifications();
+            });
+        } else {
+            needsLocation = false;
+            locationBtn.classList.add('hidden');
+            checkNotifications();
         }
-        
-        // Check notification permission
+    }
+    
+    function checkNotifications() {
         if ('Notification' in window) {
             if (Notification.permission === 'granted') {
                 needsNotification = false;
@@ -1550,59 +1546,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 needsNotification = true;
                 notificationBtn.classList.remove('hidden');
             } else {
-                // denied
                 needsNotification = false;
                 notificationBtn.classList.add('hidden');
             }
         }
-        
         updateBanner();
-    }
-    
-    function checkLocationDirectly() {
-        // For iOS Safari - check localStorage first before making geolocation request
-        // This prevents the banner from showing when permission was already granted
-        if (localStorage.getItem('locationPermissionGranted') === 'true') {
-            needsLocation = false;
-            locationBtn.classList.add('hidden');
-            updateBanner();
-            return;
-        }
-        
-        // Try a geolocation request with longer timeout for iOS
-        navigator.geolocation.getCurrentPosition(
-            () => {
-                needsLocation = false;
-                locationBtn.classList.add('hidden');
-                localStorage.setItem('locationPermissionGranted', 'true');
-                updateBanner();
-            },
-            (error) => {
-                if (error.code === error.PERMISSION_DENIED) {
-                    // Already denied - don't show button
-                    needsLocation = false;
-                    locationBtn.classList.add('hidden');
-                    localStorage.setItem('locationPermissionDenied', 'true');
-                } else if (error.code === error.TIMEOUT) {
-                    // Timeout on iOS might mean permission dialog is pending or granted
-                    // Check if we have cached location from maximumAge
-                    if (localStorage.getItem('locationPermissionGranted') === 'true') {
-                        needsLocation = false;
-                        locationBtn.classList.add('hidden');
-                    } else {
-                        // Assume not yet asked
-                        needsLocation = true;
-                        locationBtn.classList.remove('hidden');
-                    }
-                } else {
-                    // Position unavailable or other error - show button
-                    needsLocation = true;
-                    locationBtn.classList.remove('hidden');
-                }
-                updateBanner();
-            },
-            { timeout: 3000, maximumAge: 60000 }
-        );
     }
     
     function updateBanner() {
