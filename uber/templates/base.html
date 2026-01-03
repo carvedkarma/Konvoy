@@ -108,6 +108,7 @@
             <div id="mobile-menu" class="md:hidden hidden py-3 border-t border-zinc-100">
                 <div class="flex flex-col space-y-1">
                     <a href="{{ url_for('root') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Home</a>
+                    <a href="{{ url_for('subscription') }}" class="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 py-2">RizTar Pro</a>
                     <a href="{{ url_for('home') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Location</a>
                     <a href="{{ url_for('fetch_ride') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Rides</a>
                     {% if current_user.is_owner() %}
