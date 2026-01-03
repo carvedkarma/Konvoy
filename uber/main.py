@@ -503,9 +503,9 @@ def test_push_notification():
     return jsonify(success=True, sent=sent)
 
 
-@app.route('/api/active-ride')
+@app.route('/api/ride-data')
 @login_required
-def get_active_ride():
+def ride_data_api():
     if not current_user.uber_connected:
         return jsonify(success=True, active_ride=None)
 
