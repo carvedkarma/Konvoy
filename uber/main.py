@@ -6,10 +6,11 @@ import os
 import sys
 
 try:
-    from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+    from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
     from flask_login import LoginManager, login_user, logout_user, login_required, current_user
     from flask_socketio import SocketIO, emit, join_room, leave_room
     from datetime import datetime, timedelta
+    from werkzeug.utils import secure_filename
     from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour, uberRidersNearby
     import config
     import cache
@@ -18,12 +19,17 @@ try:
     from pywebpush import webpush, WebPushException
     import secrets
     import json
+    import os
     print("All imports successful", flush=True)
 except Exception as e:
     print(f"Import error: {e}", flush=True)
     sys.exit(1)
 
 app = Flask(__name__)
+UPLOAD_FOLDER = os.path.join('static', 'uploads', 'profile_images')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB max-limit
+
 
 flask_secret = os.environ.get("FLASK_SECRET_KEY") or os.environ.get(
     "SESSION_SECRET")
@@ -939,10 +945,30 @@ def profile():
                                        form=form,
                                        disconnect_form=disconnect_form)
 
+        if form.profile_image.data:
+            file = form.profile_image.data
+            filename = secure_filename(f"user_{current_user.id}_{secrets.token_hex(4)}_{file.filename}")
+            file_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], filename)
+            
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            
+            file.save(file_path)
+            
+            # Delete old image if it exists and is local
+            if current_user.profile_image and current_user.profile_image.startswith('/static/uploads/'):
+                old_path = os.path.join(app.root_path, current_user.profile_image.lstrip('/'))
+                if os.path.exists(old_path):
+                    try:
+                        os.remove(old_path)
+                    except:
+                        pass
+            
+            current_user.profile_image = f"/static/uploads/profile_images/{filename}"
+
         current_user.first_name = form.first_name.data
         current_user.last_name = form.last_name.data
         current_user.email = form.email.data
-        current_user.profile_image = form.profile_image.data
         db.session.commit()
         flash('Profile updated successfully.', 'success')
         return redirect(url_for('profile'))
@@ -951,7 +977,6 @@ def profile():
     form.last_name.data = current_user.last_name
     form.username.data = current_user.username
     form.email.data = current_user.email
-    form.profile_image.data = current_user.profile_image
     return render_template('profile.html',
                            form=form,
                            disconnect_form=disconnect_form)
