@@ -787,15 +787,22 @@ fetch('/api/home-data')
                 `}
                 
                 ${hasRidePerm ? `
-                <a href="/fetch-ride" class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors">
-                    <svg class="w-5 h-5 mr-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                    </svg>
-                    <div>
-                        <p class="font-semibold text-sm text-zinc-900">Fetch Ride</p>
-                        <p class="text-xs text-zinc-500">Get ride details</p>
-                    </div>
-                </a>
+                <div class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors relative">
+                    <a href="/fetch-ride" class="flex items-center flex-1">
+                        <svg class="w-5 h-5 mr-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                        <div>
+                            <p class="font-semibold text-sm text-zinc-900">Fetch Ride</p>
+                            <p class="text-xs text-zinc-500">Get ride details</p>
+                        </div>
+                    </a>
+                    <button id="pip-btn" class="p-2 ml-2 bg-black text-white rounded-lg hover:bg-zinc-800 transition-all shadow-xl z-20" title="Open Floating View">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    </button>
+                </div>
                 ` : `
                 <div class="flex items-center p-4 bg-zinc-100 border border-zinc-200 rounded-lg opacity-60">
                     <svg class="w-5 h-5 mr-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -897,6 +904,87 @@ fetch('/api/home-data')
         loadingEl.classList.add('hidden');
         contentEl.classList.remove('hidden');
         loadFlightData();
+        
+        // Setup PiP button handler
+        const pipBtn = document.getElementById('pip-btn');
+        if (pipBtn) {
+            let pipActive = false;
+            pipBtn.addEventListener('click', async () => {
+                if (pipActive) return;
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 400;
+                    canvas.height = 300;
+                    const ctx = canvas.getContext('2d');
+                    
+                    const video = document.createElement('video');
+                    video.muted = true;
+                    video.autoplay = true;
+                    video.srcObject = canvas.captureStream();
+                    
+                    const updateCanvas = () => {
+                        if (!document.pictureInPictureElement) {
+                            pipActive = false;
+                            return;
+                        }
+
+                        ctx.fillStyle = '#18181b';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 22px sans-serif';
+                        ctx.fillText('RizTar | Nearby', 20, 45);
+                        
+                        ctx.strokeStyle = '#27272a';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(20, 65);
+                        ctx.lineTo(380, 65);
+                        ctx.stroke();
+
+                        ctx.font = '14px sans-serif';
+                        ctx.fillStyle = '#a1a1aa';
+                        ctx.fillText(`${nearbyDrivers ? nearbyDrivers.length : 0} vehicles detected`, 20, 90);
+                        
+                        if (nearbyDrivers && nearbyDrivers.length > 0) {
+                            nearbyDrivers.slice(0, 5).forEach((d, i) => {
+                                const y = 130 + (i * 40);
+                                
+                                ctx.fillStyle = '#27272a';
+                                ctx.fillRect(20, y - 25, 360, 35);
+
+                                ctx.fillStyle = '#10b981';
+                                ctx.beginPath();
+                                ctx.arc(40, y - 7, 4, 0, Math.PI * 2);
+                                ctx.fill();
+                                
+                                ctx.fillStyle = '#ffffff';
+                                ctx.font = '500 14px sans-serif';
+                                ctx.fillText(`${d.vehicleViewName || 'Uber'}`, 60, y - 2);
+                                
+                                ctx.fillStyle = '#71717a';
+                                ctx.font = '12px monospace';
+                                ctx.fillText(`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`, 260, y - 2);
+                            });
+                        } else {
+                            ctx.fillStyle = '#71717a';
+                            ctx.font = 'italic 14px sans-serif';
+                            ctx.fillText('No vehicles found in your area.', 20, 130);
+                        }
+                        
+                        requestAnimationFrame(updateCanvas);
+                    };
+                    
+                    await video.play();
+                    await video.requestPictureInPicture();
+                    pipActive = true;
+                    updateCanvas();
+                } catch (err) {
+                    console.error('PiP error:', err);
+                    alert('Floating view failed: ' + err.message);
+                }
+            });
+        }
         
         // Fetch nearby drivers using browser geolocation
         if (uberConnected && navigator.geolocation) {
