@@ -11,32 +11,35 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .premium-shadow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
         .gradient-text {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         .phone-mockup {
-            background: linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 100%);
-            border-radius: 40px;
-            padding: 12px;
-            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.25), 0 30px 60px -30px rgba(0,0,0,0.3);
+            background: linear-gradient(145deg, #18181b 0%, #27272a 100%);
+            border-radius: 36px;
+            padding: 10px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
         }
         .phone-screen {
-            background: #f4f4f5;
-            border-radius: 28px;
+            background: #fafafa;
+            border-radius: 26px;
             overflow: hidden;
         }
         .phone-notch {
-            width: 120px;
-            height: 28px;
-            background: #1a1a1a;
-            border-radius: 0 0 20px 20px;
+            width: 100px;
+            height: 24px;
+            background: #18181b;
+            border-radius: 0 0 16px 16px;
             margin: 0 auto;
         }
         .float-animation {
@@ -52,134 +55,131 @@
         }
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-        .hero-gradient {
-            background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #fce7f3 100%);
+            50% { transform: translateY(-15px); }
         }
         .feature-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
         }
     </style>
 </head>
 <body class="bg-zinc-50">
     <nav class="fixed top-0 left-0 right-0 z-50 glass-panel">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
-            <div class="flex items-center justify-between h-16">
+            <div class="flex items-center justify-between h-14">
                 <a href="{{ url_for('landing') }}" class="flex items-center space-x-2">
                     <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-8 h-8">
-                    <span class="text-xl font-bold text-zinc-900">RizTar</span>
+                    <span class="text-lg font-bold text-zinc-900">RizTar</span>
                 </a>
                 <div class="flex items-center space-x-4">
-                    <a href="{{ url_for('login') }}" class="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">Sign In</a>
-                    <a href="{{ url_for('register') }}" class="px-5 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-full hover:bg-zinc-800 transition-all hover:shadow-lg">Get Started</a>
+                    <a href="{{ url_for('login') }}" class="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">Sign In</a>
+                    <a href="{{ url_for('register') }}" class="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors">Get Started</a>
                 </div>
             </div>
         </div>
     </nav>
 
-    <section class="hero-gradient min-h-screen pt-32 pb-20 overflow-hidden">
+    <section class="min-h-screen pt-28 pb-16 overflow-hidden">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
-            <div class="text-center mb-16">
-                <div class="inline-flex items-center px-4 py-2 bg-white/80 rounded-full shadow-sm mb-6">
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center px-3 py-1.5 bg-white rounded-full shadow-sm border border-zinc-100 mb-6">
                     <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                    <span class="text-sm font-medium text-zinc-600">Now available in Perth, Australia</span>
+                    <span class="text-xs font-medium text-zinc-600">Now available in Perth, Australia</span>
                 </div>
-                <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-zinc-900 mb-6 leading-tight">
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-zinc-900 mb-5 leading-tight">
                     Drive Smarter,<br>
                     <span class="gradient-text">Earn More</span>
                 </h1>
-                <p class="text-xl text-zinc-600 max-w-2xl mx-auto mb-10">
-                    The premium driver management platform that helps rideshare drivers maximize earnings with real-time insights, flight tracking, and team coordination.
+                <p class="text-lg text-zinc-500 max-w-xl mx-auto mb-8">
+                    The premium driver management platform that helps rideshare drivers maximize earnings with real-time insights.
                 </p>
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <a href="{{ url_for('register') }}" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-full hover:shadow-xl hover:shadow-purple-500/25 transition-all transform hover:-translate-y-1 text-lg">
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <a href="{{ url_for('register') }}" class="px-6 py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors">
                         Start Free Trial
                     </a>
-                    <a href="#features" class="px-8 py-4 bg-white text-zinc-700 font-semibold rounded-full hover:shadow-lg transition-all border border-zinc-200">
-                        See Features
+                    <a href="#features" class="px-6 py-3 text-zinc-600 font-medium hover:text-zinc-900 transition-colors">
+                        Learn More
                     </a>
                 </div>
             </div>
 
-            <div class="relative flex justify-center items-end gap-4 sm:gap-8 mt-10">
-                <div class="phone-mockup w-48 sm:w-56 float-animation-delayed hidden sm:block opacity-90 scale-90">
+            <div class="relative flex justify-center items-end gap-3 sm:gap-6 mt-8">
+                <div class="phone-mockup w-40 sm:w-48 float-animation-delayed hidden sm:block opacity-90 scale-95">
                     <div class="phone-screen aspect-[9/19]">
                         <div class="phone-notch"></div>
-                        <div class="p-3">
-                            <div class="bg-white rounded-xl p-3 shadow-sm mb-3">
+                        <div class="p-2.5">
+                            <div class="glass-panel rounded-lg p-2.5 premium-shadow mb-2">
                                 <div class="flex items-center mb-2">
-                                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+                                    <div class="w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
                                     </div>
                                     <div class="ml-2">
-                                        <div class="text-xs font-semibold text-zinc-800">Flight Center</div>
-                                        <div class="text-[10px] text-zinc-500">12 arrivals soon</div>
+                                        <div class="text-[10px] font-semibold text-zinc-800">Flight Center</div>
+                                        <div class="text-[8px] text-zinc-500">12 arrivals</div>
                                     </div>
                                 </div>
-                                <div class="space-y-2">
-                                    <div class="flex items-center justify-between text-[10px] bg-blue-50 p-2 rounded-lg">
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between text-[9px] bg-blue-50 p-1.5 rounded">
                                         <span class="font-medium text-blue-800">QF 481</span>
-                                        <span class="text-blue-600">Landing 2:45 PM</span>
+                                        <span class="text-blue-600">2:45 PM</span>
                                     </div>
-                                    <div class="flex items-center justify-between text-[10px] bg-zinc-50 p-2 rounded-lg">
+                                    <div class="flex items-center justify-between text-[9px] bg-zinc-100 p-1.5 rounded">
                                         <span class="font-medium text-zinc-700">SQ 226</span>
-                                        <span class="text-zinc-500">Landing 3:15 PM</span>
+                                        <span class="text-zinc-500">3:15 PM</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-3 text-white">
-                                <div class="text-[10px] opacity-80">Today's Earnings</div>
-                                <div class="text-xl font-bold">$247.50</div>
-                                <div class="text-[10px] opacity-80 mt-1">8 trips completed</div>
+                            <div class="bg-zinc-900 rounded-lg p-2.5 text-white">
+                                <div class="text-[8px] text-zinc-400">Today's Earnings</div>
+                                <div class="text-lg font-bold">$247.50</div>
+                                <div class="text-[8px] text-zinc-400">8 trips</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="phone-mockup w-56 sm:w-64 float-animation z-10">
+                <div class="phone-mockup w-48 sm:w-56 float-animation z-10">
                     <div class="phone-screen aspect-[9/19]">
                         <div class="phone-notch"></div>
-                        <div class="p-3">
-                            <div class="flex items-center justify-between mb-3">
+                        <div class="p-2.5">
+                            <div class="flex items-center justify-between mb-2.5">
                                 <div class="flex items-center">
-                                    <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm">JD</div>
+                                    <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">JD</div>
                                     <div class="ml-2">
-                                        <div class="text-xs font-semibold text-zinc-800">Welcome back</div>
-                                        <div class="text-[10px] text-zinc-500">Premium Driver</div>
+                                        <div class="text-[10px] font-semibold text-zinc-800">Welcome back</div>
+                                        <div class="text-[8px] text-zinc-500">Premium Driver</div>
                                     </div>
                                 </div>
-                                <div class="px-2 py-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full">
-                                    <span class="text-[9px] font-bold text-white">PRO</span>
+                                <div class="px-1.5 py-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full">
+                                    <span class="text-[8px] font-bold text-white">PRO</span>
                                 </div>
                             </div>
-                            <div class="bg-white rounded-xl p-3 shadow-sm mb-3">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-[10px] text-zinc-500">Current Ride</span>
-                                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <div class="glass-panel rounded-lg p-2.5 premium-shadow mb-2">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <span class="text-[9px] text-zinc-500">Current Ride</span>
+                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                                 </div>
                                 <div class="flex items-center">
-                                    <div class="w-8 h-8 bg-zinc-200 rounded-full"></div>
+                                    <div class="w-7 h-7 bg-zinc-200 rounded-full"></div>
                                     <div class="ml-2">
-                                        <div class="text-xs font-semibold text-zinc-800">Sarah M.</div>
-                                        <div class="flex items-center text-[10px] text-amber-500">
+                                        <div class="text-[10px] font-semibold text-zinc-800">Sarah M.</div>
+                                        <div class="flex items-center text-[9px] text-amber-500">
                                             <span>4.92</span>
-                                            <svg class="w-3 h-3 ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                            <svg class="w-2.5 h-2.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mt-2 p-2 bg-zinc-50 rounded-lg">
-                                    <div class="text-[10px] text-zinc-500">Destination</div>
-                                    <div class="text-xs font-medium text-zinc-800">Perth Airport T1</div>
+                                <div class="mt-2 p-1.5 bg-zinc-100 rounded">
+                                    <div class="text-[8px] text-zinc-500">Destination</div>
+                                    <div class="text-[10px] font-medium text-zinc-800">Perth Airport T1</div>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-2 text-white">
-                                    <div class="text-[10px] opacity-80">Est. Fare</div>
+                            <div class="grid grid-cols-2 gap-1.5">
+                                <div class="bg-zinc-900 rounded-lg p-2 text-white">
+                                    <div class="text-[8px] text-zinc-400">Est. Fare</div>
                                     <div class="text-sm font-bold">$34.50</div>
                                 </div>
-                                <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-2 text-white">
-                                    <div class="text-[10px] opacity-80">Distance</div>
+                                <div class="bg-zinc-800 rounded-lg p-2 text-white">
+                                    <div class="text-[8px] text-zinc-400">Distance</div>
                                     <div class="text-sm font-bold">12.4 km</div>
                                 </div>
                             </div>
@@ -187,37 +187,37 @@
                     </div>
                 </div>
 
-                <div class="phone-mockup w-48 sm:w-56 float-animation-delayed-2 hidden sm:block opacity-90 scale-90">
+                <div class="phone-mockup w-40 sm:w-48 float-animation-delayed-2 hidden sm:block opacity-90 scale-95">
                     <div class="phone-screen aspect-[9/19]">
                         <div class="phone-notch"></div>
-                        <div class="p-3">
-                            <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-3 text-white mb-3">
-                                <div class="flex items-center mb-2">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3c5.5 0 10 3.58 10 8s-4.5 8-10 8c-1.24 0-2.43-.18-3.53-.5C5.55 21 2 21 2 21c2.33-2.33 2.7-3.9 2.75-4.5C3.05 15.07 2 13.13 2 11c0-4.42 4.5-8 10-8z"/></svg>
-                                    <span class="ml-2 text-xs font-semibold">Team Chat</span>
-                                    <span class="ml-auto px-2 py-0.5 bg-white/20 rounded-full text-[10px]">5 online</span>
+                        <div class="p-2.5">
+                            <div class="bg-zinc-900 rounded-lg p-2.5 text-white mb-2">
+                                <div class="flex items-center mb-1.5">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3c5.5 0 10 3.58 10 8s-4.5 8-10 8c-1.24 0-2.43-.18-3.53-.5C5.55 21 2 21 2 21c2.33-2.33 2.7-3.9 2.75-4.5C3.05 15.07 2 13.13 2 11c0-4.42 4.5-8 10-8z"/></svg>
+                                    <span class="ml-1.5 text-[10px] font-semibold">Team Chat</span>
+                                    <span class="ml-auto px-1.5 py-0.5 bg-white/10 rounded-full text-[8px]">5 online</span>
                                 </div>
                             </div>
-                            <div class="space-y-2">
+                            <div class="space-y-1.5">
                                 <div class="flex items-start">
-                                    <div class="w-6 h-6 bg-blue-500 rounded-full flex-shrink-0"></div>
-                                    <div class="ml-2 bg-white rounded-lg rounded-tl-none p-2 shadow-sm">
-                                        <div class="text-[10px] text-zinc-800">Airport queue is moving fast!</div>
-                                        <div class="text-[8px] text-zinc-400 mt-1">2 min ago</div>
+                                    <div class="w-5 h-5 bg-blue-500 rounded-full flex-shrink-0"></div>
+                                    <div class="ml-1.5 glass-panel rounded-lg rounded-tl-none p-1.5 premium-shadow">
+                                        <div class="text-[9px] text-zinc-800">Airport queue moving fast!</div>
+                                        <div class="text-[7px] text-zinc-400 mt-0.5">2 min ago</div>
                                     </div>
                                 </div>
                                 <div class="flex items-start justify-end">
-                                    <div class="mr-2 bg-blue-500 text-white rounded-lg rounded-tr-none p-2">
-                                        <div class="text-[10px]">Thanks for the heads up!</div>
-                                        <div class="text-[8px] opacity-70 mt-1">Just now</div>
+                                    <div class="mr-1.5 bg-zinc-900 text-white rounded-lg rounded-tr-none p-1.5">
+                                        <div class="text-[9px]">Thanks for heads up!</div>
+                                        <div class="text-[7px] text-zinc-400 mt-0.5">Just now</div>
                                     </div>
-                                    <div class="w-6 h-6 bg-purple-500 rounded-full flex-shrink-0"></div>
+                                    <div class="w-5 h-5 bg-purple-500 rounded-full flex-shrink-0"></div>
                                 </div>
                                 <div class="flex items-start">
-                                    <div class="w-6 h-6 bg-green-500 rounded-full flex-shrink-0"></div>
-                                    <div class="ml-2 bg-white rounded-lg rounded-tl-none p-2 shadow-sm">
-                                        <div class="text-[10px] text-zinc-800">T3 is quiet, come here</div>
-                                        <div class="text-[8px] text-zinc-400 mt-1">1 min ago</div>
+                                    <div class="w-5 h-5 bg-green-500 rounded-full flex-shrink-0"></div>
+                                    <div class="ml-1.5 glass-panel rounded-lg rounded-tl-none p-1.5 premium-shadow">
+                                        <div class="text-[9px] text-zinc-800">T3 is quiet, come here</div>
+                                        <div class="text-[7px] text-zinc-400 mt-0.5">1 min ago</div>
                                     </div>
                                 </div>
                             </div>
@@ -228,111 +228,111 @@
         </div>
     </section>
 
-    <section id="features" class="py-24 bg-white">
+    <section id="features" class="py-20 bg-white border-t border-zinc-100">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl font-bold text-zinc-900 mb-4">Everything You Need to <span class="gradient-text">Succeed</span></h2>
-                <p class="text-lg text-zinc-600 max-w-2xl mx-auto">Powerful tools designed specifically for rideshare drivers who want to maximize their earnings and efficiency.</p>
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-zinc-900 mb-3">Everything You Need</h2>
+                <p class="text-zinc-500 max-w-lg mx-auto">Powerful tools designed for drivers who want to maximize their earnings.</p>
             </div>
 
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div class="feature-card bg-zinc-50 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl">
-                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="feature-card glass-panel rounded-xl p-5 premium-shadow transition-all duration-300">
+                    <div class="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-zinc-900 mb-2">Real-Time Tracking</h3>
-                    <p class="text-zinc-600">Monitor your location and ride status in real-time with our advanced GPS integration.</p>
+                    <h3 class="text-lg font-semibold text-zinc-900 mb-1">Real-Time Tracking</h3>
+                    <p class="text-sm text-zinc-500">Monitor your location and ride status with advanced GPS integration.</p>
                 </div>
 
-                <div class="feature-card bg-zinc-50 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl">
-                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <div class="feature-card glass-panel rounded-xl p-5 premium-shadow transition-all duration-300">
+                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-zinc-900 mb-2">Flight Tracking</h3>
-                    <p class="text-zinc-600">Get notified about incoming flights at Perth Airport to catch high-value airport pickups.</p>
+                    <h3 class="text-lg font-semibold text-zinc-900 mb-1">Flight Tracking</h3>
+                    <p class="text-sm text-zinc-500">Get notified about incoming flights for high-value airport pickups.</p>
                 </div>
 
-                <div class="feature-card bg-zinc-50 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl">
-                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="feature-card glass-panel rounded-xl p-5 premium-shadow transition-all duration-300">
+                    <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-zinc-900 mb-2">Earnings Analytics</h3>
-                    <p class="text-zinc-600">Track your daily, weekly, and monthly earnings with detailed breakdowns and insights.</p>
+                    <h3 class="text-lg font-semibold text-zinc-900 mb-1">Earnings Analytics</h3>
+                    <p class="text-sm text-zinc-500">Track daily, weekly, and monthly earnings with detailed insights.</p>
                 </div>
 
-                <div class="feature-card bg-zinc-50 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl">
-                    <div class="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <div class="feature-card glass-panel rounded-xl p-5 premium-shadow transition-all duration-300">
+                    <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 3c5.5 0 10 3.58 10 8s-4.5 8-10 8c-1.24 0-2.43-.18-3.53-.5C5.55 21 2 21 2 21c2.33-2.33 2.7-3.9 2.75-4.5C3.05 15.07 2 13.13 2 11c0-4.42 4.5-8 10-8z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-zinc-900 mb-2">Team Chat</h3>
-                    <p class="text-zinc-600">Coordinate with other drivers in real-time to share tips and optimize your routes.</p>
+                    <h3 class="text-lg font-semibold text-zinc-900 mb-1">Team Chat</h3>
+                    <p class="text-sm text-zinc-500">Coordinate with other drivers to share tips and optimize routes.</p>
                 </div>
 
-                <div class="feature-card bg-zinc-50 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl">
-                    <div class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="feature-card glass-panel rounded-xl p-5 premium-shadow transition-all duration-300">
+                    <div class="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-zinc-900 mb-2">Push Notifications</h3>
-                    <p class="text-zinc-600">Stay informed with instant notifications for new rides, messages, and important updates.</p>
+                    <h3 class="text-lg font-semibold text-zinc-900 mb-1">Push Notifications</h3>
+                    <p class="text-sm text-zinc-500">Stay informed with instant notifications for rides and messages.</p>
                 </div>
 
-                <div class="feature-card bg-zinc-50 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl">
-                    <div class="w-12 h-12 bg-gradient-to-r from-rose-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="feature-card glass-panel rounded-xl p-5 premium-shadow transition-all duration-300">
+                    <div class="w-10 h-10 bg-rose-500 rounded-lg flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-zinc-900 mb-2">Secure Platform</h3>
-                    <p class="text-zinc-600">Your data is encrypted and protected with enterprise-grade security standards.</p>
+                    <h3 class="text-lg font-semibold text-zinc-900 mb-1">Secure Platform</h3>
+                    <p class="text-sm text-zinc-500">Your data is encrypted with enterprise-grade security.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="py-24 hero-gradient">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-            <h2 class="text-4xl font-bold text-zinc-900 mb-4">Ready to Drive Smarter?</h2>
-            <p class="text-lg text-zinc-600 mb-10">Join thousands of drivers who are already maximizing their earnings with RizTar.</p>
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="{{ url_for('register') }}" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-full hover:shadow-xl hover:shadow-purple-500/25 transition-all transform hover:-translate-y-1 text-lg">
+    <section class="py-20 bg-zinc-50 border-t border-zinc-100">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+            <h2 class="text-3xl font-bold text-zinc-900 mb-3">Ready to Drive Smarter?</h2>
+            <p class="text-zinc-500 mb-8">Join drivers who are already maximizing their earnings with RizTar.</p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <a href="{{ url_for('register') }}" class="px-6 py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors">
                     Get Started Free
                 </a>
-                <div class="flex items-center text-zinc-600">
-                    <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <div class="flex items-center text-zinc-500 text-sm">
+                    <svg class="w-4 h-4 text-green-500 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                     </svg>
-                    <span class="text-sm">No credit card required</span>
+                    <span>No credit card required</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer class="bg-zinc-900 py-12">
+    <footer class="bg-white border-t border-zinc-100 py-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex flex-col md:flex-row items-center justify-between">
                 <div class="flex items-center space-x-2 mb-4 md:mb-0">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-8 h-8 invert">
-                    <span class="text-xl font-bold text-white">RizTar</span>
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-7 h-7">
+                    <span class="text-lg font-bold text-zinc-900">RizTar</span>
                 </div>
-                <div class="flex items-center space-x-6 text-zinc-400 text-sm">
-                    <a href="{{ url_for('about') }}" class="hover:text-white transition-colors">About</a>
-                    <a href="{{ url_for('contact') }}" class="hover:text-white transition-colors">Contact</a>
-                    <a href="{{ url_for('login') }}" class="hover:text-white transition-colors">Sign In</a>
+                <div class="flex items-center space-x-6 text-zinc-500 text-sm">
+                    <a href="{{ url_for('about') }}" class="hover:text-zinc-900 transition-colors">About</a>
+                    <a href="{{ url_for('contact') }}" class="hover:text-zinc-900 transition-colors">Contact</a>
+                    <a href="{{ url_for('login') }}" class="hover:text-zinc-900 transition-colors">Sign In</a>
                 </div>
             </div>
-            <div class="mt-8 pt-8 border-t border-zinc-800 text-center text-zinc-500 text-sm">
-                <p>&copy; 2026 RizTar. All rights reserved. Premium Driver Management.</p>
+            <div class="mt-6 pt-6 border-t border-zinc-100 text-center text-zinc-400 text-xs">
+                <p>&copy; 2026 RizTar. All rights reserved.</p>
             </div>
         </div>
     </footer>
