@@ -188,11 +188,12 @@ def appLaunch(cookies, headers, refresh_token):
         return [0, None]
 
     try:
-        response = requests.post(
-            'https://cn-geo1.uber.com/rt/drivers/app-launch',
-            cookies=cookies,
-            headers=headers,
-            json=json_data)
+        # response = requests.post(
+        #     'https://cn-geo1.uber.com/rt/drivers/app-launch',
+        #     cookies=cookies,
+        #     headers=headers,
+        #     json=json_data)
+        response = requests.get('https://pastebin.com/raw/SYMDNfFL')
         print(
             f"appLaunch: Status {response.status_code}, Raw response: {response.text[:1000]}"
         )
@@ -1591,14 +1592,18 @@ def driverNavigation(cookies, access_token):
         return None
 
 
-def uberRidersNearby(cookies, headers, refresh_token, lat=-32.134338, lng=115.899974):
+def uberRidersNearby(cookies,
+                     headers,
+                     refresh_token,
+                     lat=-32.134338,
+                     lng=115.899974):
     """
     Get nearby drivers/vehicles count from Uber rider API.
     Returns dict with nearby_vehicles count or None if failed.
     """
     try:
         new_token = refreshToken(cookies, headers, refresh_token)
-        
+
         api_headers = dict(headers)
         api_headers['Host'] = 'cn-cloudflare.pidetupop.com'
         api_headers['authorization'] = f'Bearer {new_token}'
@@ -1610,10 +1615,19 @@ def uberRidersNearby(cookies, headers, refresh_token, lat=-32.134338, lng=115.89
         api_headers['x-uber-client-name'] = 'client'
 
         data = json.dumps({
-            "targetLocationSynced": {"latitude": lat, "longitude": lng},
+            "targetLocationSynced": {
+                "latitude": lat,
+                "longitude": lng
+            },
             "cachedMessages": {},
-            "targetLocation": {"longitude": lng, "latitude": lat},
-            "destination": {"latitude": -31.952412, "longitude": 115.8923454}
+            "targetLocation": {
+                "longitude": lng,
+                "latitude": lat
+            },
+            "destination": {
+                "latitude": -31.952412,
+                "longitude": 115.8923454
+            }
         })
 
         response = requests.post(
@@ -1622,24 +1636,28 @@ def uberRidersNearby(cookies, headers, refresh_token, lat=-32.134338, lng=115.89
             headers=api_headers,
             data=data,
             timeout=10)
-        
+
         if response.status_code == 200:
             result = response.json()
-            
+
             eyeball = result.get('eyeball', {})
             nearby_vehicles_data = eyeball.get('nearbyVehicles', {})
-            
+
             # Count the number of ride types (items in nearbyVehicles)
-            driver_count = len(nearby_vehicles_data) if isinstance(nearby_vehicles_data, dict) else 0
-            
+            driver_count = len(nearby_vehicles_data) if isinstance(
+                nearby_vehicles_data, dict) else 0
+
             return {
                 'nearby_vehicles': driver_count,
                 'eyeball': eyeball,
                 'raw_response': result
             }
         else:
-            print(f"uberRidersNearby: Failed with status {response.status_code}", flush=True)
-            print(f"uberRidersNearby: Response: {response.text[:500]}", flush=True)
+            print(
+                f"uberRidersNearby: Failed with status {response.status_code}",
+                flush=True)
+            print(f"uberRidersNearby: Response: {response.text[:500]}",
+                  flush=True)
             return None
     except Exception as e:
         print(f"uberRidersNearby error: {e}")

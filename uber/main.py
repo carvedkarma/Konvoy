@@ -265,31 +265,29 @@ def home_data():
 
         print("DEBUG: Processing driver status", flush=True)
         driver_status = None
+        active_ride = None
+        
         if full_ride_data and isinstance(full_ride_data, dict):
-            driver_tasks = full_ride_data.get('driverTasks', {})
-            driver_state = driver_tasks.get('driverState', {})
-            task_scopes = driver_tasks.get('taskScopes', [])
-            
-            driver_status = {
-                'online': bool(driver_state.get('online', False)),
-                'available': bool(driver_state.get('available', False)),
-                'dispatchable': bool(driver_state.get('dispatchable', False)),
-                'onboarding_status': full_ride_data.get('driverOnboardingStatus', 'UNKNOWN')
-            }
-            
-            if task_scopes and len(task_scopes) > 0:
-                first_task = task_scopes[0]
-                active_ride = {
-                    'full_name': first_task.get('rider', {}).get('firstName', 'Rider'),
-                    'rating': first_task.get('rider', {}).get('rating', '--'),
-                    'trip_distance': first_task.get('tripDistance'),
-                    'ride_type': first_task.get('vehicleViewName', 'UberX')
+            # Check if this is already processed ride data (has full_name key)
+            if 'full_name' in full_ride_data:
+                # This is already a processed ride - use it directly
+                active_ride = full_ride_data
+                print(f"DEBUG: Found processed ride data: {full_ride_data.get('full_name')}", flush=True)
+            elif 'driverTasks' in full_ride_data:
+                # This is raw API response - extract driver status
+                driver_tasks = full_ride_data.get('driverTasks', {})
+                driver_state = driver_tasks.get('driverState', {})
+                task_scopes = driver_tasks.get('taskScopes', [])
+                
+                driver_status = {
+                    'online': bool(driver_state.get('online', False)),
+                    'available': bool(driver_state.get('available', False)),
+                    'dispatchable': bool(driver_state.get('dispatchable', False)),
+                    'onboarding_status': full_ride_data.get('driverOnboardingStatus', 'UNKNOWN')
                 }
-            else:
+                
+                # No active ride in raw response (taskScopes would be empty if no ride)
                 active_ride = None
-        else:
-            active_ride = None
-            driver_status = None
 
         for v in vehicles:
             if v.get('isDefault'):
@@ -566,16 +564,10 @@ def ride_data_api():
         """Extract active ride from appLaunch response if one exists"""
         if not data or not isinstance(data, dict):
             return None
-        driver_tasks = data.get('driverTasks', {})
-        task_scopes = driver_tasks.get('taskScopes', [])
-        if task_scopes and len(task_scopes) > 0:
-            first_task = task_scopes[0]
-            return {
-                'full_name': first_task.get('rider', {}).get('firstName', 'Rider'),
-                'rating': first_task.get('rider', {}).get('rating', '--'),
-                'trip_distance': first_task.get('tripDistance'),
-                'ride_type': first_task.get('vehicleViewName', 'UberX')
-            }
+        # Check if this is already processed ride data (has full_name key)
+        if 'full_name' in data:
+            return data
+        # Otherwise it's raw API response with no active ride
         return None
 
     cached_ride = cache.get_cached(current_user.id, 'active_ride')
