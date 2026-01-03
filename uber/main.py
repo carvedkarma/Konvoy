@@ -323,6 +323,37 @@ def home_data():
                    nearby_drivers=nearby_data)
 
 
+@app.route('/api/nearby-drivers')
+@login_required
+def get_nearby_drivers():
+    """Get nearby drivers count using browser geolocation coordinates"""
+    if not current_user.uber_connected:
+        return jsonify(success=True, nearby_drivers=0)
+    
+    lat = request.args.get('lat', type=float)
+    lng = request.args.get('lng', type=float)
+    
+    if not lat or not lng:
+        return jsonify(success=False, error='Location required', nearby_drivers=0)
+    
+    try:
+        cookies, headers, refresh_token = current_user.get_uber_credentials()
+    except Exception as e:
+        return jsonify(success=False, error='Credentials error', nearby_drivers=0)
+    
+    try:
+        nearby_result = uberRidersNearby(cookies, headers, refresh_token, lat=lat, lng=lng)
+        if nearby_result:
+            nearby_count = nearby_result.get('nearby_vehicles', 0)
+            if isinstance(nearby_count, int):
+                cache.set_cached(current_user.id, 'nearby_vehicles', nearby_count)
+                return jsonify(success=True, nearby_drivers=nearby_count)
+        return jsonify(success=True, nearby_drivers=0)
+    except Exception as e:
+        print(f"Error fetching nearby drivers: {e}", flush=True)
+        return jsonify(success=False, error=str(e), nearby_drivers=0)
+
+
 @app.route('/api/active-ride')
 @login_required
 def get_active_ride():

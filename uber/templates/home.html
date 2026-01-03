@@ -416,32 +416,27 @@ fetch('/api/home-data')
         }
         
         let nearbySection = '';
-        if (nearbyDrivers !== null && nearbyDrivers !== undefined) {
-            const count = parseInt(nearbyDrivers) || 0;
-            const countColor = count > 10 ? 'text-emerald-600' : count > 5 ? 'text-amber-600' : 'text-red-500';
-            const bgColor = count > 10 ? 'bg-emerald-50 border-emerald-200' : count > 5 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
-            const dotColor = count > 10 ? 'bg-emerald-500' : count > 5 ? 'bg-amber-500' : 'bg-red-500';
+        if (uberConnected) {
             nearbySection = `
-                <div class="glass-panel rounded-xl premium-shadow p-4 mb-6 ${bgColor} border">
+                <div id="nearby-drivers-section" class="glass-panel rounded-xl premium-shadow p-4 mb-6 bg-zinc-50 border border-zinc-200">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
                             <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center mr-3">
-                                <svg class="w-5 h-5 ${countColor}" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-5 h-5 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
                                     <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-3a1 1 0 00-.293-.707l-3-3A1 1 0 0016 6h-1V5a1 1 0 00-1-1H3z"/>
                                 </svg>
                             </div>
                             <div>
                                 <p class="text-xs text-zinc-500 font-medium">Drivers Nearby</p>
-                                <p class="text-lg font-bold ${countColor}">${count} <span class="text-sm font-normal text-zinc-500">vehicles</span></p>
+                                <p id="nearby-count" class="text-lg font-bold text-zinc-400">Getting location...</p>
                             </div>
                         </div>
                         <div class="flex items-center">
-                            <span class="relative flex h-3 w-3">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-3 w-3 ${dotColor}"></span>
+                            <span id="nearby-dot" class="relative flex h-3 w-3">
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-zinc-300"></span>
                             </span>
-                            <span class="ml-2 text-xs text-zinc-500">Live</span>
+                            <span id="nearby-status" class="ml-2 text-xs text-zinc-400">Waiting</span>
                         </div>
                     </div>
                 </div>
@@ -673,6 +668,63 @@ fetch('/api/home-data')
         loadingEl.classList.add('hidden');
         contentEl.classList.remove('hidden');
         loadFlightData();
+        
+        // Fetch nearby drivers using browser geolocation
+        if (uberConnected && navigator.geolocation) {
+            const nearbyCountEl = document.getElementById('nearby-count');
+            const nearbyDotEl = document.getElementById('nearby-dot');
+            const nearbySectionEl = document.getElementById('nearby-drivers-section');
+            const nearbyStatusEl = document.getElementById('nearby-status');
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    if (nearbyCountEl) nearbyCountEl.textContent = 'Fetching...';
+                    
+                    fetch(`/api/nearby-drivers?lat=${lat}&lng=${lng}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            const count = parseInt(data.nearby_drivers) || 0;
+                            const countColor = count > 10 ? 'text-emerald-600' : count > 5 ? 'text-amber-600' : 'text-red-500';
+                            const bgColor = count > 10 ? 'bg-emerald-50 border-emerald-200' : count > 5 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+                            const dotColor = count > 10 ? 'bg-emerald-500' : count > 5 ? 'bg-amber-500' : 'bg-red-500';
+                            
+                            if (nearbyCountEl) {
+                                nearbyCountEl.innerHTML = `${count} <span class="text-sm font-normal text-zinc-500">vehicles</span>`;
+                                nearbyCountEl.className = `text-lg font-bold ${countColor}`;
+                            }
+                            if (nearbySectionEl) {
+                                nearbySectionEl.className = `glass-panel rounded-xl premium-shadow p-4 mb-6 ${bgColor} border`;
+                            }
+                            if (nearbyDotEl) {
+                                nearbyDotEl.innerHTML = `
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-3 w-3 ${dotColor}"></span>
+                                `;
+                            }
+                            if (nearbyStatusEl) {
+                                nearbyStatusEl.textContent = 'Live';
+                                nearbyStatusEl.className = 'ml-2 text-xs text-zinc-500';
+                            }
+                        })
+                        .catch(err => {
+                            if (nearbyCountEl) nearbyCountEl.textContent = 'Error loading';
+                        });
+                },
+                (error) => {
+                    if (nearbyCountEl) {
+                        nearbyCountEl.textContent = 'Location denied';
+                        nearbyCountEl.className = 'text-lg font-bold text-zinc-400';
+                    }
+                    if (nearbyStatusEl) {
+                        nearbyStatusEl.textContent = 'Unavailable';
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
         
         document.getElementById('terminalSelect').addEventListener('change', function() {
             loadFlightData(this.value);
