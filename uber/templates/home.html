@@ -1007,11 +1007,39 @@ fetch('/api/home-data')
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     
-                    // Display user's current location
+                    // Display user's current location with reverse geocoding
                     if (userCoordsEl) {
-                        userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>`;
-                        userCoordsEl.parentElement.classList.remove('text-zinc-400');
-                        userCoordsEl.parentElement.classList.add('text-blue-600');
+                        userCoordsEl.innerHTML = `<span class="text-zinc-500">Finding your location...</span>`;
+                        
+                        // Reverse geocode to get street/suburb name
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
+                            headers: { 'User-Agent': 'RizTar/1.0' }
+                        })
+                        .then(res => res.json())
+                        .then(geoData => {
+                            const addr = geoData.address || {};
+                            // Build a short location string: street, suburb/city
+                            let locationParts = [];
+                            if (addr.road) locationParts.push(addr.road);
+                            if (addr.suburb) locationParts.push(addr.suburb);
+                            else if (addr.neighbourhood) locationParts.push(addr.neighbourhood);
+                            else if (addr.city) locationParts.push(addr.city);
+                            else if (addr.town) locationParts.push(addr.town);
+                            
+                            const locationName = locationParts.length > 0 
+                                ? locationParts.join(', ') 
+                                : geoData.display_name?.split(',').slice(0, 2).join(',') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                            
+                            userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600 font-semibold">${locationName}</span>`;
+                            userCoordsEl.parentElement.classList.remove('text-zinc-400');
+                            userCoordsEl.parentElement.classList.add('text-blue-600');
+                        })
+                        .catch(() => {
+                            // Fallback to coordinates if geocoding fails
+                            userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>`;
+                            userCoordsEl.parentElement.classList.remove('text-zinc-400');
+                            userCoordsEl.parentElement.classList.add('text-blue-600');
+                        });
                     }
                     
                     if (nearbyCountEl) nearbyCountEl.textContent = 'Fetching...';
