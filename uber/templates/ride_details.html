@@ -271,6 +271,7 @@
                 </div>
                 
                 <div class="border-t border-zinc-100 pt-4 mt-4 space-y-3">
+                    {% if current_user.is_owner() %}
                     <button id="cancel-ride-btn" 
                         data-pickup-lat="{{ ride_data.pickup_coords[0] if ride_data.pickup_coords else '' }}"
                         data-pickup-lng="{{ ride_data.pickup_coords[1] if ride_data.pickup_coords else '' }}"
@@ -282,6 +283,14 @@
                         </svg>
                         Cancel Ride
                     </button>
+                    {% else %}
+                    <div class="w-full bg-zinc-200 text-zinc-500 py-3.5 rounded-xl font-semibold text-sm text-center flex items-center justify-center gap-2 cursor-not-allowed">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        Cancel Ride
+                    </div>
+                    {% endif %}
                     <div id="simulation-status" class="hidden">
                         <div class="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-xl p-3 shadow-lg">
                             <div class="flex items-center justify-between mb-2">
@@ -425,6 +434,7 @@ fetch('/api/ride-data')
         if (data.active_ride) {
             const rd = data.active_ride;
             const dv = data.default_vehicle;
+            const isOwner = {{ 'true' if current_user.is_owner() else 'false' }};
             const fullName = escapeHtml(rd.full_name);
             const nameParts = rd.full_name.split(' ');
             const initials = escapeHtml(nameParts[0][0] + (nameParts.length > 1 ? nameParts[1][0] : ''));
@@ -545,6 +555,7 @@ fetch('/api/ride-data')
                 </div>
                 
                 <div class="bg-white rounded-b-2xl shadow-xl px-5 pb-5 space-y-3">
+                    ${isOwner ? `
                     <button id="cancel-ride-btn" 
                             data-pickup-lat="${rd.pickup_coords ? rd.pickup_coords[0] : ''}"
                             data-pickup-lng="${rd.pickup_coords ? rd.pickup_coords[1] : ''}"
@@ -556,6 +567,14 @@ fetch('/api/ride-data')
                         </svg>
                         Cancel Ride
                     </button>
+                    ` : `
+                    <div class="w-full bg-zinc-200 text-zinc-500 py-3.5 rounded-xl font-semibold text-sm text-center flex items-center justify-center gap-2 cursor-not-allowed">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        Cancel Ride
+                    </div>
+                    `}
                     <div id="simulation-status" class="hidden">
                         <div class="bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-xl p-3 shadow-lg">
                             <div class="flex items-center justify-between mb-2">
