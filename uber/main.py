@@ -337,6 +337,59 @@ def home_data():
                    unread_chat_count=unread_chat_count)
 
 
+@app.route('/api/driver-status')
+@login_required
+def get_driver_status():
+    """Get fresh driver status - bypasses cache for real-time updates"""
+    if not current_user.uber_connected:
+        return jsonify(success=False, error='Not connected')
+    
+    try:
+        cookies, headers, refresh_token = current_user.get_uber_credentials()
+    except Exception as e:
+        return jsonify(success=False, error='Credentials error')
+    
+    try:
+        ride_data = appLaunch(cookies, headers, refresh_token)
+        driver_status = None
+        active_ride = None
+        
+        if ride_data:
+            if isinstance(ride_data, list) and len(ride_data) >= 2:
+                full_data = ride_data[1]
+            elif isinstance(ride_data, dict):
+                full_data = ride_data
+            else:
+                full_data = None
+            
+            if full_data and isinstance(full_data, dict):
+                driver_tasks = full_data.get('driverTasks', {})
+                driver_state = driver_tasks.get('driverState', {})
+                task_scopes = driver_tasks.get('taskScopes', [])
+                
+                driver_status = {
+                    'online': bool(driver_state.get('online', False)),
+                    'available': bool(driver_state.get('available', False)),
+                    'dispatchable': bool(driver_state.get('dispatchable', False))
+                }
+                
+                if task_scopes and len(task_scopes) > 0:
+                    first_task = task_scopes[0]
+                    active_ride = {
+                        'full_name': first_task.get('rider', {}).get('firstName', 'Rider'),
+                        'rating': first_task.get('rider', {}).get('rating', '--'),
+                        'trip_distance': first_task.get('tripDistance'),
+                        'ride_type': first_task.get('vehicleViewName', 'UberX')
+                    }
+                
+                cache.set_cached(current_user.id, 'active_ride', full_data)
+        
+        return jsonify(success=True, driver_status=driver_status, active_ride=active_ride)
+    except Exception as e:
+        print(f"Error fetching driver status: {e}", flush=True)
+        return jsonify(success=False, error=str(e))
+
+
 @app.route('/api/nearby-drivers')
 @login_required
 def get_nearby_drivers():

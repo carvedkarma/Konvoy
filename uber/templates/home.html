@@ -521,26 +521,29 @@ fetch('/api/home-data')
                             </svg>
                         </button>
                     </div>
-                    ${driverStatus ? `
-                    <div class="mt-3 pt-3 border-t border-zinc-100">
+                    <div id="driver-status-section" class="mt-3 pt-3 border-t border-zinc-100">
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                                <div class="flex items-center ${driverStatus.online ? 'text-emerald-600' : 'text-zinc-400'}">
-                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus.online ? 'bg-emerald-500' : 'bg-zinc-300'} mr-1"></span>
-                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus.online ? 'Online' : 'Offline'}</span>
+                                <div id="status-online" class="flex items-center ${driverStatus && driverStatus.online ? 'text-emerald-600' : 'text-zinc-400'}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus && driverStatus.online ? 'bg-emerald-500' : 'bg-zinc-300'} mr-1"></span>
+                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus && driverStatus.online ? 'Online' : 'Offline'}</span>
                                 </div>
-                                <div class="flex items-center ${driverStatus.available ? 'text-blue-600' : 'text-zinc-400'}">
-                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus.available ? 'bg-blue-500' : 'bg-zinc-300'} mr-1"></span>
-                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus.available ? 'Available' : 'Busy'}</span>
+                                <div id="status-available" class="flex items-center ${driverStatus && driverStatus.available ? 'text-blue-600' : 'text-zinc-400'}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus && driverStatus.available ? 'bg-blue-500' : 'bg-zinc-300'} mr-1"></span>
+                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus && driverStatus.available ? 'Available' : 'Busy'}</span>
                                 </div>
-                                <div class="flex items-center ${driverStatus.dispatchable ? 'text-purple-600' : 'text-zinc-400'}">
-                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus.dispatchable ? 'bg-purple-500' : 'bg-zinc-300'} mr-1"></span>
-                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus.dispatchable ? 'Dispatchable' : 'No'}</span>
+                                <div id="status-dispatchable" class="flex items-center ${driverStatus && driverStatus.dispatchable ? 'text-purple-600' : 'text-zinc-400'}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus && driverStatus.dispatchable ? 'bg-purple-500' : 'bg-zinc-300'} mr-1"></span>
+                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus && driverStatus.dispatchable ? 'Dispatchable' : 'No'}</span>
                                 </div>
                             </div>
+                            <button id="refresh-status-btn" class="p-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors" title="Refresh status">
+                                <svg class="w-3 h-3 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
-                    ` : ''}
                 </div>
             `;
         } else {
@@ -1219,7 +1222,67 @@ function loadFlightData(terminal = '') {
 
 let currentActiveRide = null;
 let refreshInterval = null;
+let statusRefreshInterval = null;
 const uberConnected = {{ 'true' if current_user.uber_connected else 'false' }};
+
+function updateDriverStatusUI(driverStatus) {
+    const onlineEl = document.getElementById('status-online');
+    const availableEl = document.getElementById('status-available');
+    const dispatchableEl = document.getElementById('status-dispatchable');
+    
+    if (!onlineEl || !availableEl || !dispatchableEl) return;
+    
+    const online = driverStatus && driverStatus.online;
+    const available = driverStatus && driverStatus.available;
+    const dispatchable = driverStatus && driverStatus.dispatchable;
+    
+    onlineEl.className = `flex items-center ${online ? 'text-emerald-600' : 'text-zinc-400'}`;
+    onlineEl.innerHTML = `
+        <span class="w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-zinc-300'} mr-1"></span>
+        <span class="text-[9px] md:text-xs font-medium">${online ? 'Online' : 'Offline'}</span>
+    `;
+    
+    availableEl.className = `flex items-center ${available ? 'text-blue-600' : 'text-zinc-400'}`;
+    availableEl.innerHTML = `
+        <span class="w-1.5 h-1.5 rounded-full ${available ? 'bg-blue-500' : 'bg-zinc-300'} mr-1"></span>
+        <span class="text-[9px] md:text-xs font-medium">${available ? 'Available' : 'Busy'}</span>
+    `;
+    
+    dispatchableEl.className = `flex items-center ${dispatchable ? 'text-purple-600' : 'text-zinc-400'}`;
+    dispatchableEl.innerHTML = `
+        <span class="w-1.5 h-1.5 rounded-full ${dispatchable ? 'bg-purple-500' : 'bg-zinc-300'} mr-1"></span>
+        <span class="text-[9px] md:text-xs font-medium">${dispatchable ? 'Dispatchable' : 'No'}</span>
+    `;
+}
+
+function refreshDriverStatus() {
+    if (!uberConnected || document.hidden) return;
+    
+    const refreshBtn = document.getElementById('refresh-status-btn');
+    if (refreshBtn) {
+        refreshBtn.querySelector('svg').classList.add('animate-spin');
+    }
+    
+    fetch('/api/driver-status')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.driver_status) {
+                updateDriverStatusUI(data.driver_status);
+            }
+            if (data.active_ride) {
+                if (JSON.stringify(currentActiveRide) !== JSON.stringify(data.active_ride)) {
+                    currentActiveRide = data.active_ride;
+                    updateActiveRideSection(data.active_ride);
+                }
+            }
+        })
+        .catch(err => console.error('Error refreshing status:', err))
+        .finally(() => {
+            if (refreshBtn) {
+                refreshBtn.querySelector('svg').classList.remove('animate-spin');
+            }
+        });
+}
 
 function refreshActiveRide() {
     if (!uberConnected || document.hidden) return;
@@ -1240,12 +1303,17 @@ function refreshActiveRide() {
 function startAutoRefresh() {
     if (refreshInterval) return;
     refreshInterval = setInterval(refreshActiveRide, 15000);
+    statusRefreshInterval = setInterval(refreshDriverStatus, 30000);
 }
 
 function stopAutoRefresh() {
     if (refreshInterval) {
         clearInterval(refreshInterval);
         refreshInterval = null;
+    }
+    if (statusRefreshInterval) {
+        clearInterval(statusRefreshInterval);
+        statusRefreshInterval = null;
     }
 }
 
@@ -1255,6 +1323,13 @@ document.addEventListener('visibilitychange', function() {
     } else {
         startAutoRefresh();
         refreshActiveRide();
+        refreshDriverStatus();
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('#refresh-status-btn')) {
+        refreshDriverStatus();
     }
 });
 
