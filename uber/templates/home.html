@@ -395,7 +395,7 @@ fetch('/api/home-data')
             const messageEl = document.getElementById('permission-message');
 
             if (!banner) return;
-            if (sessionStorage.getItem('permissionBannerDismissed')) return;
+            if (localStorage.getItem('permissionBannerDismissed')) return;
 
             const geoPromise = new Promise(resolve => {
                 if (navigator.permissions && navigator.permissions.query) {
@@ -1457,7 +1457,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (!banner) return;
     
-    const dismissed = sessionStorage.getItem('permissionBannerDismissed');
+    // Check if already dismissed or location already granted (persisted in localStorage)
+    const dismissed = localStorage.getItem('permissionBannerDismissed');
+    const locationGranted = localStorage.getItem('locationPermissionGranted');
     if (dismissed) return;
     
     let needsLocation = false;
@@ -1467,28 +1469,89 @@ document.addEventListener('DOMContentLoaded', function() {
         needsLocation = false;
         needsNotification = false;
         
-        if ('geolocation' in navigator && 'permissions' in navigator) {
-            navigator.permissions.query({name: 'geolocation'}).then(result => {
-                if (result.state !== 'granted') {
-                    needsLocation = true;
-                    locationBtn.classList.remove('hidden');
-                }
-                updateBanner();
-            }).catch(() => {
-                needsLocation = true;
-                locationBtn.classList.remove('hidden');
-                updateBanner();
-            });
+        // If we already have location permission stored, skip the location check
+        if (locationGranted === 'true') {
+            needsLocation = false;
+            locationBtn.classList.add('hidden');
+        } else if ('geolocation' in navigator) {
+            // Try permissions API first (works on Android Chrome, desktop browsers)
+            if ('permissions' in navigator) {
+                navigator.permissions.query({name: 'geolocation'}).then(result => {
+                    if (result.state === 'granted') {
+                        needsLocation = false;
+                        locationBtn.classList.add('hidden');
+                        localStorage.setItem('locationPermissionGranted', 'true');
+                    } else if (result.state === 'prompt') {
+                        needsLocation = true;
+                        locationBtn.classList.remove('hidden');
+                    } else {
+                        // denied - don't show button, they need to change in settings
+                        needsLocation = false;
+                        locationBtn.classList.add('hidden');
+                    }
+                    updateBanner();
+                    
+                    // Listen for permission changes
+                    result.onchange = function() {
+                        if (this.state === 'granted') {
+                            needsLocation = false;
+                            locationBtn.classList.add('hidden');
+                            localStorage.setItem('locationPermissionGranted', 'true');
+                            updateBanner();
+                        }
+                    };
+                }).catch(() => {
+                    // Permissions API failed (iOS Safari) - try direct geolocation check
+                    checkLocationDirectly();
+                });
+            } else {
+                // No permissions API (iOS Safari) - try direct geolocation check
+                checkLocationDirectly();
+            }
         }
         
+        // Check notification permission
         if ('Notification' in window) {
-            if (Notification.permission !== 'granted') {
+            if (Notification.permission === 'granted') {
+                needsNotification = false;
+                notificationBtn.classList.add('hidden');
+            } else if (Notification.permission === 'default') {
                 needsNotification = true;
                 notificationBtn.classList.remove('hidden');
+            } else {
+                // denied
+                needsNotification = false;
+                notificationBtn.classList.add('hidden');
             }
         }
         
         updateBanner();
+    }
+    
+    function checkLocationDirectly() {
+        // For iOS Safari - try a quick geolocation request with short timeout
+        // If it succeeds quickly, permission was already granted
+        navigator.geolocation.getCurrentPosition(
+            () => {
+                needsLocation = false;
+                locationBtn.classList.add('hidden');
+                localStorage.setItem('locationPermissionGranted', 'true');
+                updateBanner();
+            },
+            (error) => {
+                if (error.code === error.PERMISSION_DENIED) {
+                    // Already denied - don't show button
+                    needsLocation = false;
+                    locationBtn.classList.add('hidden');
+                } else {
+                    // Not yet asked or other error - show button
+                    needsLocation = true;
+                    locationBtn.classList.remove('hidden');
+                }
+                updateBanner();
+            },
+            { timeout: 100, maximumAge: Infinity }
+        );
     }
     
     function updateBanner() {
@@ -1517,6 +1580,7 @@ document.addEventListener('DOMContentLoaded', function() {
             () => {
                 needsLocation = false;
                 locationBtn.classList.add('hidden');
+                localStorage.setItem('locationPermissionGranted', 'true');
                 updateBanner();
             },
             () => {
@@ -1587,7 +1651,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     dismissBtn.addEventListener('click', () => {
-        sessionStorage.setItem('permissionBannerDismissed', 'true');
+        localStorage.setItem('permissionBannerDismissed', 'true');
         banner.classList.add('hidden');
     });
     
