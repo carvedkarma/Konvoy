@@ -225,14 +225,6 @@
                         <path d="M12 3c5.5 0 10 3.58 10 8s-4.5 8-10 8c-1.24 0-2.43-.18-3.53-.5C5.55 21 2 21 2 21c2.33-2.33 2.7-3.9 2.75-4.5C3.05 15.07 2 13.13 2 11c0-4.42 4.5-8 10-8z"/>
                     </svg>
                     <div id="unread-badge-container">
-                        ${unreadCount > 0 ? `
-                        <span class="absolute -top-1 -right-1 flex h-4 w-4">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-4 w-4 bg-white text-purple-600 text-[10px] font-bold items-center justify-center shadow-sm">
-                                ${unreadCount < 10 ? unreadCount : '9+'}
-                            </span>
-                        </span>
-                        ` : ''}
                     </div>
                 </div>
                 <div class="flex-1">
@@ -243,6 +235,22 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
             </a>
+
+            <button id="pip-btn" class="flex items-center p-4 bg-gradient-to-r from-zinc-700 to-zinc-900 text-white rounded-lg hover:from-zinc-800 hover:to-black transition-all shadow-lg hover:shadow-xl relative overflow-hidden group">
+                <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3 relative">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <div class="flex-1 text-left">
+                    <p class="font-semibold text-sm">Floating View</p>
+                    <p class="text-xs text-zinc-400">View nearby vehicles in a popup</p>
+                </div>
+                <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </button>
 
             {% if not current_user.uber_connected %}
             <a href="{{ url_for('uber_connect') }}" class="flex items-center p-4 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
@@ -481,6 +489,93 @@ fetch('/api/home-data')
                         }
                     }, 100);
                     setTimeout(() => clearInterval(checkInterval), 5000);
+
+                    // PiP implementation for floating view
+                    const pipBtn = document.getElementById('pip-btn');
+                    if (pipBtn) {
+                        let pipActive = false;
+                        pipBtn.addEventListener('click', async () => {
+                            if (pipActive) return;
+                            try {
+                                const canvas = document.createElement('canvas');
+                                canvas.width = 400;
+                                canvas.height = 300;
+                                const ctx = canvas.getContext('2d');
+                                
+                                const video = document.createElement('video');
+                                video.muted = true;
+                                video.autoplay = true;
+                                video.srcObject = canvas.captureStream();
+                                
+                                const updateCanvas = () => {
+                                    if (!document.pictureInPictureElement) {
+                                        pipActive = false;
+                                        return;
+                                    }
+
+                                    ctx.fillStyle = '#18181b'; // zinc-900
+                                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                    
+                                    // Header
+                                    ctx.fillStyle = '#ffffff';
+                                    ctx.font = 'bold 22px sans-serif';
+                                    ctx.fillText('RizTar | Nearby', 20, 45);
+                                    
+                                    ctx.strokeStyle = '#27272a'; // zinc-800
+                                    ctx.lineWidth = 1;
+                                    ctx.beginPath();
+                                    ctx.moveTo(20, 65);
+                                    ctx.lineTo(380, 65);
+                                    ctx.stroke();
+
+                                    // Stats
+                                    ctx.font = '14px sans-serif';
+                                    ctx.fillStyle = '#a1a1aa'; // zinc-400
+                                    ctx.fillText(`${nearbyDrivers ? nearbyDrivers.length : 0} vehicles detected`, 20, 90);
+                                    
+                                    if (nearbyDrivers && nearbyDrivers.length > 0) {
+                                        nearbyDrivers.slice(0, 5).forEach((d, i) => {
+                                            const y = 130 + (i * 40);
+                                            
+                                            // Card background
+                                            ctx.fillStyle = '#27272a';
+                                            ctx.roundRect ? ctx.roundRect(20, y - 25, 360, 35, 8) : ctx.fillRect(20, y - 25, 360, 35);
+                                            ctx.fill();
+
+                                            // Status dot
+                                            ctx.fillStyle = '#10b981'; // emerald-500
+                                            ctx.beginPath();
+                                            ctx.arc(40, y - 7, 4, 0, Math.PI * 2);
+                                            ctx.fill();
+                                            
+                                            // Text
+                                            ctx.fillStyle = '#ffffff';
+                                            ctx.font = '500 14px sans-serif';
+                                            ctx.fillText(`${d.vehicleViewName || 'Uber'}`, 60, y - 2);
+                                            
+                                            ctx.fillStyle = '#71717a'; // zinc-500
+                                            ctx.font = '12px monospace';
+                                            ctx.fillText(`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`, 260, y - 2);
+                                        });
+                                    } else {
+                                        ctx.fillStyle = '#71717a';
+                                        ctx.font = 'italic 14px sans-serif';
+                                        ctx.fillText('No vehicles found in your area.', 20, 130);
+                                    }
+                                    
+                                    requestAnimationFrame(updateCanvas);
+                                };
+                                
+                                await video.play();
+                                await video.requestPictureInPicture();
+                                pipActive = true;
+                                updateCanvas();
+                            } catch (err) {
+                                console.error('PiP error:', err);
+                                alert('Floating view failed: ' + err.message);
+                            }
+                        });
+                    }
                 }, (err) => {
                     console.error("Geolocation error:", err);
                 });
