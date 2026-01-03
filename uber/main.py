@@ -321,13 +321,20 @@ def home_data():
             except Exception as e:
                 print(f"Error fetching nearby vehicles: {e}", flush=True)
 
+    # Unread messages count
+    unread_chat_count = ChatMessage.query.filter(
+        ChatMessage.created_at > current_user.last_chat_read_at,
+        ChatMessage.user_id != current_user.id
+    ).count()
+
     return jsonify(success=True,
                    vehicles=vehicles,
                    driver_info=driver_info,
                    default_vehicle=default_vehicle,
                    active_ride=active_ride,
                    driver_status=driver_status,
-                   nearby_drivers=nearby_data)
+                   nearby_drivers=nearby_data,
+                   unread_chat_count=unread_chat_count)
 
 
 @app.route('/api/nearby-drivers')
@@ -1849,9 +1856,19 @@ def get_active_users():
     return jsonify({'success': True, 'users': users})
 
 
+@app.route('/api/chat-mark-read', methods=['POST'])
+@login_required
+def chat_mark_read():
+    current_user.last_chat_read_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'success': True})
+
+
 @app.route('/chat-lobby')
 @login_required
 def chat_lobby():
+    current_user.last_chat_read_at = datetime.utcnow()
+    db.session.commit()
     return render_template('chat_lobby.html')
 
 

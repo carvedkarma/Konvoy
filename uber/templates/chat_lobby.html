@@ -445,6 +445,8 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
 socket.on('connect', function() {
     console.log('Connected to chat, socket id:', socket.id);
     fetchActiveUsers();
+    // Mark chat as read when opening lobby
+    fetch('/api/chat-mark-read', {method: 'POST'});
 });
 
 socket.on('connect_error', function(error) {

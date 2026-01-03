@@ -113,6 +113,7 @@ class User(UserMixin, db.Model):
     uber_refresh_token = db.Column(db.Text, nullable=True)
     uber_connected = db.Column(db.Boolean, default=False)
     profile_image = db.Column(db.Text, nullable=True)
+    last_chat_read_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     roles = db.relationship('Role', secondary=user_roles, back_populates='users')
     

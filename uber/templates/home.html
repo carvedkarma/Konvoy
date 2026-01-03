@@ -218,11 +218,22 @@
                 </svg>
             </a>
 
-            <a href="{{ url_for('chat_lobby') }}" class="flex items-center p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl">
-                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
+            <a href="{{ url_for('chat_lobby') }}" class="flex items-center p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl relative overflow-hidden group">
+                <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3 relative">
                     <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 3c5.5 0 10 3.58 10 8s-4.5 8-10 8c-1.24 0-2.43-.18-3.53-.5C5.55 21 2 21 2 21c2.33-2.33 2.7-3.9 2.75-4.5C3.05 15.07 2 13.13 2 11c0-4.42 4.5-8 10-8z"/>
                     </svg>
+                    <div id="unread-badge-container">
+                        ${unreadCount > 0 ? `
+                        <span class="absolute -top-1 -right-1 flex h-4 w-4">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-4 w-4 bg-white text-purple-600 text-[10px] font-bold items-center justify-center shadow-sm">
+                                ${unreadCount < 10 ? unreadCount : '9+'}
+                            </span>
+                        </span>
+                        ` : ''}
+                    </div>
                 </div>
                 <div class="flex-1">
                     <p class="font-semibold text-sm">Chat Lobby</p>
@@ -378,6 +389,7 @@ fetch('/api/home-data')
         const roleDisplay = "{{ current_user.get_role_display()|e }}";
         const roleBadgeClasses = "{{ current_user.get_role_badge_classes()|e }}";
         const userProfileImage = "{{ current_user.profile_image or '' }}";
+        const unreadCount = data.unread_chat_count || 0;
         
         let driverSection = '';
         if (di) {
