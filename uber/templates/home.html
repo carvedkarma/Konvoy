@@ -435,21 +435,34 @@ fetch('/api/home-data')
             const locBtn = document.getElementById('enable-location-btn');
             
             if (state === 'granted') {
-                locBtn.classList.add('hidden');
+                if (locBtn) locBtn.classList.add('hidden');
                 // Check if we still need the banner for notifications
                 if (Notification.permission === 'granted' || Notification.permission === 'denied') {
-                    banner.classList.add('hidden');
+                    if (banner) banner.classList.add('hidden');
                 }
                 
                 // Get current location and display it
                 navigator.geolocation.getCurrentPosition((position) => {
                     const { latitude, longitude } = position.coords;
-                    // Wait for nearby drivers section to be rendered if it's dynamic
+                    
+                    // Direct update to any existing element first
+                    const existingLocInfo = document.getElementById('user-location-info');
+                    if (existingLocInfo) {
+                        existingLocInfo.innerHTML = `
+                            <p class="text-[10px] font-bold text-blue-600 flex items-center justify-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                </svg>
+                                YOUR LOCATION: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}
+                            </p>
+                        `;
+                    }
+
+                    // Also poll for dynamic content
                     const checkInterval = setInterval(() => {
                         const nearbyGrid = document.getElementById('nearby-drivers-grid');
                         if (nearbyGrid) {
                             clearInterval(checkInterval);
-                            // Check if location info already exists
                             let locInfo = document.getElementById('user-location-info');
                             if (!locInfo) {
                                 locInfo = document.createElement('div');
@@ -467,12 +480,13 @@ fetch('/api/home-data')
                             `;
                         }
                     }, 100);
-                    // Timeout after 5 seconds
                     setTimeout(() => clearInterval(checkInterval), 5000);
+                }, (err) => {
+                    console.error("Geolocation error:", err);
                 });
             } else {
-                banner.classList.remove('hidden');
-                locBtn.classList.remove('hidden');
+                if (banner) banner.classList.remove('hidden');
+                if (locBtn) locBtn.classList.remove('hidden');
             }
         }
         
