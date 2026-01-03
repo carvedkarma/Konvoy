@@ -389,22 +389,46 @@ fetch('/api/home-data')
         const roleDisplay = "{{ current_user.get_role_display()|e }}";
         const roleBadgeClasses = "{{ current_user.get_role_badge_classes()|e }}";
         const userProfileImage = "{{ current_user.profile_image or '' }}";
-        // Check location permission and status
-        if (navigator.permissions && navigator.permissions.query) {
-            navigator.permissions.query({ name: 'geolocation' }).then(result => {
-                updateLocationUI(result.state);
-                result.onchange = () => updateLocationUI(result.state);
+        function updatePermissionUI() {
+            const banner = document.getElementById('permission-banner');
+            const locationBtn = document.getElementById('enable-location-btn');
+            const notificationBtn = document.getElementById('enable-notifications-btn');
+            const messageEl = document.getElementById('permission-message');
+
+            if (!banner) return;
+            if (sessionStorage.getItem('permissionBannerDismissed')) return;
+
+            const geoPromise = new Promise(resolve => {
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+                        const granted = result.state === 'granted';
+                        if (granted) locationBtn.classList.add('hidden');
+                        else locationBtn.classList.remove('hidden');
+                        resolve(!granted);
+                    }).catch(() => resolve(true));
+                } else resolve(true);
             });
-        } else {
-            // Fallback for browsers that don't support permissions.query
-            navigator.geolocation.getCurrentPosition(
-                () => updateLocationUI('granted'),
-                (err) => {
-                    if (err.code === 1) updateLocationUI('denied');
-                    else updateLocationUI('prompt');
+
+            const notifyPromise = new Promise(resolve => {
+                const granted = 'Notification' in window && Notification.permission === 'granted';
+                if (granted) notificationBtn.classList.add('hidden');
+                else notificationBtn.classList.remove('hidden');
+                resolve(!granted);
+            });
+
+            Promise.all([geoPromise, notifyPromise]).then(([needsLoc, needsNotify]) => {
+                if (!needsLoc && !needsNotify) {
+                    banner.classList.add('hidden');
+                } else {
+                    banner.classList.remove('hidden');
+                    if (needsLoc && needsNotify) messageEl.textContent = 'Enable location and notifications for the best experience.';
+                    else if (needsLoc) messageEl.textContent = 'Enable location access for driver features.';
+                    else messageEl.textContent = 'Enable notifications to stay updated.';
                 }
-            );
+            });
         }
+
+        updatePermissionUI();
 
         function updateLocationUI(state) {
             const banner = document.getElementById('permission-banner');

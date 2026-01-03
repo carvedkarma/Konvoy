@@ -890,28 +890,43 @@ document.addEventListener('DOMContentLoaded', initCancelRideButton);
         needsLocation = false;
         needsNotification = false;
         
-        if ('geolocation' in navigator && 'permissions' in navigator) {
-            navigator.permissions.query({name: 'geolocation'}).then(result => {
-                if (result.state !== 'granted') {
+        const geoPromise = new Promise((resolve) => {
+            if ('geolocation' in navigator && 'permissions' in navigator) {
+                navigator.permissions.query({name: 'geolocation'}).then(result => {
+                    if (result.state !== 'granted') {
+                        needsLocation = true;
+                        locationBtn.classList.remove('hidden');
+                    } else {
+                        needsLocation = false;
+                        locationBtn.classList.add('hidden');
+                    }
+                    resolve();
+                }).catch(() => {
                     needsLocation = true;
                     locationBtn.classList.remove('hidden');
-                }
-                updateBanner();
-            }).catch(() => {
-                needsLocation = true;
-                locationBtn.classList.remove('hidden');
-                updateBanner();
-            });
-        }
-        
-        if ('Notification' in window) {
-            if (Notification.permission !== 'granted') {
-                needsNotification = true;
-                notificationBtn.classList.remove('hidden');
+                    resolve();
+                });
+            } else {
+                resolve();
             }
-        }
-        
-        updateBanner();
+        });
+
+        const notifyPromise = new Promise((resolve) => {
+            if ('Notification' in window) {
+                if (Notification.permission !== 'granted') {
+                    needsNotification = true;
+                    notificationBtn.classList.remove('hidden');
+                } else {
+                    needsNotification = false;
+                    notificationBtn.classList.add('hidden');
+                }
+            }
+            resolve();
+        });
+
+        Promise.all([geoPromise, notifyPromise]).then(() => {
+            updateBanner();
+        });
     }
     
     function updateBanner() {
