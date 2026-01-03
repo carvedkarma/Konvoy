@@ -1629,16 +1629,11 @@ def uberRidersNearby(cookies, headers, refresh_token, lat=-32.134338, lng=115.89
             eyeball = result.get('eyeball', {})
             nearby_vehicles_data = eyeball.get('nearbyVehicles', {})
             
-            total_vehicles = 0
-            if isinstance(nearby_vehicles_data, dict):
-                for key, value in nearby_vehicles_data.items():
-                    if isinstance(value, dict) and 'vehiclePaths' in value:
-                        vehicle_paths = value.get('vehiclePaths', {})
-                        total_vehicles += len(vehicle_paths)
-            elif isinstance(nearby_vehicles_data, int):
-                total_vehicles = nearby_vehicles_data
+            # Count the number of ride types (items in nearbyVehicles)
+            driver_count = len(nearby_vehicles_data) if isinstance(nearby_vehicles_data, dict) else 0
+            
             return {
-                'nearby_vehicles': total_vehicles,
+                'nearby_vehicles': driver_count,
                 'eyeball': eyeball,
                 'raw_response': result
             }
