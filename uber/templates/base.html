@@ -29,23 +29,6 @@
             visibility: visible;
             transform: translateY(0);
         }
-        .logo-gradient {
-            position: relative;
-            overflow: hidden;
-        }
-        .logo-gradient::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
-        }
-        .logo-gradient::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: url("{{ url_for('static', filename='images/logo.png') }}") center/contain no-repeat;
-            mix-blend-mode: multiply;
-        }
         {% block extra_styles %}{% endblock %}
     </style>
 </head>
@@ -55,7 +38,9 @@
         <div class="max-w-6xl mx-auto px-4">
             <div class="flex items-center justify-between h-14">
                 <a href="{{ url_for('root') }}" class="flex items-center space-x-2">
-                    <div class="w-8 h-8 logo-gradient"></div>
+                    <div class="w-8 h-8 flex items-center justify-center">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-full h-full object-contain">
+                    </div>
                     <span class="text-lg font-bold text-zinc-900">RizTar</span>
                 </a>
 
@@ -208,7 +193,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-left mb-8">
                 <div class="col-span-2">
                     <div class="flex items-center space-x-2 mb-4">
-                        <div class="w-6 h-6 logo-gradient"></div>
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="RizTar" class="w-6 h-6 object-contain">
                         <span class="text-lg font-bold text-zinc-900">RizTar</span>
                     </div>
                     <p class="text-zinc-500 text-sm max-w-xs">Premium driver management system for elite Uber operations. Built for performance, designed for luxury.</p>
