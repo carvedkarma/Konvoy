@@ -684,6 +684,12 @@ def register():
         db.session.add(user)
         db.session.commit()
         
+        # Assign default "user" role to new user
+        user_role = Role.query.filter_by(name='user').first()
+        if user_role:
+            user.roles.append(user_role)
+            db.session.commit()
+        
         # Send welcome email using Replit Mail service
         try:
             from replitmail import send_email as replit_send_email
