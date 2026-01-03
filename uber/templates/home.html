@@ -1831,4 +1831,42 @@ document.addEventListener('DOMContentLoaded', function() {
     checkPermissions();
 })();
 </script>
+
+<!-- Real-time unread message updates -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
+<script>
+(function() {
+    const socket = io({
+        transports: ['polling', 'websocket'],
+        reconnectionDelay: 1000,
+        timeout: 10000
+    });
+    
+    let unreadCount = 0;
+    
+    function updateUnreadBadge(count) {
+        unreadCount = count;
+        const badge = document.getElementById('unread-badge-container');
+        if (badge) {
+            if (count > 0) {
+                badge.innerHTML = `<span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">${count > 99 ? '99+' : count}</span>`;
+            } else {
+                badge.innerHTML = '';
+            }
+        }
+    }
+    
+    socket.on('new_message', function(msg) {
+        // Only increment if not from current user
+        if (msg.user_id !== {{ current_user.id }}) {
+            unreadCount++;
+            updateUnreadBadge(unreadCount);
+        }
+    });
+    
+    socket.on('chat_cleared', function() {
+        updateUnreadBadge(0);
+    });
+})();
+</script>
 {% endblock %}
