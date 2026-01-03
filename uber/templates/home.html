@@ -480,93 +480,6 @@ fetch('/api/home-data')
                         }
                     }, 100);
                     setTimeout(() => clearInterval(checkInterval), 5000);
-
-                    // PiP implementation for floating view
-                    const pipBtn = document.getElementById('pip-btn');
-                    if (pipBtn) {
-                        let pipActive = false;
-                        pipBtn.addEventListener('click', async () => {
-                            if (pipActive) return;
-                            try {
-                                const canvas = document.createElement('canvas');
-                                canvas.width = 400;
-                                canvas.height = 300;
-                                const ctx = canvas.getContext('2d');
-                                
-                                const video = document.createElement('video');
-                                video.muted = true;
-                                video.autoplay = true;
-                                video.srcObject = canvas.captureStream();
-                                
-                                const updateCanvas = () => {
-                                    if (!document.pictureInPictureElement) {
-                                        pipActive = false;
-                                        return;
-                                    }
-
-                                    ctx.fillStyle = '#18181b'; // zinc-900
-                                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                    
-                                    // Header
-                                    ctx.fillStyle = '#ffffff';
-                                    ctx.font = 'bold 22px sans-serif';
-                                    ctx.fillText('RizTar | Nearby', 20, 45);
-                                    
-                                    ctx.strokeStyle = '#27272a'; // zinc-800
-                                    ctx.lineWidth = 1;
-                                    ctx.beginPath();
-                                    ctx.moveTo(20, 65);
-                                    ctx.lineTo(380, 65);
-                                    ctx.stroke();
-
-                                    // Stats
-                                    ctx.font = '14px sans-serif';
-                                    ctx.fillStyle = '#a1a1aa'; // zinc-400
-                                    ctx.fillText(`${nearbyDrivers ? nearbyDrivers.length : 0} vehicles detected`, 20, 90);
-                                    
-                                    if (nearbyDrivers && nearbyDrivers.length > 0) {
-                                        nearbyDrivers.slice(0, 5).forEach((d, i) => {
-                                            const y = 130 + (i * 40);
-                                            
-                                            // Card background
-                                            ctx.fillStyle = '#27272a';
-                                            ctx.roundRect ? ctx.roundRect(20, y - 25, 360, 35, 8) : ctx.fillRect(20, y - 25, 360, 35);
-                                            ctx.fill();
-
-                                            // Status dot
-                                            ctx.fillStyle = '#10b981'; // emerald-500
-                                            ctx.beginPath();
-                                            ctx.arc(40, y - 7, 4, 0, Math.PI * 2);
-                                            ctx.fill();
-                                            
-                                            // Text
-                                            ctx.fillStyle = '#ffffff';
-                                            ctx.font = '500 14px sans-serif';
-                                            ctx.fillText(`${d.vehicleViewName || 'Uber'}`, 60, y - 2);
-                                            
-                                            ctx.fillStyle = '#71717a'; // zinc-500
-                                            ctx.font = '12px monospace';
-                                            ctx.fillText(`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`, 260, y - 2);
-                                        });
-                                    } else {
-                                        ctx.fillStyle = '#71717a';
-                                        ctx.font = 'italic 14px sans-serif';
-                                        ctx.fillText('No vehicles found in your area.', 20, 130);
-                                    }
-                                    
-                                    requestAnimationFrame(updateCanvas);
-                                };
-                                
-                                await video.play();
-                                await video.requestPictureInPicture();
-                                pipActive = true;
-                                updateCanvas();
-                            } catch (err) {
-                                console.error('PiP error:', err);
-                                alert('Floating view failed: ' + err.message);
-                            }
-                        });
-                    }
                 }, (err) => {
                     console.error("Geolocation error:", err);
                 });
@@ -919,6 +832,20 @@ fetch('/api/home-data')
             let pipActive = false;
             pipBtn.addEventListener('click', async () => {
                 if (pipActive) return;
+                
+                // Check if running in an iframe (PiP doesn't work in iframes)
+                const isInIframe = window.self !== window.top;
+                if (isInIframe) {
+                    alert('Floating View requires opening this page in a new browser tab.\n\nClick the "Open in new tab" button at the top right of the preview, then try again.');
+                    return;
+                }
+                
+                // Check if PiP is supported
+                if (!document.pictureInPictureEnabled) {
+                    alert('Floating View is not supported in your browser. Please try Chrome, Edge, or Safari.');
+                    return;
+                }
+                
                 try {
                     const canvas = document.createElement('canvas');
                     canvas.width = 400;
@@ -989,7 +916,11 @@ fetch('/api/home-data')
                     updateCanvas();
                 } catch (err) {
                     console.error('PiP error:', err);
-                    alert('Floating view failed: ' + err.message);
+                    if (err.name === 'NotAllowedError') {
+                        alert('Floating View was blocked. Please open this page in a new browser tab and try again.');
+                    } else {
+                        alert('Floating view failed: ' + err.message);
+                    }
                 }
             });
         }
