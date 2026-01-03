@@ -182,15 +182,22 @@
             {% endif %}
             
             {% if current_user.has_permission('can_fetch_ride') %}
-            <a href="/fetch-ride" class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors">
-                <svg class="w-5 h-5 mr-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                </svg>
-                <div>
-                    <p class="font-semibold text-sm text-zinc-900">Fetch Ride</p>
-                    <p class="text-xs text-zinc-500">Get ride details</p>
-                </div>
-            </a>
+            <div class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors group/fetch">
+                <a href="/fetch-ride" class="flex items-center flex-1">
+                    <svg class="w-5 h-5 mr-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                    <div>
+                        <p class="font-semibold text-sm text-zinc-900">Fetch Ride</p>
+                        <p class="text-xs text-zinc-500">Get ride details</p>
+                    </div>
+                </a>
+                <button id="pip-btn" class="p-2 ml-2 bg-zinc-900 text-white rounded-lg hover:bg-black transition-all shadow-md group-hover/fetch:scale-105" title="Open Floating View">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </button>
+            </div>
             {% else %}
             <div class="flex items-center p-4 bg-zinc-100 border border-zinc-200 rounded-lg opacity-60">
                 <svg class="w-5 h-5 mr-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -235,22 +242,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
             </a>
-
-            <button id="pip-btn" class="flex items-center p-4 bg-gradient-to-r from-zinc-700 to-zinc-900 text-white rounded-lg hover:from-zinc-800 hover:to-black transition-all shadow-lg hover:shadow-xl relative overflow-hidden group">
-                <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3 relative">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <div class="flex-1 text-left">
-                    <p class="font-semibold text-sm">Floating View</p>
-                    <p class="text-xs text-zinc-400">View nearby vehicles in a popup</p>
-                </div>
-                <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-            </button>
 
             {% if not current_user.uber_connected %}
             <a href="{{ url_for('uber_connect') }}" class="flex items-center p-4 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
