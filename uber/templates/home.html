@@ -225,13 +225,13 @@
                 </svg>
             </a>
 
-            <a href="{{ url_for('chat_lobby') }}" class="flex items-center p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl relative overflow-hidden group">
-                <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3 relative">
+            <a href="{{ url_for('chat_lobby') }}" class="flex items-center p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl relative group">
+                <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3 relative z-10">
                     <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 3c5.5 0 10 3.58 10 8s-4.5 8-10 8c-1.24 0-2.43-.18-3.53-.5C5.55 21 2 21 2 21c2.33-2.33 2.7-3.9 2.75-4.5C3.05 15.07 2 13.13 2 11c0-4.42 4.5-8 10-8z"/>
                     </svg>
-                    <div id="unread-badge-container">
+                    <div id="unread-badge-container" class="absolute -top-1 -right-1 z-20">
                     </div>
                 </div>
                 <div class="flex-1">
@@ -386,7 +386,7 @@ fetch('/api/home-data')
         const unreadBadge = document.getElementById('unread-badge-container');
         if (unreadBadge) {
             if (unreadCount > 0) {
-                unreadBadge.innerHTML = `<span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">${unreadCount > 99 ? '99+' : unreadCount}</span>`;
+                unreadBadge.innerHTML = `<span class="w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">${unreadCount > 99 ? '99+' : unreadCount}</span>`;
             } else {
                 unreadBadge.innerHTML = '';
             }
@@ -1849,7 +1849,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const badge = document.getElementById('unread-badge-container');
         if (badge) {
             if (count > 0) {
-                badge.innerHTML = `<span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">${count > 99 ? '99+' : count}</span>`;
+                badge.innerHTML = `<span class="w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">${count > 99 ? '99+' : count}</span>`;
             } else {
                 badge.innerHTML = '';
             }
