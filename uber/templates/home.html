@@ -381,54 +381,49 @@ fetch('/api/home-data')
         let driverSection = '';
         if (di) {
             driverSection = `
-                <div class="glass-panel rounded-xl premium-shadow p-4 md:p-6 mb-6">
-                    <div class="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 md:gap-5">
-                        <div class="relative">
-                            ${di.photo ? `<img src="${escapeHtml(di.photo)}" alt="Driver Photo" class="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover border-4 border-white shadow-lg">` : `
-                            <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-zinc-200 flex items-center justify-center border-4 border-white shadow-lg">
-                                <svg class="w-8 h-8 md:w-10 md:h-10 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
+                <div class="glass-panel rounded-xl premium-shadow p-3 md:p-6 mb-4 md:mb-6">
+                    <div class="flex items-center gap-3 md:gap-5">
+                        <div class="relative flex-shrink-0">
+                            ${di.photo ? `<img src="${escapeHtml(di.photo)}" alt="Driver Photo" class="w-12 h-12 md:w-20 md:h-20 rounded-full object-cover border-2 md:border-4 border-white shadow-md md:shadow-lg">` : `
+                            <div class="w-12 h-12 md:w-20 md:h-20 rounded-full bg-zinc-200 flex items-center justify-center border-2 md:border-4 border-white shadow-md md:shadow-lg">
+                                <svg class="w-6 h-6 md:w-10 md:h-10 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
                                 </svg>
                             </div>`}
-                            <div class="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-black rounded-full flex items-center justify-center">
-                                <svg class="w-2.5 h-2.5 md:w-3 md:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 md:w-6 md:h-6 bg-black rounded-full flex items-center justify-center">
+                                <svg class="w-2 h-2 md:w-3 md:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                 </svg>
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h1 class="text-lg md:text-xl font-bold text-zinc-900 truncate">${escapeHtml(di.name)}</h1>
-                            ${di.email ? `<p class="text-xs md:text-sm text-zinc-500 truncate">${escapeHtml(di.email)}</p>` : ''}
-                            ${di.phone ? `<p class="text-[10px] md:text-xs text-zinc-400 truncate">${escapeHtml(di.phone)}</p>` : ''}
-                            <div class="flex flex-wrap items-center justify-center sm:justify-start mt-2 gap-2">
-                                <span class="inline-block px-2 py-0.5 text-[10px] md:text-xs font-medium rounded-full border ${roleBadgeClasses}">${roleDisplay}</span>
-                                <span class="inline-block px-2 py-0.5 text-[10px] md:text-xs font-medium rounded-full bg-emerald-500 text-white">Connected</span>
+                            <h1 class="text-base md:text-xl font-bold text-zinc-900 truncate">${escapeHtml(di.name)}</h1>
+                            <div class="flex flex-wrap items-center mt-1 gap-1.5 md:gap-2">
+                                <span class="inline-block px-1.5 py-0.5 text-[9px] md:text-xs font-medium rounded-full border ${roleBadgeClasses}">${roleDisplay}</span>
+                                <span class="inline-block px-1.5 py-0.5 text-[9px] md:text-xs font-medium rounded-full bg-emerald-500 text-white">Connected</span>
                             </div>
                         </div>
-                        <button id="disconnectBtn" class="sm:ml-auto p-2 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors" title="Disconnect Uber Account">
-                            <svg class="w-4 h-4 md:w-5 md:h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button id="disconnectBtn" class="p-1.5 md:p-2 bg-red-50 border border-red-200 rounded-lg md:rounded-xl hover:bg-red-100 transition-colors" title="Disconnect Uber Account">
+                            <svg class="w-3.5 h-3.5 md:w-5 md:h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                             </svg>
                         </button>
                     </div>
                     ${driverStatus ? `
-                    <div class="mt-4 pt-4 border-t border-zinc-100">
-                        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <span class="text-[10px] md:text-xs text-zinc-500 font-medium">Driver Status</span>
-                            <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                    <div class="mt-3 pt-3 border-t border-zinc-100">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                                 <div class="flex items-center ${driverStatus.online ? 'text-emerald-600' : 'text-zinc-400'}">
-                                    <span class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${driverStatus.online ? 'bg-emerald-500' : 'bg-zinc-300'} mr-1.5"></span>
-                                    <span class="text-[10px] md:text-xs font-medium">${driverStatus.online ? 'Online' : 'Offline'}</span>
+                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus.online ? 'bg-emerald-500' : 'bg-zinc-300'} mr-1"></span>
+                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus.online ? 'Online' : 'Offline'}</span>
                                 </div>
-                                <span class="hidden sm:inline text-zinc-300">|</span>
                                 <div class="flex items-center ${driverStatus.available ? 'text-blue-600' : 'text-zinc-400'}">
-                                    <span class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${driverStatus.available ? 'bg-blue-500' : 'bg-zinc-300'} mr-1.5"></span>
-                                    <span class="text-[10px] md:text-xs font-medium">${driverStatus.available ? 'Available' : 'Busy'}</span>
+                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus.available ? 'bg-blue-500' : 'bg-zinc-300'} mr-1"></span>
+                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus.available ? 'Available' : 'Busy'}</span>
                                 </div>
-                                <span class="hidden sm:inline text-zinc-300">|</span>
                                 <div class="flex items-center ${driverStatus.dispatchable ? 'text-purple-600' : 'text-zinc-400'}">
-                                    <span class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${driverStatus.dispatchable ? 'bg-purple-500' : 'bg-zinc-300'} mr-1.5"></span>
-                                    <span class="text-[10px] md:text-xs font-medium">${driverStatus.dispatchable ? 'Dispatchable' : 'Not Dispatchable'}</span>
+                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus.dispatchable ? 'bg-purple-500' : 'bg-zinc-300'} mr-1"></span>
+                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus.dispatchable ? 'Dispatchable' : 'No'}</span>
                                 </div>
                             </div>
                         </div>
