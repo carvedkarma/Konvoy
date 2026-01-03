@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - RizTar{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+    <div class="glass-panel p-8 md:p-12 rounded-2xl premium-shadow border border-white/20">
+        <h1 class="text-3xl font-bold text-zinc-900 mb-6">Privacy Policy</h1>
+        <div class="prose prose-zinc max-w-none text-zinc-600 space-y-4">
+            <p>Last updated: January 3, 2026</p>
+            <p>At RizTar, we take your privacy seriously. This policy describes how we collect, use, and handle your information when you use our driver management system.</p>
+            
+            <h2 class="text-xl font-bold text-zinc-800 mt-8">1. Information Collection</h2>
+            <p>We collect information you provide directly to us, such as when you create an account, connect your Uber account, or communicate with us.</p>
+            
+            <h2 class="text-xl font-bold text-zinc-800 mt-8">2. Uber Integration</h2>
+            <p>To provide our services, we securely store encrypted credentials for your Uber driver account. This data is used solely to fetch vehicle and ride information on your behalf.</p>
+            
+            <h2 class="text-xl font-bold text-zinc-800 mt-8">3. Security</h2>
+            <p>We implement enterprise-grade security measures including Fernet encryption and secure session management to protect your data.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

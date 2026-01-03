@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}About Us - RizTar{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+    <div class="glass-panel p-8 md:p-12 rounded-2xl premium-shadow border border-white/20 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-purple-600"></div>
+        
+        <h1 class="text-4xl font-bold text-zinc-900 mb-6">Redefining Driver Management</h1>
+        
+        <div class="mb-8 rounded-xl overflow-hidden shadow-2xl border border-white/20">
+            <img src="{{ url_for('static', filename='generated_images/modern_luxury_fleet_of_black_cars_on_city_street_at_night.png') }}" alt="RizTar Fleet" class="w-full h-auto object-cover">
+        </div>
+
+        <p class="text-lg text-zinc-600 mb-8 leading-relaxed">
+            RizTar is the premium choice for professional drivers who demand excellence, efficiency, and advanced technical integration. Our mission is to empower drivers with the most sophisticated tools available in the industry.
+        </p>
+
+        <div class="grid md:grid-cols-2 gap-8 mt-12">
+            <div class="space-y-4">
+                <h2 class="text-xl font-bold text-zinc-800">Our Vision</h2>
+                <p class="text-zinc-600">To create a seamless, high-tech ecosystem where driver management meets luxury design, making every trip more profitable and efficient.</p>
+            </div>
+            <div class="space-y-4">
+                <h2 class="text-xl font-bold text-zinc-800">Why RizTar?</h2>
+                <ul class="space-y-2 text-zinc-600">
+                    <li class="flex items-start gap-2">
+                        <svg class="w-5 h-5 text-blue-500 mt-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        Professional Management Tools
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-5 h-5 text-blue-500 mt-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        Premium Glassmorphism Interface
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <svg class="w-5 h-5 text-blue-500 mt-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        Enterprise-Grade Security
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
