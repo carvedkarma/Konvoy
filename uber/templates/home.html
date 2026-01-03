@@ -1086,7 +1086,7 @@ fetch('/api/home-data')
                     // Fetch nearby drivers initially
                     fetchNearbyDrivers(userLat, userLng, false);
                     
-                    // Auto-refresh every 19 seconds
+                    // Auto-refresh every 10 seconds
                     nearbyRefreshInterval = setInterval(() => {
                         // Update location each refresh for accuracy
                         navigator.geolocation.getCurrentPosition(
@@ -1103,7 +1103,7 @@ fetch('/api/home-data')
                             },
                             { enableHighAccuracy: true, timeout: 5000 }
                         );
-                    }, 19000);
+                    }, 10000);
                 },
                 (error) => {
                     if (nearbyCountEl) {
