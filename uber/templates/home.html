@@ -1202,7 +1202,7 @@ const uberConnected = {{ 'true' if current_user.uber_connected else 'false' }};
 function refreshActiveRide() {
     if (!uberConnected || document.hidden) return;
     
-    fetch('/api/active-ride')
+    fetch('/api/ride-data')
         .then(r => r.json())
         .then(data => {
             const activeRide = data.active_ride;

@@ -504,7 +504,6 @@ def test_push_notification():
 
 
 @app.route('/api/ride-data')
-@app.route('/api/active-ride')
 @login_required
 def ride_data_api():
     if not current_user.uber_connected:
