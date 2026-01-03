@@ -606,6 +606,19 @@ def register():
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
+        
+        # Send welcome email
+        try:
+            from replitmail import send_email
+            send_email(
+                to=user.email,
+                subject=f"Welcome to RizTar, {user.first_name}!",
+                body=f"Hi {user.first_name},\n\nWelcome to RizTar, the premium driver management system. We're excited to have you on board!\n\nBest regards,\nThe RizTar Team"
+            )
+            print(f"Welcome email sent to {user.email}", flush=True)
+        except Exception as e:
+            print(f"Failed to send welcome email: {e}", flush=True)
+
         flash('Account created successfully! Please sign in.', 'success')
         return redirect(url_for('login'))
 
