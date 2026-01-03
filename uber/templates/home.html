@@ -833,6 +833,15 @@ fetch('/api/home-data')
             pipBtn.addEventListener('click', async () => {
                 if (pipActive) return;
                 
+                // Detection for iOS/Safari specific issues
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                
+                if (isIOS) {
+                    alert('Floating View is currently not supported on iOS due to Apple/Safari technical restrictions with canvas streaming. Please use a desktop browser (Chrome, Edge, or Safari on Mac) for this feature.');
+                    return;
+                }
+                
                 // Check if running in an iframe (PiP doesn't work in iframes)
                 const isInIframe = window.self !== window.top;
                 if (isInIframe) {
@@ -841,7 +850,10 @@ fetch('/api/home-data')
                 }
                 
                 // Check if PiP is supported
-                if (!document.pictureInPictureEnabled) {
+                const supportsStandardPiP = document.pictureInPictureEnabled;
+                const supportsWebkitPiP = HTMLVideoElement.prototype.webkitSetPresentationMode !== undefined;
+                
+                if (!supportsStandardPiP && !supportsWebkitPiP) {
                     alert('Floating View is not supported in your browser. Please try Chrome, Edge, or Safari.');
                     return;
                 }
@@ -855,10 +867,14 @@ fetch('/api/home-data')
                     const video = document.createElement('video');
                     video.muted = true;
                     video.autoplay = true;
+                    video.playsInline = true; // Important for iOS/Safari
                     video.srcObject = canvas.captureStream();
                     
                     const updateCanvas = () => {
-                        if (!document.pictureInPictureElement) {
+                        const isPiPActive = document.pictureInPictureElement || 
+                                          (video.webkitPresentationMode === 'picture-in-picture');
+                                          
+                        if (!isPiPActive) {
                             pipActive = false;
                             return;
                         }
@@ -911,7 +927,13 @@ fetch('/api/home-data')
                     };
                     
                     await video.play();
-                    await video.requestPictureInPicture();
+                    
+                    if (video.requestPictureInPicture) {
+                        await video.requestPictureInPicture();
+                    } else if (video.webkitSetPresentationMode) {
+                        video.webkitSetPresentationMode('picture-in-picture');
+                    }
+                    
                     pipActive = true;
                     updateCanvas();
                 } catch (err) {
