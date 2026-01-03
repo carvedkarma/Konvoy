@@ -668,6 +668,14 @@ fetch('/api/home-data')
                             <span id="nearby-status" class="ml-2 text-xs text-zinc-400">Waiting</span>
                         </div>
                     </div>
+                    <div id="user-location-info" class="mt-3 pt-3 border-t border-zinc-200">
+                        <p class="text-[10px] font-bold text-zinc-400 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            </svg>
+                            <span id="user-coords">Fetching your location...</span>
+                        </p>
+                    </div>
                 </div>
             `;
         }
@@ -992,11 +1000,19 @@ fetch('/api/home-data')
             const nearbyDotEl = document.getElementById('nearby-dot');
             const nearbySectionEl = document.getElementById('nearby-drivers-section');
             const nearbyStatusEl = document.getElementById('nearby-status');
+            const userCoordsEl = document.getElementById('user-coords');
             
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
+                    
+                    // Display user's current location
+                    if (userCoordsEl) {
+                        userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>`;
+                        userCoordsEl.parentElement.classList.remove('text-zinc-400');
+                        userCoordsEl.parentElement.classList.add('text-blue-600');
+                    }
                     
                     if (nearbyCountEl) nearbyCountEl.textContent = 'Fetching...';
                     
@@ -1037,6 +1053,9 @@ fetch('/api/home-data')
                     }
                     if (nearbyStatusEl) {
                         nearbyStatusEl.textContent = 'Unavailable';
+                    }
+                    if (userCoordsEl) {
+                        userCoordsEl.textContent = 'Location access denied - enable in browser settings';
                     }
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
