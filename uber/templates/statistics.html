@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}RizTar | Statistics{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div>
+            <h1 class="text-xl font-bold text-zinc-900">Analytics Dashboard</h1>
+            <p class="text-sm text-zinc-500">Track activity and growth metrics</p>
+        </div>
+        <a href="{{ url_for('admin') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg text-sm font-medium text-zinc-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to Users
+        </a>
+    </div>
+
+    <div id="loadingState" class="text-center py-16">
+        <div class="w-10 h-10 border-2 border-zinc-200 border-t-zinc-600 rounded-full animate-spin mx-auto mb-4"></div>
+        <p class="text-sm text-zinc-500">Loading statistics...</p>
+    </div>
+
+    <div id="statsContent" class="hidden">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="glass-panel rounded-xl p-5 premium-shadow">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </div>
+                    <span class="text-[10px] font-medium px-2 py-1 bg-blue-50 text-blue-600 rounded-full">Today</span>
+                </div>
+                <p class="text-2xl font-bold text-zinc-900" id="visitsToday">0</p>
+                <p class="text-xs text-zinc-500 mt-1">Page Visits</p>
+            </div>
+
+            <div class="glass-panel rounded-xl p-5 premium-shadow">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </div>
+                    <span class="text-[10px] font-medium px-2 py-1 bg-purple-50 text-purple-600 rounded-full">This Week</span>
+                </div>
+                <p class="text-2xl font-bold text-zinc-900" id="visitsWeek">0</p>
+                <p class="text-xs text-zinc-500 mt-1">Page Visits</p>
+            </div>
+
+            <div class="glass-panel rounded-xl p-5 premium-shadow">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </div>
+                    <span class="text-[10px] font-medium px-2 py-1 bg-emerald-50 text-emerald-600 rounded-full">This Month</span>
+                </div>
+                <p class="text-2xl font-bold text-zinc-900" id="visitsMonth">0</p>
+                <p class="text-xs text-zinc-500 mt-1">Page Visits</p>
+            </div>
+
+            <div class="glass-panel rounded-xl p-5 premium-shadow">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-zinc-600 to-zinc-700 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </div>
+                    <span class="text-[10px] font-medium px-2 py-1 bg-zinc-100 text-zinc-600 rounded-full">All Time</span>
+                </div>
+                <p class="text-2xl font-bold text-zinc-900" id="visitsTotal">0</p>
+                <p class="text-xs text-zinc-500 mt-1">Total Visits</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <div class="glass-panel rounded-xl p-5 premium-shadow">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-zinc-900" id="totalUsers">0</p>
+                <p class="text-sm text-zinc-500 mt-1">Total Users</p>
+                <div class="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-100">
+                    <div>
+                        <p class="text-lg font-semibold text-zinc-900" id="usersToday">0</p>
+                        <p class="text-[10px] text-zinc-400">Today</p>
+                    </div>
+                    <div>
+                        <p class="text-lg font-semibold text-zinc-900" id="usersWeek">0</p>
+                        <p class="text-[10px] text-zinc-400">This Week</p>
+                    </div>
+                    <div>
+                        <p class="text-lg font-semibold text-zinc-900" id="usersMonth">0</p>
+                        <p class="text-[10px] text-zinc-400">This Month</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-xl p-5 premium-shadow">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-zinc-900" id="uberConnected">0</p>
+                <p class="text-sm text-zinc-500 mt-1">Uber Connected</p>
+                <div class="mt-3 pt-3 border-t border-zinc-100">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-zinc-400">Connection Rate</span>
+                        <span class="text-sm font-medium text-zinc-700" id="connectionRate">0%</span>
+                    </div>
+                    <div class="w-full bg-zinc-100 rounded-full h-1.5 mt-2">
+                        <div class="bg-gradient-to-r from-amber-500 to-amber-400 h-1.5 rounded-full transition-all duration-500" id="connectionBar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-xl p-5 premium-shadow">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-rose-500 to-rose-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-bold text-zinc-900" id="growthRate">0%</p>
+                <p class="text-sm text-zinc-500 mt-1">Weekly Growth</p>
+                <div class="mt-3 pt-3 border-t border-zinc-100">
+                    <div class="flex items-center gap-1">
+                        <svg class="w-4 h-4 text-emerald-500" id="growthIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                        <span class="text-xs text-zinc-500" id="growthText">Compared to last week</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="glass-panel rounded-xl p-5 premium-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-zinc-900">Welcome Page Visits</h3>
+                        <p class="text-xs text-zinc-400">Last 30 days</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 bg-blue-500 rounded-full"></span>
+                        <span class="text-xs text-zinc-500">Daily Visits</span>
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="visitsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-xl p-5 premium-shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-zinc-900">New User Signups</h3>
+                        <p class="text-xs text-zinc-400">Last 30 days</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 bg-emerald-500 rounded-full"></span>
+                        <span class="text-xs text-zinc-500">Daily Signups</span>
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="signupsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let visitsChart, signupsChart;
+
+async function loadStatistics() {
+    try {
+        const response = await fetch('/api/statistics');
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error(data.error);
+            return;
+        }
+        
+        document.getElementById('visitsToday').textContent = data.visits.today.toLocaleString();
+        document.getElementById('visitsWeek').textContent = data.visits.week.toLocaleString();
+        document.getElementById('visitsMonth').textContent = data.visits.month.toLocaleString();
+        document.getElementById('visitsTotal').textContent = data.visits.total.toLocaleString();
+        
+        document.getElementById('totalUsers').textContent = data.users.total.toLocaleString();
+        document.getElementById('usersToday').textContent = data.users.today.toLocaleString();
+        document.getElementById('usersWeek').textContent = data.users.week.toLocaleString();
+        document.getElementById('usersMonth').textContent = data.users.month.toLocaleString();
+        
+        document.getElementById('uberConnected').textContent = data.uber_connected.toLocaleString();
+        
+        const connectionRate = data.users.total > 0 ? Math.round((data.uber_connected / data.users.total) * 100) : 0;
+        document.getElementById('connectionRate').textContent = connectionRate + '%';
+        document.getElementById('connectionBar').style.width = connectionRate + '%';
+        
+        const lastWeekVisits = data.daily_visits.slice(-14, -7).reduce((sum, d) => sum + d.count, 0);
+        const thisWeekVisits = data.daily_visits.slice(-7).reduce((sum, d) => sum + d.count, 0);
+        let growthRate = 0;
+        if (lastWeekVisits > 0) {
+            growthRate = Math.round(((thisWeekVisits - lastWeekVisits) / lastWeekVisits) * 100);
+        } else if (thisWeekVisits > 0) {
+            growthRate = 100;
+        }
+        document.getElementById('growthRate').textContent = (growthRate >= 0 ? '+' : '') + growthRate + '%';
+        
+        const labels = data.daily_visits.map(d => d.date);
+        const visitCounts = data.daily_visits.map(d => d.count);
+        const signupCounts = data.daily_signups.map(d => d.count);
+        
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { 
+                        font: { size: 10 },
+                        color: '#a1a1aa',
+                        maxTicksLimit: 7
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f4f4f5' },
+                    ticks: { 
+                        font: { size: 10 },
+                        color: '#a1a1aa',
+                        stepSize: 1
+                    }
+                }
+            },
+            elements: {
+                line: { tension: 0.4 },
+                point: { radius: 0, hoverRadius: 4 }
+            }
+        };
+        
+        const visitsCtx = document.getElementById('visitsChart').getContext('2d');
+        visitsChart = new Chart(visitsCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: visitCounts,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    borderWidth: 2
+                }]
+            },
+            options: chartOptions
+        });
+        
+        const signupsCtx = document.getElementById('signupsChart').getContext('2d');
+        signupsChart = new Chart(signupsCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: signupCounts,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    borderWidth: 2
+                }]
+            },
+            options: chartOptions
+        });
+        
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('statsContent').classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadStatistics);
+</script>
+{% endblock %}
