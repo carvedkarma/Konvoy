@@ -63,6 +63,7 @@
                         <div class="dropdown-menu absolute top-full left-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-zinc-100 py-1">
                             <a href="{{ url_for('admin') }}" class="block px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50">Users</a>
                             <a href="{{ url_for('roles') }}" class="block px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50">Roles</a>
+                            <a href="{{ url_for('admin_statistics') }}" class="block px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50">Statistics</a>
                         </div>
                     </div>
                     {% endif %}
@@ -114,6 +115,7 @@
                     {% if current_user.is_owner() %}
                     <a href="{{ url_for('admin') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Users</a>
                     <a href="{{ url_for('roles') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Roles</a>
+                    <a href="{{ url_for('admin_statistics') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Statistics</a>
                     {% endif %}
                 </div>
             </div>
