@@ -742,6 +742,84 @@ def admin():
     return render_template('admin.html', users=users, roles=roles)
 
 
+@app.route('/admin/statistics')
+@login_required
+def admin_statistics():
+    if not current_user.can_manage_users():
+        flash('Access denied. Owner privileges required.', 'error')
+        return redirect(url_for('root'))
+    return render_template('statistics.html')
+
+
+@app.route('/api/statistics')
+@login_required
+def api_statistics():
+    if not current_user.can_manage_users():
+        return jsonify(error='Access denied'), 403
+    
+    from sqlalchemy import func
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    month_start = today_start.replace(day=1)
+    
+    # Page visits
+    visits_today = PageVisit.query.filter(PageVisit.visited_at >= today_start).count()
+    visits_week = PageVisit.query.filter(PageVisit.visited_at >= week_start).count()
+    visits_month = PageVisit.query.filter(PageVisit.visited_at >= month_start).count()
+    visits_total = PageVisit.query.count()
+    
+    # User stats
+    total_users = User.query.count()
+    users_today = User.query.filter(User.created_at >= today_start).count()
+    users_week = User.query.filter(User.created_at >= week_start).count()
+    users_month = User.query.filter(User.created_at >= month_start).count()
+    
+    # Uber connected
+    uber_connected = User.query.filter(User.uber_connected == True).count()
+    
+    # Daily visits for last 30 days (for chart)
+    daily_visits = []
+    daily_signups = []
+    for i in range(29, -1, -1):
+        day_start = (today_start - timedelta(days=i))
+        day_end = day_start + timedelta(days=1)
+        count = PageVisit.query.filter(
+            PageVisit.visited_at >= day_start,
+            PageVisit.visited_at < day_end
+        ).count()
+        signup_count = User.query.filter(
+            User.created_at >= day_start,
+            User.created_at < day_end
+        ).count()
+        daily_visits.append({
+            'date': day_start.strftime('%b %d'),
+            'count': count
+        })
+        daily_signups.append({
+            'date': day_start.strftime('%b %d'),
+            'count': signup_count
+        })
+    
+    return jsonify(
+        visits={
+            'today': visits_today,
+            'week': visits_week,
+            'month': visits_month,
+            'total': visits_total
+        },
+        users={
+            'total': total_users,
+            'today': users_today,
+            'week': users_week,
+            'month': users_month
+        },
+        uber_connected=uber_connected,
+        daily_visits=daily_visits,
+        daily_signups=daily_signups
+    )
+
+
 @app.route('/admin/update-roles/<int:user_id>', methods=['POST'])
 @login_required
 def update_roles(user_id):
