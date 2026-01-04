@@ -14,7 +14,7 @@ try:
     from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour, uberRidersNearby
     import config
     import cache
-    from models import db, User, Role, ChatMessage, PushSubscription, create_default_roles, encrypt_data, decrypt_data
+    from models import db, User, Role, ChatMessage, PushSubscription, PageVisit, create_default_roles, encrypt_data, decrypt_data
     from forms import LoginForm, RegisterForm, RoleForm, ProfileForm, ChangePasswordForm, ForgotPasswordForm, ResetPasswordForm, UberConnectForm, UberDisconnectForm, EmptyForm
     from pywebpush import webpush, WebPushException
     import secrets
@@ -178,6 +178,20 @@ def root():
 def landing():
     if current_user.is_authenticated:
         return redirect(url_for('root'))
+    
+    # Track page visit
+    try:
+        visit = PageVisit(
+            page='welcome',
+            ip_address=request.remote_addr,
+            user_agent=request.user_agent.string[:500] if request.user_agent.string else None,
+            referrer=request.referrer[:500] if request.referrer else None
+        )
+        db.session.add(visit)
+        db.session.commit()
+    except Exception as e:
+        print(f"Error tracking page visit: {e}", flush=True)
+    
     return render_template('landing.html')
 
 
