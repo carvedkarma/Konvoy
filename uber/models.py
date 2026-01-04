@@ -295,6 +295,20 @@ class PushSubscription(db.Model):
         return f'<PushSubscription {self.id} for user {self.user_id}>'
 
 
+class PageVisit(db.Model):
+    __tablename__ = 'page_visits'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    page = db.Column(db.String(100), nullable=False, index=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+    user_agent = db.Column(db.Text, nullable=True)
+    referrer = db.Column(db.Text, nullable=True)
+    visited_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    def __repr__(self):
+        return f'<PageVisit {self.page} at {self.visited_at}>'
+
+
 def create_default_roles():
     default_roles = [
         {
