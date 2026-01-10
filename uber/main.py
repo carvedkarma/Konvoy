@@ -2078,10 +2078,17 @@ def admin_broadcast():
             
             all_users = User.query.all()
             total_sent = 0
+            
+            # Use a separate block for imports to be safe
+            from replitmail import Mail
+            mail_client = Mail()
+            
+            print(f"DEBUG: Starting broadcast to {len(all_users)} users", flush=True)
             for user in all_users:
                 # First try push notification with plain text
+                sent_push = False
                 try:
-                    sent_push = send_push_notification(
+                    sent_push_count = send_push_notification(
                         user.id, 
                         title, 
                         clean_text,
@@ -2089,23 +2096,29 @@ def admin_broadcast():
                         tag='broadcast',
                         require_interaction=True
                     )
+                    if sent_push_count and sent_push_count > 0:
+                        sent_push = True
+                        print(f"DEBUG: Push sent to {user.email}", flush=True)
                 except Exception as e:
-                    sent_push = 0
+                    print(f"DEBUG: Push failed for {user.email}: {e}", flush=True)
                 
-                # Also send email with plain text (Mail only supports plain text)
+                # Also send email with plain text
+                sent_email = False
                 try:
-                    from replitmail import Mail
-                    mail = Mail()
-                    mail.send(
+                    mail_client.send(
                         user.email,
                         title,
                         clean_text
                     )
-                    total_sent += 1
+                    sent_email = True
+                    print(f"DEBUG: Email sent to {user.email}", flush=True)
                 except Exception as e:
-                    if sent_push > 0:
-                        total_sent += 1
+                    print(f"DEBUG: Email failed for {user.email}: {e}", flush=True)
+                
+                if sent_push or sent_email:
+                    total_sent += 1
             
+            print(f"DEBUG: Broadcast finished. Total sent: {total_sent}", flush=True)
             flash(f'Broadcast sent to {total_sent} users via push and/or email.', 'success')
             return redirect(url_for('admin_broadcast'))
             
