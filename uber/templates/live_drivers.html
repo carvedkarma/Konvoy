@@ -197,7 +197,7 @@
         </div>
         <div id="drivers-map"></div>
         <p id="map-status" class="text-xs text-zinc-400 mt-3 text-center"></p>
-        <p class="text-xs text-zinc-400 mt-2 text-center">Drivers within 100m are counted as one. Data resets after 3 minutes of inactivity per driver.</p>
+        <p class="text-xs text-zinc-400 mt-2 text-center">Scanning 2km radius. 40 samples per scan. Drivers within 100m are counted as one.</p>
     </div>
 </div>
 {% endblock %}
@@ -213,8 +213,10 @@
     let userLocation = { lat: -31.9505, lng: 115.8605 };
     let samplePoints = [];
     let currentPointIndex = 0;
+    let totalSamplesCollected = 0;
+    const MAX_SAMPLES = 40;
     
-    function generateSamplePoints(centerLat, centerLng, radiusKm = 1) {
+    function generateSamplePoints(centerLat, centerLng, radiusKm = 2) {
         const offset = radiusKm / 111;
         return [
             { lat: centerLat, lng: centerLng },
@@ -299,11 +301,14 @@
         const scanningStatus = document.getElementById('scanning-status');
         
         if (isScanning) {
+            // Reset counter when resuming so user gets another 40 samples
+            totalSamplesCollected = 0;
             toggleBtn.classList.remove('bg-zinc-600');
             toggleBtn.classList.add('bg-emerald-600');
             toggleIcon.textContent = '⏸';
             toggleText.textContent = 'Pause';
             scanningStatus.innerHTML = '<span class="scanning-dot"></span><span class="scanning-dot"></span><span class="scanning-dot"></span><span class="text-sm text-emerald-600 font-medium">Scanning...</span>';
+            document.getElementById('map-status').textContent = '';
             startPolling();
         } else {
             toggleBtn.classList.remove('bg-emerald-600');
@@ -319,6 +324,7 @@
         try {
             await fetch('/api/live-drivers/reset');
             clearMarkers();
+            totalSamplesCollected = 0;
             document.getElementById('total-drivers').textContent = '0';
             document.getElementById('count-uberx').textContent = '0';
             document.getElementById('count-comfort').textContent = '0';
@@ -350,8 +356,16 @@
     async function fetchDrivers() {
         if (!isScanning) return;
         
+        // Check if we've reached the sample limit
+        if (totalSamplesCollected >= MAX_SAMPLES) {
+            toggleScanning();
+            document.getElementById('map-status').textContent = `Scan complete: ${MAX_SAMPLES} samples collected. Press Resume to continue.`;
+            return;
+        }
+        
         const point = samplePoints[currentPointIndex];
         currentPointIndex = (currentPointIndex + 1) % samplePoints.length;
+        totalSamplesCollected++;
         
         try {
             const response = await fetch(`/api/live-drivers?lat=${point.lat}&lng=${point.lng}`);
