@@ -354,7 +354,7 @@
     </div>
 </div>
 
-<form id="disconnectForm" method="POST" action="{{ url_for('disconnect_uber') }}" class="hidden">
+<form id="disconnectForm" method="POST" action="{{ url_for('uber_disconnect') }}" class="hidden">
     {{ disconnect_form.csrf_token if disconnect_form else '' }}
 </form>
 {% endblock %}
