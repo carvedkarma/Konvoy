@@ -7,13 +7,18 @@
 <style>
     #map {
         height: 550px;
+        width: 100%;
         border-radius: 16px;
         z-index: 1;
         border: 1px solid rgba(0, 0, 0, 0.1);
+        background: #e5e7eb;
     }
     .leaflet-container {
-        background: #e5e7eb;
+        background: #e5e7eb !important;
         font-family: 'Inter', sans-serif;
+    }
+    .leaflet-tile-pane {
+        opacity: 1 !important;
     }
     .hotspot-marker {
         border-radius: 50%;
@@ -304,9 +309,10 @@ async function searchLocation(query) {
 function initMap() {
     map = L.map('map').setView([31.5204, 74.3587], 12);
     
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
-        maxZoom: 19
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
     }).addTo(map);
     
     const now = new Date();
