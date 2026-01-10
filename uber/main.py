@@ -2079,9 +2079,8 @@ def admin_broadcast():
             all_users = User.query.all()
             total_sent = 0
             
-            # Use a separate block for imports to be safe
-            from replitmail import Mail
-            mail_client = Mail()
+            # Import local replitmail module
+            from replitmail import send_email
             
             print(f"DEBUG: Starting broadcast to {len(all_users)} users", flush=True)
             for user in all_users:
@@ -2105,10 +2104,10 @@ def admin_broadcast():
                 # Also send email with plain text
                 sent_email = False
                 try:
-                    mail_client.send(
-                        user.email,
-                        title,
-                        clean_text
+                    send_email(
+                        to=user.email,
+                        subject=title,
+                        body=clean_text
                     )
                     sent_email = True
                     print(f"DEBUG: Email sent to {user.email}", flush=True)
