@@ -1712,9 +1712,10 @@ def location_data():
 
 
 @app.route('/hotspots')
+@app.route('/demand')
 @login_required
-def hotspots():
-    return render_template('hotspots.html')
+def demand_intel():
+    return render_template('demand_intel.html')
 
 
 @app.route('/api/hotspots')
@@ -2423,13 +2424,13 @@ def api_events():
 @app.route('/events')
 @login_required
 def events_page():
-    return render_template('events.html')
+    return redirect(url_for('demand_intel'))
 
 
 @app.route('/surge-map')
 @login_required
 def surge_map_page():
-    return render_template('surge_map.html')
+    return redirect(url_for('demand_intel'))
 
 
 @app.route('/smart-route')

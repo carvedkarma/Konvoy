@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block title %}Demand Intelligence - RizTar{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #hotspots-map, #surge-map {
+        height: 500px;
+        width: 100%;
+        border-radius: 16px;
+        z-index: 1;
+    }
+    .leaflet-container { background: #f1f5f9 !important; font-family: 'Inter', sans-serif; }
+    .leaflet-tile { filter: saturate(0.85) contrast(1.05); }
+    .leaflet-bar { border: none !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; border-radius: 12px !important; overflow: hidden; }
+    .leaflet-bar a { background-color: rgba(255, 255, 255, 0.95) !important; backdrop-filter: blur(8px); color: #1f2937 !important; border: none !important; width: 36px !important; height: 36px !important; line-height: 36px !important; }
+    .leaflet-popup-content-wrapper { border-radius: 16px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); padding: 0; }
+    .leaflet-popup-content { margin: 0; }
+    .hotspot-marker { border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s ease; }
+    .demand-high { background: linear-gradient(135deg, #f43f5e, #e11d48); box-shadow: 0 0 20px rgba(225, 29, 72, 0.5); }
+    .demand-medium { background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+    .demand-low { background: linear-gradient(135deg, #34d399, #10b981); box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .pulse-animation { animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.85; } 100% { transform: scale(1); opacity: 1; } }
+    .user-location-marker { width: 16px; height: 16px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3), 0 2px 8px rgba(0,0,0,0.3); }
+    .surge-zone-marker { border-radius: 50%; border: 2px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 12px; transition: all 0.3s ease; }
+    .surge-zone-marker:hover { transform: scale(1.1); z-index: 1000; }
+    .skeleton { background: linear-gradient(90deg, #f4f4f5 25%, #e4e4e7 50%, #f4f4f5 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; }
+    @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .tab-btn { transition: all 0.2s ease; }
+    .tab-btn.active { background: linear-gradient(135deg, #18181b, #27272a); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .event-card { transition: all 0.2s ease; }
+    .event-card:hover { transform: translateY(-2px); }
+    .hotspot-card { transition: all 0.2s ease; }
+    .hotspot-card:hover { transform: translateX(4px); }
+    .peak-badge { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; text-transform: uppercase; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-zinc-900 mb-2">Demand Intelligence</h1>
+        <p class="text-zinc-500">Real-time insights on hotspots, surge pricing, and events</p>
+    </div>
+
+    <div class="flex gap-2 mb-6 bg-zinc-100 p-1 rounded-xl w-fit">
+        <button class="tab-btn active px-4 py-2 rounded-lg text-sm font-semibold" data-tab="hotspots">Hotspots</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-zinc-600 hover:text-zinc-900" data-tab="surge">Surge Map</button>
+        <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold text-zinc-600 hover:text-zinc-900" data-tab="events">Events</button>
+    </div>
+
+    <div id="hotspots-tab" class="tab-content active">
+        <div class="grid lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <div class="glass-panel rounded-2xl p-6 premium-shadow">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-lg font-bold text-zinc-900">Live Hotspot Map</h2>
+                            <span id="last-updated" class="text-xs text-zinc-400"></span>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs">
+                            <div class="flex items-center gap-1.5"><span class="legend-dot demand-high"></span><span class="text-zinc-600">High</span></div>
+                            <div class="flex items-center gap-1.5"><span class="legend-dot demand-medium"></span><span class="text-zinc-600">Medium</span></div>
+                            <div class="flex items-center gap-1.5"><span class="legend-dot demand-low"></span><span class="text-zinc-600">Low</span></div>
+                        </div>
+                    </div>
+                    <div id="hotspots-map"></div>
+                    <p id="location-status" class="text-xs text-zinc-400 mt-2 text-center"></p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="glass-panel rounded-2xl p-6 premium-shadow">
+                    <h3 class="text-lg font-bold text-zinc-900 mb-4">Current Conditions</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-500">Time Period</span>
+                            <span id="time-period" class="text-sm font-semibold text-zinc-900"><span class="skeleton h-4 w-24 inline-block rounded"></span></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-500">Weather</span>
+                            <span id="weather-info" class="text-sm font-semibold text-zinc-900"><span class="skeleton h-4 w-28 inline-block rounded"></span></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-500">Overall Demand</span>
+                            <span id="overall-demand" class="px-2 py-0.5 text-xs font-bold rounded-full skeleton h-5 w-16"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-500">Flights (1hr)</span>
+                            <span id="flights-info" class="text-sm font-semibold text-zinc-900"><span class="skeleton h-4 w-20 inline-block rounded"></span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 premium-shadow">
+                    <h3 class="text-lg font-bold text-zinc-900 mb-4">Top Hotspots Now</h3>
+                    <div id="top-hotspots" class="space-y-3">
+                        <div class="skeleton h-14 rounded-lg"></div>
+                        <div class="skeleton h-14 rounded-lg"></div>
+                        <div class="skeleton h-14 rounded-lg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="surge-tab" class="tab-content">
+        <div class="grid lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 relative">
+                <div class="glass-panel rounded-2xl overflow-hidden premium-shadow" id="surge-map-container">
+                    <div id="surge-map"></div>
+                    <div class="absolute bottom-4 left-4 z-[10] bg-white/90 backdrop-blur p-3 rounded-xl shadow-lg border border-zinc-200/50 text-xs flex flex-col gap-2">
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#ef4444]"></span> High (>2.0x)</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#f59e0b]"></span> Medium (1.5x-2.0x)</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#22c55e]"></span> Normal (1.0x-1.4x)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="glass-panel rounded-2xl p-6 premium-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-zinc-900">City Average</h3>
+                        <div class="text-right">
+                            <p id="avg-surge-val" class="text-2xl font-bold text-zinc-900">--</p>
+                            <span id="surge-level-badge" class="px-2 py-0.5 rounded-full text-xs font-bold">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 premium-shadow">
+                    <h3 class="text-lg font-bold text-zinc-900 mb-4">Highest Surge Areas</h3>
+                    <div id="surge-list" class="space-y-3">
+                        <div class="skeleton h-12 rounded-lg"></div>
+                        <div class="skeleton h-12 rounded-lg"></div>
+                        <div class="skeleton h-12 rounded-lg"></div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 premium-shadow bg-gradient-to-br from-zinc-900 to-zinc-800 text-white">
+                    <h3 class="text-lg font-bold mb-2">Strategy Tip</h3>
+                    <p id="strategy-tip" class="text-zinc-300 text-sm">Analyzing patterns...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="events-tab" class="tab-content">
+        <div class="grid lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <div class="glass-panel rounded-2xl p-6 premium-shadow">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-bold text-zinc-900">Upcoming Events</h2>
+                        <span id="event-count" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">Loading...</span>
+                    </div>
+                    <div id="events-list" class="space-y-4">
+                        <div class="skeleton h-24 rounded-xl"></div>
+                        <div class="skeleton h-24 rounded-xl"></div>
+                        <div class="skeleton h-24 rounded-xl"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="glass-panel rounded-2xl p-6 premium-shadow">
+                    <h3 class="text-lg font-bold text-zinc-900 mb-4">Key Venues</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">OS</div>
+                            <div>
+                                <p class="font-semibold text-zinc-900">Optus Stadium</p>
+                                <p class="text-xs text-zinc-500">60,000 capacity</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold">RA</div>
+                            <div>
+                                <p class="font-semibold text-zinc-900">RAC Arena</p>
+                                <p class="text-xs text-zinc-500">15,500 capacity</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-zinc-50 rounded-lg">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-bold">CP</div>
+                            <div>
+                                <p class="font-semibold text-zinc-900">Crown Perth</p>
+                                <p class="text-xs text-zinc-500">Theatre & Events</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-6 premium-shadow">
+                    <h3 class="text-lg font-bold text-zinc-900 mb-4">Demand Boost Tips</h3>
+                    <div class="space-y-3 text-sm text-zinc-600">
+                        <p class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Position near venues 30-60 mins before events
+                        </p>
+                        <p class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Post-event surge typically lasts 45-90 mins
+                        </p>
+                        <p class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Weekend concerts = highest surge multipliers
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let hotspotsMap, surgeMap;
+let hotspotMarkers = [], surgeMarkers = [];
+let userMarker = null;
+let userLat = null, userLng = null;
+let mapsInitialized = { hotspots: false, surge: false };
+
+function getDemandClass(level) {
+    if (level === 'high') return 'demand-high';
+    if (level === 'medium') return 'demand-medium';
+    return 'demand-low';
+}
+
+function createHotspotMarker(hotspot) {
+    const size = 22 + (hotspot.demand * 6);
+    const hasFlights = hotspot.flightsNearby && hotspot.flightsNearby > 0;
+    const hasEvent = hotspot.eventBoost && hotspot.eventBoost > 1.0;
+    const shouldPulse = hotspot.isPeak || hasFlights || hasEvent;
+    
+    let badgeHtml = '';
+    if (hasFlights) {
+        badgeHtml = '<span style="position:absolute;top:-8px;right:-8px;background:#3b82f6;color:white;font-size:9px;font-weight:bold;padding:2px 4px;border-radius:8px;">✈ ' + hotspot.flightsNearby + '</span>';
+    } else if (hasEvent) {
+        badgeHtml = '<span style="position:absolute;top:-8px;right:-8px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;font-size:9px;font-weight:bold;padding:2px 4px;border-radius:8px;">🎫</span>';
+    }
+    
+    const icon = L.divIcon({
+        className: '',
+        html: `<div class="hotspot-marker ${getDemandClass(hotspot.level)} ${shouldPulse ? 'pulse-animation' : ''}" style="width:${size}px;height:${size}px;">${badgeHtml}</div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+    });
+    
+    const marker = L.marker([hotspot.lat, hotspot.lng], { icon });
+    marker.bindPopup(`
+        <div style="padding:12px;min-width:200px;">
+            <h3 style="font-weight:bold;font-size:14px;margin:0 0 4px 0;">${hotspot.name}</h3>
+            <p style="color:#666;font-size:12px;margin:0 0 8px 0;">${hotspot.type}</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;color:${hotspot.color};">${hotspot.level.charAt(0).toUpperCase() + hotspot.level.slice(1)}</span>
+                <span style="font-weight:bold;font-size:16px;">${hotspot.demand.toFixed(1)}x</span>
+            </div>
+        </div>
+    `);
+    return marker;
+}
+
+function initHotspotsMap() {
+    if (mapsInitialized.hotspots) return;
+    hotspotsMap = L.map('hotspots-map').setView([-31.9505, 115.8605], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd', maxZoom: 20
+    }).addTo(hotspotsMap);
+    mapsInitialized.hotspots = true;
+    setTimeout(() => { hotspotsMap.invalidateSize(); getUserLocation(); }, 100);
+}
+
+function initSurgeMap() {
+    if (mapsInitialized.surge) return;
+    surgeMap = L.map('surge-map').setView([-31.9505, 115.8605], 11);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd', maxZoom: 20
+    }).addTo(surgeMap);
+    mapsInitialized.surge = true;
+    setTimeout(() => { surgeMap.invalidateSize(); loadSurgeData(); }, 100);
+}
+
+function getUserLocation() {
+    const statusEl = document.getElementById('location-status');
+    if (!navigator.geolocation) { statusEl.textContent = 'Geolocation not supported'; fetchHotspots(); return; }
+    statusEl.textContent = 'Getting your location...';
+    navigator.geolocation.getCurrentPosition(
+        (pos) => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; setUserLocation(userLat, userLng); statusEl.textContent = 'Showing hotspots near you'; },
+        () => { statusEl.textContent = 'Showing all hotspots'; fetchHotspots(); },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+function setUserLocation(lat, lng) {
+    if (userMarker) hotspotsMap.removeLayer(userMarker);
+    const icon = L.divIcon({ className: '', html: '<div class="user-location-marker"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+    userMarker = L.marker([lat, lng], { icon }).addTo(hotspotsMap);
+    hotspotsMap.setView([lat, lng], 13);
+    fetchHotspots();
+}
+
+async function fetchHotspots() {
+    try {
+        let url = '/api/hotspots';
+        if (userLat !== null) url += `?lat=${userLat}&lng=${userLng}&max_distance=200`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.success) updateHotspotsUI(data);
+    } catch (e) { console.error('Error fetching hotspots:', e); }
+}
+
+function updateHotspotsUI(data) {
+    hotspotMarkers.forEach(m => hotspotsMap.removeLayer(m));
+    hotspotMarkers = [];
+    data.hotspots.forEach(h => { const m = createHotspotMarker(h); m.addTo(hotspotsMap); hotspotMarkers.push(m); });
+    
+    const analysis = data.analysis;
+    document.getElementById('time-period').textContent = analysis.timePeriod;
+    
+    const weatherEl = document.getElementById('weather-info');
+    if (analysis.weather) {
+        const boost = analysis.weatherMultiplier > 1.1 ? ` (+${Math.round((analysis.weatherMultiplier - 1) * 100)}%)` : '';
+        weatherEl.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs">${analysis.weather}${boost}</span>`;
+    } else { weatherEl.textContent = 'Checking...'; }
+    
+    const overallEl = document.getElementById('overall-demand');
+    const levelLabels = { high: 'High Demand', medium: 'Medium', low: 'Low' };
+    const levelClasses = { high: 'bg-red-100 text-red-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-green-100 text-green-700' };
+    overallEl.textContent = levelLabels[analysis.overallLevel] || 'Unknown';
+    overallEl.className = `px-2 py-0.5 text-xs font-bold rounded-full ${levelClasses[analysis.overallLevel] || 'bg-zinc-100 text-zinc-700'}`;
+    
+    const flightsEl = document.getElementById('flights-info');
+    if (analysis.flightsNextHour > 0) {
+        flightsEl.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">✈ ${analysis.flightsNextHour} flights</span>`;
+    } else { flightsEl.innerHTML = '<span class="text-zinc-400 text-xs">No flights soon</span>'; }
+    
+    const topHotspotsEl = document.getElementById('top-hotspots');
+    topHotspotsEl.innerHTML = data.hotspots.slice(0, 5).map(h => `
+        <div class="hotspot-card flex items-center justify-between p-3 bg-zinc-50 rounded-lg cursor-pointer hover:bg-zinc-100" onclick="hotspotsMap.setView([${h.lat}, ${h.lng}], 15)">
+            <div>
+                <p class="text-sm font-semibold text-zinc-900">${h.name}</p>
+                <p class="text-xs text-zinc-500 capitalize">${h.type}</p>
+            </div>
+            <span class="px-2 py-1 text-xs font-bold rounded-full ${levelClasses[h.level]}">${h.demand.toFixed(1)}x</span>
+        </div>
+    `).join('');
+    
+    document.getElementById('last-updated').textContent = `Updated ${analysis.updated || 'now'}`;
+}
+
+async function loadSurgeData() {
+    try {
+        const response = await fetch('/api/surge-map');
+        const data = await response.json();
+        if (data.success) updateSurgeUI(data);
+    } catch (e) { console.error('Error loading surge:', e); }
+}
+
+function updateSurgeUI(data) {
+    const { zones, overall } = data;
+    document.getElementById('avg-surge-val').textContent = overall.avgSurge.toFixed(1) + 'x';
+    const badge = document.getElementById('surge-level-badge');
+    badge.textContent = overall.level.toUpperCase();
+    badge.className = `px-2 py-0.5 rounded-full text-xs font-bold ${overall.level === 'high' ? 'bg-red-100 text-red-600' : (overall.level === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600')}`;
+    document.getElementById('strategy-tip').textContent = overall.avgSurge > 1.5 ? "High surge active. Focus on peak zones for maximum earnings." : "Market is stable. Use Smart Route for optimal positioning.";
+    
+    const listEl = document.getElementById('surge-list');
+    listEl.innerHTML = zones.slice(0, 5).map(z => `
+        <div class="flex items-center justify-between p-3 bg-zinc-50 rounded-xl border border-zinc-100">
+            <div>
+                <p class="font-bold text-zinc-900 text-sm">${z.name}</p>
+                <p class="text-[10px] text-zinc-500 uppercase font-bold">${z.type}</p>
+            </div>
+            <span class="px-2 py-1 rounded-lg text-xs font-black bg-white shadow-sm border border-zinc-100" style="color:${z.color}">${z.surge}x</span>
+        </div>
+    `).join('');
+    
+    surgeMarkers.forEach(m => surgeMap.removeLayer(m));
+    surgeMarkers = [];
+    zones.forEach(z => {
+        const size = 30 + (z.surge * 5);
+        const icon = L.divIcon({ className: '', html: `<div class="surge-zone-marker" style="width:${size}px;height:${size}px;background:${z.color};">${z.surge}x</div>`, iconSize: [size, size] });
+        const marker = L.marker([z.lat, z.lng], { icon }).addTo(surgeMap);
+        marker.bindPopup(`<b>${z.name}</b><br>Predicted Surge: ${z.surge}x`);
+        surgeMarkers.push(marker);
+    });
+}
+
+async function loadEvents() {
+    try {
+        const response = await fetch('/api/events');
+        const data = await response.json();
+        if (data.success && data.events) {
+            document.getElementById('event-count').textContent = `${data.events.length} events`;
+            const typeColors = { 'sports': 'from-green-500 to-emerald-600', 'music': 'from-purple-500 to-pink-600', 'arts': 'from-blue-500 to-indigo-600', 'other': 'from-zinc-500 to-zinc-600' };
+            const typeIcons = { 'sports': '⚽', 'music': '🎵', 'arts': '🎭', 'other': '📅' };
+            document.getElementById('events-list').innerHTML = data.events.length === 0 ? '<p class="text-center text-zinc-500 py-8">No upcoming events</p>' : data.events.map(event => {
+                const colorClass = typeColors[event.type] || typeColors['other'];
+                const icon = typeIcons[event.type] || typeIcons['other'];
+                return `
+                    <div class="event-card bg-white rounded-xl p-4 border border-zinc-100 shadow-sm hover:shadow-md">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${colorClass} flex items-center justify-center text-white text-xl">${icon}</div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-zinc-900 truncate">${event.name}</h3>
+                                <p class="text-sm text-zinc-500">${event.venue}</p>
+                                <div class="flex items-center gap-3 mt-2 text-xs">
+                                    <span class="px-2 py-1 bg-zinc-100 text-zinc-600 rounded-full">${event.date}</span>
+                                    ${event.time ? `<span class="px-2 py-1 bg-blue-50 text-blue-600 rounded-full">${event.time}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (e) { console.error('Error loading events:', e); }
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        document.getElementById(tab + '-tab').classList.add('active');
+        
+        if (tab === 'hotspots') { initHotspotsMap(); }
+        else if (tab === 'surge') { initSurgeMap(); }
+        else if (tab === 'events') { loadEvents(); }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => { initHotspotsMap(); });
+</script>
+{% endblock %}
