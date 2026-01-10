@@ -2094,10 +2094,16 @@ def admin_broadcast():
                     from replitmail import Mail
                     mail = Mail()
                     # Mail tool handles the recipient and subject
+                    # Clean HTML for push title/body but use full HTML for email
+                    from markupsafe import Markup
+                    import re
+                    clean_text = re.sub('<[^<]+?>', '', message)
+                    
                     mail.send(
                         user.email,
                         title,
-                        message
+                        message,
+                        html=True
                     )
                     total_sent += 1
                 except Exception as e:
