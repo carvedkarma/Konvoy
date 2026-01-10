@@ -181,17 +181,17 @@ def root():
             return '0'
         
         drivers_nearby = {
-            'uberx': current['uberx'],
-            'xl': current['xl'],
-            'black': current['black'],
-            'total': current['total'],
+            'uberx': current.get('uberx', 0),
+            'xl': current.get('xl', 0),
+            'black': current.get('black', 0),
+            'total': current.get('total', 0),
             'changes': {
-                'uberx': calc_change(current['uberx'], previous['uberx']),
-                'xl': calc_change(current['xl'], previous['xl']),
-                'black': calc_change(current['black'], previous['black']),
+                'uberx': calc_change(current.get('uberx', 0), previous.get('uberx', 0)),
+                'xl': calc_change(current.get('xl', 0), previous.get('xl', 0)),
+                'black': calc_change(current.get('black', 0), previous.get('black', 0)),
             },
-            'updated': current['updated'].strftime('%H:%M') if current['updated'] else None,
-            'scanning': homepage_driver_cache['scanning']
+            'updated': current.get('updated').strftime('%H:%M') if current.get('updated') else None,
+            'scanning': homepage_driver_cache.get('scanning', False)
         }
         
         return render_template('home.html',
