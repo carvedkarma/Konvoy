@@ -63,12 +63,19 @@ Preferred communication style: Simple, everyday language.
     - Speed-based distance: max 30m/s (108km/h) × elapsed time
     - Bearing alignment: driver must be moving in same direction (within 30°)
     - Movement alignment: new position must be along expected trajectory (within 45°)
-  - **5 sample points**: Polls center + N/S/E/W within 1km radius of user location
+  - **5 sample points**: Polls center + N/S/E/W within 2km radius of user location
   - **3-second polling**: Rotates through sample points for broader coverage
+  - **40 sample limit**: Auto-pauses after 40 samples, resume for another scan
   - **3-minute rolling window**: Accumulates unique drivers, older entries expire
   - **Per-user cache**: Each user has separate driver cache, cleared on logout
   - **Geolocation support**: Uses browser location or defaults to Perth CBD
   - Displays product type breakdown (UberX, Comfort, XL, Black) and sample counter
+- **Homepage Drivers Nearby Widget**: Background scan displays driver counts on home page
+  - **Background scanning**: Runs every 5 minutes automatically (40 samples per scan)
+  - **Displayed types**: UberX, XL, Black (excluding Comfort as requested)
+  - **Change indicators**: Shows +/- change compared to previous scan
+  - **Auto-refresh**: Home page updates every 5 minutes without reload
+  - **Link to Live Drivers**: Quick access to full Live Drivers map
 
 ### Uber Account Connection
 - Users can connect their Uber driver accounts via `/uber-connect`

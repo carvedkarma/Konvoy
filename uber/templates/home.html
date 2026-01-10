@@ -282,6 +282,46 @@
             </div>
             {% endif %}
 
+            <div id="drivers-nearby-section" class="pt-3 border-t border-zinc-100">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-zinc-400">Drivers Nearby</p>
+                        <span id="drivers-scanning-badge" class="hidden px-1.5 py-0.5 bg-emerald-100 text-emerald-600 text-[10px] font-semibold rounded-full animate-pulse">Scanning</span>
+                    </div>
+                    <p id="drivers-updated" class="text-[10px] text-zinc-400">--</p>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-lg text-center">
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
+                            <p class="text-xs text-emerald-700 font-medium">UberX</p>
+                        </div>
+                        <p id="hp-uberx-count" class="text-xl font-bold text-emerald-900">--</p>
+                        <p id="hp-uberx-change" class="text-[10px] text-zinc-500 mt-0.5">--</p>
+                    </div>
+                    <div class="p-3 bg-amber-50 border border-amber-100 rounded-lg text-center">
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <div class="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
+                            <p class="text-xs text-amber-700 font-medium">XL</p>
+                        </div>
+                        <p id="hp-xl-count" class="text-xl font-bold text-amber-900">--</p>
+                        <p id="hp-xl-change" class="text-[10px] text-zinc-500 mt-0.5">--</p>
+                    </div>
+                    <div class="p-3 bg-zinc-100 border border-zinc-200 rounded-lg text-center">
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <div class="w-2.5 h-2.5 bg-zinc-900 rounded-full"></div>
+                            <p class="text-xs text-zinc-700 font-medium">Black</p>
+                        </div>
+                        <p id="hp-black-count" class="text-xl font-bold text-zinc-900">--</p>
+                        <p id="hp-black-change" class="text-[10px] text-zinc-500 mt-0.5">--</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('live_drivers_page') }}" class="mt-2 flex items-center justify-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 transition-colors">
+                    <span>View Live Map</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+
             {% if current_user.is_owner() %}
             <div class="pt-3 border-t border-zinc-100">
                 <p class="text-xs text-zinc-400 mb-2">Admin</p>
@@ -1868,6 +1908,61 @@ document.addEventListener('DOMContentLoaded', function() {
     socket.on('chat_cleared', function() {
         updateUnreadBadge(0);
     });
+})();
+</script>
+
+<script>
+(function() {
+    const REFRESH_INTERVAL = 300000;
+    
+    async function fetchDriversNearby() {
+        try {
+            const response = await fetch('/api/homepage-drivers');
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('hp-uberx-count').textContent = data.current.uberx.toLocaleString();
+                document.getElementById('hp-xl-count').textContent = data.current.xl.toLocaleString();
+                document.getElementById('hp-black-count').textContent = data.current.black.toLocaleString();
+                
+                const uberxChange = document.getElementById('hp-uberx-change');
+                const xlChange = document.getElementById('hp-xl-change');
+                const blackChange = document.getElementById('hp-black-change');
+                
+                function formatChange(change) {
+                    if (change.startsWith('+')) {
+                        return `<span class="text-emerald-600">${change}</span>`;
+                    } else if (change.startsWith('-')) {
+                        return `<span class="text-red-500">${change}</span>`;
+                    }
+                    return change;
+                }
+                
+                uberxChange.innerHTML = formatChange(data.changes.uberx);
+                xlChange.innerHTML = formatChange(data.changes.xl);
+                blackChange.innerHTML = formatChange(data.changes.black);
+                
+                const scanningBadge = document.getElementById('drivers-scanning-badge');
+                if (data.scanning) {
+                    scanningBadge.classList.remove('hidden');
+                } else {
+                    scanningBadge.classList.add('hidden');
+                }
+                
+                const updatedEl = document.getElementById('drivers-updated');
+                if (data.updated) {
+                    updatedEl.textContent = `Updated ${data.updated}`;
+                } else {
+                    updatedEl.textContent = 'Scanning...';
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching drivers nearby:', error);
+        }
+    }
+    
+    fetchDriversNearby();
+    setInterval(fetchDriversNearby, REFRESH_INTERVAL);
 })();
 </script>
 {% endblock %}
