@@ -1717,6 +1717,432 @@ def hotspots():
     return render_template('hotspots.html')
 
 
+@app.route('/api/hotspots')
+@login_required
+def api_hotspots():
+    """
+    Advanced hotspot prediction API with:
+    - 30-minute time bins
+    - Location-type specific demand curves
+    - Weather-based multipliers
+    - Day-specific patterns
+    """
+    import requests
+    from datetime import datetime
+    
+    # Get user location if provided
+    user_lat = request.args.get('lat', type=float)
+    user_lng = request.args.get('lng', type=float)
+    max_distance = request.args.get('max_distance', 200, type=float)
+    
+    now = datetime.now()
+    hour = now.hour
+    minute = now.minute
+    day = now.weekday()  # 0=Monday, 6=Sunday
+    
+    # 30-minute time slot (0-47)
+    time_slot = hour * 2 + (1 if minute >= 30 else 0)
+    
+    # Enhanced hotspot data with more precise patterns
+    HOTSPOTS = [
+        {
+            "id": 1,
+            "name": "Allama Iqbal Airport",
+            "lat": 31.5216,
+            "lng": 74.4036,
+            "type": "airport",
+            "baseMultiplier": 1.5,
+            # Flight arrival times: early morning (5-7), morning (9-11), afternoon (14-16), evening (18-22)
+            "peakSlots": [10,11,12,13,14,18,19,20,21,22,23,28,29,30,31,32,36,37,38,39,40,41,42,43,44],
+            "weekendBoost": 1.1,
+            "description": "High demand after flight arrivals"
+        },
+        {
+            "id": 2,
+            "name": "Lahore Railway Station",
+            "lat": 31.5669,
+            "lng": 74.3097,
+            "type": "transit",
+            "baseMultiplier": 1.4,
+            # Train arrival peaks: morning (6-10), evening (17-21)
+            "peakSlots": [12,13,14,15,16,17,18,19,20,34,35,36,37,38,39,40,41,42],
+            "weekendBoost": 0.9,
+            "description": "Surge during train arrivals/departures"
+        },
+        {
+            "id": 3,
+            "name": "Packages Mall",
+            "lat": 31.4697,
+            "lng": 74.2728,
+            "type": "shopping",
+            "baseMultiplier": 1.3,
+            # Shopping peaks: late morning (11-14), evening (18-22)
+            "peakSlots": [22,23,24,25,26,27,28,36,37,38,39,40,41,42,43,44],
+            "weekendBoost": 1.4,
+            "description": "Weekend shopping rush"
+        },
+        {
+            "id": 4,
+            "name": "Emporium Mall",
+            "lat": 31.5082,
+            "lng": 74.3604,
+            "type": "shopping",
+            "baseMultiplier": 1.35,
+            "peakSlots": [22,23,24,25,26,27,28,36,37,38,39,40,41,42,43,44],
+            "weekendBoost": 1.45,
+            "description": "Premium mall with high-value rides"
+        },
+        {
+            "id": 5,
+            "name": "Gulberg Main Boulevard",
+            "lat": 31.5127,
+            "lng": 74.3407,
+            "type": "business",
+            "baseMultiplier": 1.4,
+            # Office hours: morning (8-10), lunch (12-14), evening (17-19)
+            "peakSlots": [16,17,18,19,20,24,25,26,27,28,34,35,36,37,38],
+            "weekendBoost": 0.6,
+            "description": "Corporate area - peak during work hours"
+        },
+        {
+            "id": 6,
+            "name": "Liberty Market",
+            "lat": 31.5082,
+            "lng": 74.3359,
+            "type": "entertainment",
+            "baseMultiplier": 1.4,
+            # Evening and night entertainment
+            "peakSlots": [34,35,36,37,38,39,40,41,42,43,44,45,46,47],
+            "weekendBoost": 1.5,
+            "description": "Nightlife and entertainment hub"
+        },
+        {
+            "id": 7,
+            "name": "DHA Phase 5",
+            "lat": 31.4663,
+            "lng": 74.3957,
+            "type": "residential",
+            "baseMultiplier": 1.2,
+            # Morning commute (7-9), evening return (18-21)
+            "peakSlots": [14,15,16,17,18,36,37,38,39,40,41,42],
+            "weekendBoost": 1.1,
+            "description": "Upscale residential - consistent demand"
+        },
+        {
+            "id": 8,
+            "name": "Johar Town",
+            "lat": 31.4697,
+            "lng": 74.2900,
+            "type": "residential",
+            "baseMultiplier": 1.15,
+            "peakSlots": [14,15,16,17,18,36,37,38,39,40,41,42],
+            "weekendBoost": 1.0,
+            "description": "Middle-class residential area"
+        },
+        {
+            "id": 9,
+            "name": "Model Town",
+            "lat": 31.4823,
+            "lng": 74.3155,
+            "type": "residential",
+            "baseMultiplier": 1.1,
+            "peakSlots": [14,15,16,17,18,36,37,38,39,40,41,42],
+            "weekendBoost": 1.05,
+            "description": "Established residential community"
+        },
+        {
+            "id": 10,
+            "name": "Food Street Gawalmandi",
+            "lat": 31.5827,
+            "lng": 74.3294,
+            "type": "food",
+            "baseMultiplier": 1.35,
+            # Dinner time (19-24)
+            "peakSlots": [38,39,40,41,42,43,44,45,46,47],
+            "weekendBoost": 1.6,
+            "description": "Famous food street - evening crowds"
+        },
+        {
+            "id": 11,
+            "name": "Expo Center",
+            "lat": 31.4721,
+            "lng": 74.3719,
+            "type": "events",
+            "baseMultiplier": 1.0,
+            # Event times vary, moderate during business hours
+            "peakSlots": [18,19,20,21,22,32,33,34,35,36],
+            "weekendBoost": 1.8,
+            "description": "High surge during exhibitions/events"
+        },
+        {
+            "id": 12,
+            "name": "Lahore Fort Area",
+            "lat": 31.5881,
+            "lng": 74.3107,
+            "type": "tourist",
+            "baseMultiplier": 1.2,
+            # Tourist hours (9-18)
+            "peakSlots": [18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36],
+            "weekendBoost": 1.5,
+            "description": "Historical site - tourist traffic"
+        },
+        {
+            "id": 13,
+            "name": "UET University",
+            "lat": 31.5800,
+            "lng": 74.3566,
+            "type": "education",
+            "baseMultiplier": 1.2,
+            # Class times (8-10, 12-14, 16-18)
+            "peakSlots": [16,17,18,19,20,24,25,26,27,28,32,33,34,35,36],
+            "weekendBoost": 0.4,
+            "description": "University - class schedule peaks"
+        },
+        {
+            "id": 14,
+            "name": "LUMS University",
+            "lat": 31.4716,
+            "lng": 74.4074,
+            "type": "education",
+            "baseMultiplier": 1.25,
+            "peakSlots": [16,17,18,19,20,24,25,26,27,28,32,33,34,35,36],
+            "weekendBoost": 0.3,
+            "description": "Premium university - consistent demand"
+        },
+        {
+            "id": 15,
+            "name": "Doctors Hospital",
+            "lat": 31.4946,
+            "lng": 74.3666,
+            "type": "hospital",
+            "baseMultiplier": 1.3,
+            # 24/7 but peaks during visiting hours
+            "peakSlots": [16,17,18,19,20,21,22,34,35,36,37,38,39,40],
+            "weekendBoost": 1.1,
+            "description": "Hospital - emergency & visiting hours"
+        }
+    ]
+    
+    # Time period analysis (more granular 30-min slots)
+    def get_time_period_info(slot):
+        if slot < 10:  # 0:00-5:00
+            return {"name": "Late Night", "multiplier": 0.5, "emoji": ""}
+        elif slot < 14:  # 5:00-7:00
+            return {"name": "Early Morning", "multiplier": 0.9, "emoji": ""}
+        elif slot < 18:  # 7:00-9:00
+            return {"name": "Morning Rush", "multiplier": 1.5, "emoji": ""}
+        elif slot < 24:  # 9:00-12:00
+            return {"name": "Late Morning", "multiplier": 0.85, "emoji": ""}
+        elif slot < 28:  # 12:00-14:00
+            return {"name": "Lunch Time", "multiplier": 1.25, "emoji": ""}
+        elif slot < 34:  # 14:00-17:00
+            return {"name": "Afternoon", "multiplier": 0.75, "emoji": ""}
+        elif slot < 40:  # 17:00-20:00
+            return {"name": "Evening Rush", "multiplier": 1.6, "emoji": ""}
+        elif slot < 46:  # 20:00-23:00
+            return {"name": "Night Life", "multiplier": 1.3, "emoji": ""}
+        else:  # 23:00-24:00
+            return {"name": "Late Night", "multiplier": 0.7, "emoji": ""}
+    
+    def get_day_info(d):
+        days = {
+            0: {"name": "Monday", "multiplier": 1.0, "type": "weekday"},
+            1: {"name": "Tuesday", "multiplier": 1.0, "type": "weekday"},
+            2: {"name": "Wednesday", "multiplier": 1.0, "type": "weekday"},
+            3: {"name": "Thursday", "multiplier": 1.05, "type": "weekday"},
+            4: {"name": "Friday", "multiplier": 1.3, "type": "weekend"},
+            5: {"name": "Saturday", "multiplier": 1.2, "type": "weekend"},
+            6: {"name": "Sunday", "multiplier": 0.9, "type": "weekend"}
+        }
+        return days.get(d, {"name": "Unknown", "multiplier": 1.0, "type": "weekday"})
+    
+    # Weather integration (cached for 30 minutes)
+    weather_data = None
+    weather_multiplier = 1.0
+    weather_description = None
+    
+    try:
+        # Check cache first
+        weather_cache_key = f"weather_{now.strftime('%Y%m%d%H')}"
+        cached_weather = cache.get_cached(0, weather_cache_key)
+        
+        if cached_weather:
+            weather_data = cached_weather
+        else:
+            # Fetch from OpenWeather (free tier)
+            api_key = os.environ.get('OPENWEATHER_API_KEY')
+            if api_key:
+                resp = requests.get(
+                    f"https://api.openweathermap.org/data/2.5/weather?lat=31.5204&lon=74.3587&appid={api_key}&units=metric",
+                    timeout=5
+                )
+                if resp.status_code == 200:
+                    weather_data = resp.json()
+                    cache.set_cached(0, weather_cache_key, weather_data)
+    except Exception as e:
+        print(f"Weather API error: {e}")
+    
+    if weather_data:
+        main = weather_data.get('main', {})
+        weather = weather_data.get('weather', [{}])[0]
+        weather_id = weather.get('id', 800)
+        temp = main.get('temp', 25)
+        
+        weather_description = weather.get('description', '').title()
+        
+        # Rain increases demand significantly
+        if 200 <= weather_id < 600:  # Thunderstorm or Rain
+            weather_multiplier = 1.5
+            weather_description = f"Rainy ({weather_description}) - High Demand"
+        elif 600 <= weather_id < 700:  # Snow
+            weather_multiplier = 1.6
+            weather_description = f"Snow - Very High Demand"
+        elif 700 <= weather_id < 800:  # Fog/Mist
+            weather_multiplier = 1.2
+            weather_description = f"Low Visibility - Moderate Boost"
+        elif temp > 38:  # Extreme heat
+            weather_multiplier = 1.3
+            weather_description = f"Extreme Heat ({temp:.0f}°C) - High Demand"
+        elif temp < 10:  # Cold
+            weather_multiplier = 1.2
+            weather_description = f"Cold ({temp:.0f}°C) - Moderate Boost"
+        else:
+            weather_description = f"Clear ({temp:.0f}°C)"
+    
+    time_info = get_time_period_info(time_slot)
+    day_info = get_day_info(day)
+    is_weekend = day_info['type'] == 'weekend'
+    
+    # Calculate distance helper
+    def calc_distance(lat1, lon1, lat2, lon2):
+        from math import radians, sin, cos, sqrt, atan2
+        R = 6371
+        lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        return R * 2 * atan2(sqrt(a), sqrt(1-a))
+    
+    # Process each hotspot
+    hotspots_result = []
+    for h in HOTSPOTS:
+        # Base calculation
+        demand = h['baseMultiplier'] * time_info['multiplier'] * day_info['multiplier']
+        
+        # Peak slot bonus
+        if time_slot in h.get('peakSlots', []):
+            demand *= 1.5
+        
+        # Weekend adjustment
+        if is_weekend:
+            demand *= h.get('weekendBoost', 1.0)
+        
+        # Weather boost
+        demand *= weather_multiplier
+        
+        # Cap at 3.5x
+        demand = min(demand, 3.5)
+        
+        # Determine demand level
+        if demand >= 2.0:
+            level = "high"
+            color = "#ef4444"
+        elif demand >= 1.2:
+            level = "medium"
+            color = "#f59e0b"
+        else:
+            level = "low"
+            color = "#22c55e"
+        
+        hotspot_data = {
+            "id": h['id'],
+            "name": h['name'],
+            "lat": h['lat'],
+            "lng": h['lng'],
+            "type": h['type'],
+            "demand": round(demand, 2),
+            "level": level,
+            "color": color,
+            "description": h['description'],
+            "isPeak": time_slot in h.get('peakSlots', [])
+        }
+        
+        # Add distance if user location provided
+        if user_lat and user_lng:
+            distance = calc_distance(user_lat, user_lng, h['lat'], h['lng'])
+            hotspot_data['distance'] = round(distance, 1)
+            
+            # Only include if within max distance
+            if distance <= max_distance:
+                hotspots_result.append(hotspot_data)
+        else:
+            hotspots_result.append(hotspot_data)
+    
+    # Sort by demand (highest first)
+    hotspots_result.sort(key=lambda x: x['demand'], reverse=True)
+    
+    # If user location, sort nearby ones by distance first
+    if user_lat and user_lng:
+        nearby = [h for h in hotspots_result if h.get('distance', 999) <= 15]
+        far = [h for h in hotspots_result if h.get('distance', 999) > 15]
+        nearby.sort(key=lambda x: x['demand'], reverse=True)
+        far.sort(key=lambda x: x.get('distance', 999))
+        hotspots_result = nearby + far
+    
+    # Calculate overall demand
+    if hotspots_result:
+        avg_demand = sum(h['demand'] for h in hotspots_result) / len(hotspots_result)
+    else:
+        avg_demand = 1.0
+    
+    if avg_demand >= 2.0:
+        overall_level = "high"
+    elif avg_demand >= 1.2:
+        overall_level = "medium"
+    else:
+        overall_level = "low"
+    
+    # Generate smart tips based on current conditions
+    tips = []
+    if time_info['name'] == "Morning Rush":
+        tips.append("Morning commuters heading to work - focus on residential areas")
+    elif time_info['name'] == "Evening Rush":
+        tips.append("Evening rush hour - position near business districts")
+    elif time_info['name'] == "Night Life":
+        tips.append("Nightlife peak - entertainment areas and restaurants are hot")
+    
+    if weather_multiplier > 1.2:
+        tips.append("Bad weather = surge pricing - stay active!")
+    
+    if is_weekend:
+        tips.append("Weekend mode - malls and entertainment spots are busiest")
+    else:
+        tips.append("Weekday - business areas peak during office hours")
+    
+    # Airport tip if flights expected
+    airport_hotspot = next((h for h in hotspots_result if h['type'] == 'airport'), None)
+    if airport_hotspot and airport_hotspot['isPeak']:
+        tips.append("Flight arrivals expected - airport has high demand now")
+    
+    return jsonify({
+        "success": True,
+        "hotspots": hotspots_result[:20],  # Top 20
+        "analysis": {
+            "timePeriod": time_info['name'],
+            "timeEmoji": time_info.get('emoji', ''),
+            "dayName": day_info['name'],
+            "dayType": day_info['type'],
+            "timeSlot": time_slot,
+            "overallDemand": round(avg_demand, 2),
+            "overallLevel": overall_level,
+            "weather": weather_description,
+            "weatherMultiplier": weather_multiplier
+        },
+        "tips": tips[:3],
+        "updated": now.strftime("%H:%M")
+    })
+
+
 @app.route('/fetch-ride')
 @login_required
 def fetch_ride():
