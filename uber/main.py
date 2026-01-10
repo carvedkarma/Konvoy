@@ -1758,12 +1758,17 @@ def calculate_bearing_to_point(lat1, lng1, lat2, lng2):
     bearing = math.degrees(math.atan2(x, y))
     return (bearing + 360) % 360
 
-def is_moving_same_driver(new_driver, existing_driver, max_along_track=400, max_cross_track=80):
+def is_moving_same_driver(new_driver, existing_driver, max_cross_track=100, max_elapsed_seconds=60):
     """
     Check if new_driver is the same as existing_driver based on motion trajectory.
-    Uses directional corridor matching: allows larger distance along travel direction.
+    Uses velocity-based projection: if driver is moving forward at consistent bearing,
+    allow unlimited along-track distance but restrict cross-track deviation.
+    
+    A driver moving at 60km/h (city speed) travels ~1000m per minute.
+    We check if the new position is along the expected trajectory.
     """
     import math
+    from datetime import datetime
     
     new_lat = new_driver.get('lat')
     new_lng = new_driver.get('lng')
@@ -1772,6 +1777,7 @@ def is_moving_same_driver(new_driver, existing_driver, max_along_track=400, max_
     ex_lat = existing_driver.get('lat')
     ex_lng = existing_driver.get('lng')
     ex_bearing = existing_driver.get('bearing')
+    ex_timestamp = existing_driver.get('timestamp')
     
     if None in (new_lat, new_lng, ex_lat, ex_lng):
         return False
@@ -1786,18 +1792,27 @@ def is_moving_same_driver(new_driver, existing_driver, max_along_track=400, max_
         return False
     
     b_diff = bearing_difference(new_bearing, ex_bearing)
-    if b_diff >= 45:
+    if b_diff >= 30:
         return False
     
-    bearing_to_new = calculate_bearing_to_point(ex_lat, ex_lng, new_lat, new_lng)
+    if ex_timestamp:
+        now = datetime.now()
+        elapsed = (now - ex_timestamp).total_seconds()
+        if elapsed > max_elapsed_seconds:
+            return False
+        
+        max_speed_mps = 30
+        max_travel = max_speed_mps * elapsed
+        
+        if dist > max_travel + 100:
+            return False
     
+    bearing_to_new = calculate_bearing_to_point(ex_lat, ex_lng, new_lat, new_lng)
     movement_alignment = bearing_difference(ex_bearing, bearing_to_new)
     
-    if movement_alignment <= 30:
-        along_track = dist * math.cos(math.radians(movement_alignment))
+    if movement_alignment <= 45:
         cross_track = dist * math.sin(math.radians(movement_alignment))
-        
-        if along_track <= max_along_track and cross_track <= max_cross_track:
+        if cross_track <= max_cross_track:
             return True
     
     return False

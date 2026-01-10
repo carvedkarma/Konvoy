@@ -58,6 +58,11 @@ Preferred communication style: Simple, everyday language.
   - Uses Uber's GetStatus GraphQL API (`m.uber.com/go/graphql`)
   - **Coordinate-based deduplication**: Drivers within 100m are counted as one
   - **Bearing check**: Drivers at same location facing opposite directions (>90°) counted separately
+  - **Velocity-based trajectory tracking**: Moving drivers are tracked using:
+    - Cross-track tolerance: 100m lateral deviation allowed
+    - Speed-based distance: max 30m/s (108km/h) × elapsed time
+    - Bearing alignment: driver must be moving in same direction (within 30°)
+    - Movement alignment: new position must be along expected trajectory (within 45°)
   - **5 sample points**: Polls center + N/S/E/W within 1km radius of user location
   - **3-second polling**: Rotates through sample points for broader coverage
   - **3-minute rolling window**: Accumulates unique drivers, older entries expire
