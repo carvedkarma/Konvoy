@@ -167,11 +167,39 @@ def root():
     if current_user.is_authenticated:
         disconnect_form = UberDisconnectForm(
         ) if current_user.uber_connected else None
+        
+        # Get cached driver counts for home page
+        current = homepage_driver_cache['current']
+        previous = homepage_driver_cache['previous']
+        
+        def calc_change(curr, prev):
+            diff = curr - prev
+            if diff > 0:
+                return f'+{diff}'
+            elif diff < 0:
+                return str(diff)
+            return '0'
+        
+        drivers_nearby = {
+            'uberx': current['uberx'],
+            'xl': current['xl'],
+            'black': current['black'],
+            'total': current['total'],
+            'changes': {
+                'uberx': calc_change(current['uberx'], previous['uberx']),
+                'xl': calc_change(current['xl'], previous['xl']),
+                'black': calc_change(current['black'], previous['black']),
+            },
+            'updated': current['updated'].strftime('%H:%M') if current['updated'] else None,
+            'scanning': homepage_driver_cache['scanning']
+        }
+        
         return render_template('home.html',
                                loading=current_user.uber_connected,
                                vehicles=[],
                                driver_info=None,
-                               disconnect_form=disconnect_form)
+                               disconnect_form=disconnect_form,
+                               drivers_nearby=drivers_nearby)
     return redirect(url_for('landing'))
 
 @app.route('/welcome')
