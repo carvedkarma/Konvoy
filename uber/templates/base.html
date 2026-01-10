@@ -356,7 +356,9 @@
                 let registration = await navigator.serviceWorker.getRegistration();
                 if (!registration) {
                     console.log('Registering service worker...');
-                    registration = await navigator.serviceWorker.register('/static/service-worker.js');
+                    registration = await navigator.serviceWorker.register('/static/service-worker.js', {
+                        scope: '/'
+                    });
                 }
                 
                 // Wait for service worker to be active
