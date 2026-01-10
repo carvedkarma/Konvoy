@@ -2073,15 +2073,18 @@ def admin_broadcast():
         if not message:
             flash('Message content is required.', 'danger')
         else:
+            import re
+            clean_text = re.sub('<[^<]+?>', '', message).strip()
+            
             all_users = User.query.all()
             total_sent = 0
             for user in all_users:
-                # First try push notification
+                # First try push notification with plain text
                 try:
                     sent_push = send_push_notification(
                         user.id, 
                         title, 
-                        message, 
+                        clean_text,
                         url=url, 
                         tag='broadcast',
                         require_interaction=True
@@ -2089,21 +2092,14 @@ def admin_broadcast():
                 except Exception as e:
                     sent_push = 0
                 
-                # Also send email since they might not be subscribed to push
+                # Also send email with plain text (Mail only supports plain text)
                 try:
                     from replitmail import Mail
                     mail = Mail()
-                    # Mail tool handles the recipient and subject
-                    # Clean HTML for push title/body but use full HTML for email
-                    from markupsafe import Markup
-                    import re
-                    clean_text = re.sub('<[^<]+?>', '', message)
-                    
                     mail.send(
                         user.email,
                         title,
-                        message,
-                        html=True
+                        clean_text
                     )
                     total_sent += 1
                 except Exception as e:
