@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Route Planner - RizTar{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-zinc-900 mb-2">Smart Route Planner</h1>
+        <p class="text-zinc-500">Post-ride recommendations to maximize your earnings</p>
+    </div>
+
+    <div id="route-loader" class="glass-panel rounded-2xl p-12 text-center">
+        <div class="inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-zinc-600 font-medium">Analyzing demand patterns and your location...</p>
+    </div>
+
+    <div id="route-content" class="hidden space-y-6">
+        <div class="grid md:grid-cols-2 gap-6">
+            <div id="top-recommendation" class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="relative z-10">
+                    <span class="px-2 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-wider">Top Match</span>
+                    <h2 id="top-name" class="text-3xl font-black mt-2">--</h2>
+                    <p id="top-type" class="text-blue-100 text-sm uppercase font-bold">--</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <div class="bg-white/10 p-3 rounded-xl border border-white/10">
+                            <p class="text-[10px] text-blue-200 uppercase font-bold">Distance</p>
+                            <p id="top-dist" class="text-xl font-bold">--</p>
+                        </div>
+                        <div class="bg-white/10 p-3 rounded-xl border border-white/10">
+                            <p class="text-[10px] text-blue-200 uppercase font-bold">Drive Time</p>
+                            <p id="top-time" class="text-xl font-bold">--</p>
+                        </div>
+                    </div>
+                    
+                    <button id="nav-btn" class="w-full mt-6 bg-white text-blue-700 font-bold py-3 rounded-xl shadow-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+                        Start Navigation
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6 premium-shadow">
+                <h3 class="text-lg font-bold text-zinc-900 mb-4">Alternative Destinations</h3>
+                <div id="alternatives-list" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 premium-shadow">
+            <h3 class="text-lg font-bold text-zinc-900 mb-4">Earnings Strategy</h3>
+            <div id="strategy-tips" class="grid sm:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadPlanner() {
+    if (!navigator.geolocation) {
+        alert("Geolocation required for Smart Route");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+            const response = await fetch(`/api/smart-route?lat=${latitude}&lng=${longitude}`);
+            const data = await response.json();
+            if (data.success) {
+                renderPlanner(data);
+            }
+        } catch (e) { console.error(e); }
+    });
+}
+
+function renderPlanner(data) {
+    document.getElementById('route-loader').classList.add('hidden');
+    document.getElementById('route-content').classList.remove('hidden');
+
+    const top = data.topRecommendation;
+    document.getElementById('top-name').textContent = top.name;
+    document.getElementById('top-type').textContent = top.type;
+    document.getElementById('top-dist').textContent = top.distance + ' km';
+    document.getElementById('top-time').textContent = top.driveMins + ' min';
+    
+    document.getElementById('nav-btn').onclick = () => {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${top.lat},${top.lng}`, '_blank');
+    };
+
+    const altsList = document.getElementById('alternatives-list');
+    altsList.innerHTML = data.alternatives.map(a => `
+        <div class="flex items-center justify-between p-3 bg-zinc-50 rounded-xl hover:bg-zinc-100 cursor-pointer border border-transparent hover:border-blue-200 transition-all" 
+             onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${a.lat},${a.lng}', '_blank')">
+            <div>
+                <p class="font-bold text-zinc-900 text-sm">${a.name}</p>
+                <p class="text-[10px] text-zinc-500 font-bold">${a.distance} km • ${a.driveMins} mins</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs font-black text-blue-600">${a.demand.toFixed(1)}x</p>
+            </div>
+        </div>
+    `).join('');
+
+    const tipsEl = document.getElementById('strategy-tips');
+    tipsEl.innerHTML = data.tips.filter(t => t).map(t => `
+        <div class="p-4 bg-zinc-50 rounded-xl border border-zinc-100 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM5.884 6.68a1 1 0 10-1.404-1.427l-.707.696a1 1 0 101.39 1.437l.721-.706zM14.116 6.68l.721.706a1 1 0 101.39-1.437l-.707-.696a1 1 0 10-1.404 1.427zM5 11a1 1 0 01-1-1V9a1 1 0 012 0v1a1 1 0 01-1 1zM15 11a1 1 0 01-1-1V9a1 1 0 012 0v1a1 1 0 01-1 1zM6.343 15.657a1 1 0 101.414-1.414l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM13.657 15.657l.707-.707a1 1 0 00-1.414-1.414l-.707.707a1 1 0 101.414 1.414z"/></svg>
+            </div>
+            <p class="text-xs text-zinc-600 font-medium leading-tight">${t}</p>
+        </div>
+    `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', loadPlanner);
+</script>
+{% endblock %}

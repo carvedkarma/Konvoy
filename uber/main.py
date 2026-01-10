@@ -2426,7 +2426,18 @@ def events_page():
     return render_template('events.html')
 
 
-@app.route('/api/airport-queue')
+@app.route('/surge-map')
+@login_required
+def surge_map_page():
+    return render_template('surge_map.html')
+
+
+@app.route('/smart-route')
+@login_required
+def smart_route_page():
+    return render_template('smart_route.html')
+
+
 @login_required
 def api_airport_queue():
     """
