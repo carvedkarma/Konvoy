@@ -8,18 +8,30 @@
     .ql-editor {
         min-height: 200px;
         font-size: 14px;
-        background: #f9fafb;
+        color: #18181b;
+    }
+    .ql-editor.ql-blank::before {
+        color: #a1a1aa;
+        font-style: normal;
     }
     .ql-toolbar.ql-snow {
         border-top-left-radius: 12px;
         border-top-right-radius: 12px;
-        background: #fff;
-        border-color: #e5e7eb;
+        background: rgba(255, 255, 255, 0.8);
+        border-color: rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(8px);
     }
     .ql-container.ql-snow {
         border-bottom-left-radius: 12px;
         border-bottom-right-radius: 12px;
-        border-color: #e5e7eb;
+        background: rgba(255, 255, 255, 0.5);
+        border-color: rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(8px);
+    }
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
 </style>
 {% endblock %}
