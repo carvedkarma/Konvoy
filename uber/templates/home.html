@@ -353,38 +353,6 @@
             </a>
             {% endif %}
 
-            {% if driver_info %}
-            <div class="glass-panel p-4 rounded-xl premium-shadow mb-6 flex items-center justify-between border-2 border-emerald-100 bg-emerald-50/30">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Drivers Nearby</p>
-                        <p class="text-xl font-bold text-emerald-900 leading-tight">
-                            {{ drivers_nearby.nearby_summary }} <span class="text-xs font-medium text-emerald-700/70">vehicles</span>
-                        </p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/20">
-                    <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                    <span class="text-[10px] font-bold text-white uppercase tracking-widest">Live</span>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 gap-1 mb-6">
-                <p class="text-[10px] text-zinc-400 font-medium px-1 flex items-center gap-1.5">
-                    <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    YOUR LOCATION: <span class="text-blue-600 font-bold uppercase" id="current-location-text">Detecting...</span>
-                </p>
-            </div>
-            {% endif %}
-
             {% if current_user.is_owner() %}
             <div class="pt-3 border-t border-zinc-100">
                 <p class="text-xs text-zinc-400 mb-2">Admin</p>

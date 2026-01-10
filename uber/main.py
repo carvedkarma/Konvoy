@@ -180,11 +180,14 @@ def root():
                 return str(diff)
             return '0'
         
+        # Total nearby drivers from background scan
+        nearby_total = current.get('total', 0)
+        
         drivers_nearby = {
             'uberx': current.get('uberx', 0),
             'xl': current.get('xl', 0),
             'black': current.get('black', 0),
-            'total': current.get('total', 0),
+            'total': nearby_total,
             'changes': {
                 'uberx': calc_change(current.get('uberx', 0), previous.get('uberx', 0)),
                 'xl': calc_change(current.get('xl', 0), previous.get('xl', 0)),
@@ -192,7 +195,7 @@ def root():
             },
             'updated': current.get('updated').strftime('%H:%M') if current.get('updated') else None,
             'scanning': homepage_driver_cache.get('scanning', False),
-            'nearby_summary': nearby_data
+            'nearby_summary': nearby_total
         }
         
         return render_template('home.html',
