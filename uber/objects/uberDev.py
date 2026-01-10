@@ -1671,7 +1671,7 @@ def generate_perth_grid():
     return grid_points
 
 
-def fetch_drivers_at_location(lat, lng, product_type=None):
+def fetch_drivers_at_location(lat, lng):
     """
     Fetch nearby drivers at a specific location using Uber's GetStatus GraphQL API.
     Returns list of drivers with id, lat, lng, bearing.
@@ -1681,8 +1681,6 @@ def fetch_drivers_at_location(lat, lng, product_type=None):
         'latitude': lat,
         'longitude': lng,
     }
-    if product_type:
-        variables['targetProductType'] = product_type
     
     json_data = {
         'operationName': 'GetStatus',
@@ -1707,13 +1705,22 @@ def fetch_drivers_at_location(lat, lng, product_type=None):
             drivers = []
             for vehicle in nearby_vehicles:
                 coord = vehicle.get('coordinate', {})
+                map_url = vehicle.get('mapImageUrl', '')
+                product_type = 'UberX'
+                if 'comfort' in map_url.lower():
+                    product_type = 'Comfort'
+                elif 'xl' in map_url.lower() or 'suv' in map_url.lower():
+                    product_type = 'XL'
+                elif 'black' in map_url.lower() or 'lux' in map_url.lower():
+                    product_type = 'Black'
+                    
                 drivers.append({
                     'id': vehicle.get('id'),
                     'lat': coord.get('latitude'),
                     'lng': coord.get('longitude'),
                     'bearing': vehicle.get('bearing'),
                     'eta': vehicle.get('etaInMin'),
-                    'product_type': product_type or 'ALL'
+                    'product_type': product_type
                 })
             return drivers
         else:
@@ -1725,61 +1732,46 @@ def fetch_drivers_at_location(lat, lng, product_type=None):
 
 def fetch_all_perth_drivers(max_points=50):
     """
-    Fetch drivers from multiple grid points and product types.
+    Fetch drivers from multiple grid points across Perth.
     Returns deduplicated list of all drivers with counts by product type.
     """
     import concurrent.futures
+    import time
     
     grid = generate_perth_grid()
-    # Prioritize CBD and metro points, limit total for performance
     cbd_points = [p for p in grid if p['tier'] == 'cbd']
     metro_points = [p for p in grid if p['tier'] == 'metro']
     outer_points = [p for p in grid if p['tier'] == 'outer']
     
-    # Take balanced sample
-    selected_points = cbd_points[:15] + metro_points[:20] + outer_points[:15]
+    selected_points = cbd_points[:12] + metro_points[:15] + outer_points[:8]
     selected_points = selected_points[:max_points]
     
-    product_types = ['UBERX', 'COMFORT', 'XL', 'BLACK']
-    
     all_drivers = {}
-    drivers_by_type = {pt: set() for pt in product_types}
+    counts_by_type = {'UberX': set(), 'Comfort': set(), 'XL': set(), 'Black': set()}
     
-    def fetch_point_type(args):
-        point, product_type = args
-        return fetch_drivers_at_location(point['lat'], point['lng'], product_type)
+    def fetch_point(point):
+        time.sleep(0.1)
+        return fetch_drivers_at_location(point['lat'], point['lng'])
     
-    # Create all tasks
-    tasks = []
-    for point in selected_points:
-        for pt in product_types:
-            tasks.append((point, pt))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(executor.map(fetch_point, selected_points))
     
-    # Execute in parallel with thread pool
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        results = list(executor.map(fetch_point_type, tasks))
+    for drivers in results:
+        for driver in drivers:
+            driver_id = driver.get('id')
+            if driver_id and driver_id not in all_drivers:
+                all_drivers[driver_id] = driver
+                ptype = driver.get('product_type', 'UberX')
+                if ptype in counts_by_type:
+                    counts_by_type[ptype].add(driver_id)
     
-    # Process results
-    task_idx = 0
-    for point in selected_points:
-        for pt in product_types:
-            drivers = results[task_idx]
-            task_idx += 1
-            for driver in drivers:
-                driver_id = driver.get('id')
-                if driver_id:
-                    drivers_by_type[pt].add(driver_id)
-                    if driver_id not in all_drivers:
-                        all_drivers[driver_id] = driver
-    
-    # Build response
     unique_drivers = list(all_drivers.values())
     counts = {
         'total': len(unique_drivers),
-        'uberx': len(drivers_by_type['UBERX']),
-        'comfort': len(drivers_by_type['COMFORT']),
-        'xl': len(drivers_by_type['XL']),
-        'black': len(drivers_by_type['BLACK']),
+        'uberx': len(counts_by_type['UberX']),
+        'comfort': len(counts_by_type['Comfort']),
+        'xl': len(counts_by_type['XL']),
+        'black': len(counts_by_type['Black']),
     }
     
     return {
