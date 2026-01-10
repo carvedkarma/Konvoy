@@ -2077,26 +2077,30 @@ def admin_broadcast():
             total_sent = 0
             for user in all_users:
                 # First try push notification
-                sent_push = send_push_notification(
-                    user.id, 
-                    title, 
-                    message, 
-                    url=url, 
-                    tag='broadcast',
-                    require_interaction=True
-                )
+                try:
+                    sent_push = send_push_notification(
+                        user.id, 
+                        title, 
+                        message, 
+                        url=url, 
+                        tag='broadcast',
+                        require_interaction=True
+                    )
+                except Exception as e:
+                    sent_push = 0
                 
                 # Also send email since they might not be subscribed to push
                 try:
                     from replitmail import Mail
                     mail = Mail()
+                    # Mail tool handles the recipient and subject
                     mail.send(
                         user.email,
                         title,
                         message
                     )
                     total_sent += 1
-                except Exception:
+                except Exception as e:
                     if sent_push > 0:
                         total_sent += 1
             
