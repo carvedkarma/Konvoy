@@ -1747,29 +1747,67 @@ def bearing_difference(b1, b2):
     diff = abs(b1 - b2) % 360
     return min(diff, 360 - diff)
 
-def is_duplicate_driver(new_driver, existing_drivers, distance_threshold=100, bearing_threshold=90):
-    """Check if a driver is duplicate based on coordinates and bearing."""
+def calculate_bearing_to_point(lat1, lng1, lat2, lng2):
+    """Calculate bearing from point 1 to point 2 in degrees (0-360)."""
+    import math
+    delta_lng = math.radians(lng2 - lng1)
+    lat1_rad = math.radians(lat1)
+    lat2_rad = math.radians(lat2)
+    x = math.sin(delta_lng) * math.cos(lat2_rad)
+    y = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(delta_lng)
+    bearing = math.degrees(math.atan2(x, y))
+    return (bearing + 360) % 360
+
+def is_moving_same_driver(new_driver, existing_driver, max_along_track=400, max_cross_track=80):
+    """
+    Check if new_driver is the same as existing_driver based on motion trajectory.
+    Uses directional corridor matching: allows larger distance along travel direction.
+    """
+    import math
+    
     new_lat = new_driver.get('lat')
     new_lng = new_driver.get('lng')
     new_bearing = new_driver.get('bearing')
     
-    if new_lat is None or new_lng is None:
-        return True
+    ex_lat = existing_driver.get('lat')
+    ex_lng = existing_driver.get('lng')
+    ex_bearing = existing_driver.get('bearing')
     
-    for existing in existing_drivers:
-        ex_lat = existing.get('lat')
-        ex_lng = existing.get('lng')
-        ex_bearing = existing.get('bearing')
+    if None in (new_lat, new_lng, ex_lat, ex_lng):
+        return False
+    
+    dist = calculate_distance_meters(new_lat, new_lng, ex_lat, ex_lng)
+    
+    if dist <= 100:
+        b_diff = bearing_difference(new_bearing, ex_bearing)
+        return b_diff < 90
+    
+    if new_bearing is None or ex_bearing is None:
+        return False
+    
+    b_diff = bearing_difference(new_bearing, ex_bearing)
+    if b_diff >= 45:
+        return False
+    
+    bearing_to_new = calculate_bearing_to_point(ex_lat, ex_lng, new_lat, new_lng)
+    
+    movement_alignment = bearing_difference(ex_bearing, bearing_to_new)
+    
+    if movement_alignment <= 30:
+        along_track = dist * math.cos(math.radians(movement_alignment))
+        cross_track = dist * math.sin(math.radians(movement_alignment))
         
-        if ex_lat is None or ex_lng is None:
-            continue
-        
-        dist = calculate_distance_meters(new_lat, new_lng, ex_lat, ex_lng)
-        if dist <= distance_threshold:
-            b_diff = bearing_difference(new_bearing, ex_bearing)
-            if b_diff < bearing_threshold:
-                return True
+        if along_track <= max_along_track and cross_track <= max_cross_track:
+            return True
+    
     return False
+
+def find_matching_driver_index(new_driver, existing_drivers):
+    """Find index of existing driver that matches new_driver, or -1 if none."""
+    for i, existing in enumerate(existing_drivers):
+        if is_moving_same_driver(new_driver, existing):
+            return i
+    return -1
 
 @app.route('/api/live-drivers')
 @login_required
@@ -1803,7 +1841,13 @@ def api_live_drivers():
         
         for driver in new_drivers:
             driver['timestamp'] = now
-            if not is_duplicate_driver(driver, cache['drivers']):
+            match_idx = find_matching_driver_index(driver, cache['drivers'])
+            if match_idx >= 0:
+                cache['drivers'][match_idx]['lat'] = driver['lat']
+                cache['drivers'][match_idx]['lng'] = driver['lng']
+                cache['drivers'][match_idx]['bearing'] = driver.get('bearing')
+                cache['drivers'][match_idx]['timestamp'] = now
+            else:
                 cache['drivers'].append(driver)
         
         counts_by_type = {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0}
