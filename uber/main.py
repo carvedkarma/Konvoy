@@ -2058,6 +2058,38 @@ def get_active_users():
     return jsonify({'success': True, 'users': users})
 
 
+@app.route('/admin/broadcast', methods=['GET', 'POST'])
+@login_required
+def admin_broadcast():
+    if not current_user.is_owner():
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('root'))
+    
+    if request.method == 'POST':
+        title = request.form.get('title', 'RizTar Announcement')
+        message = request.form.get('message')
+        url = request.form.get('url', '/')
+        
+        if not message:
+            flash('Message content is required.', 'danger')
+        else:
+            all_user_ids = [u.id for u in User.query.all()]
+            total_sent = 0
+            for uid in all_user_ids:
+                total_sent += send_push_notification(
+                    uid, 
+                    title, 
+                    message, 
+                    url=url, 
+                    tag='broadcast',
+                    require_interaction=True
+                )
+            
+            flash(f'Broadcast sent! Reached {total_sent} active subscriptions.', 'success')
+            return redirect(url_for('admin_broadcast'))
+            
+    return render_template('admin_broadcast.html')
+
 @app.route('/api/chat-mark-read', methods=['POST'])
 @login_required
 def chat_mark_read():
