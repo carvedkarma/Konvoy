@@ -42,5 +42,5 @@ run = ["python", "uber/main.py"]
 [userenv]
 
 [userenv.shared]
-VAPID_PUBLIC_KEY = "BPZ9Q2nM1-GUE37l7sOWOXNdBa3rJxhbrJ44wc_CU5ZSdtnbde9AEyvKplD8swx8DjYvC9-jAI3l0cKiKb15cYc"
-VAPID_PRIVATE_KEY = "ZGMXQGDen9ByjXvKrCthvPAfvoVoLpO-fJvoo8kEAg0"
+VAPID_PUBLIC_KEY = "BJ_B6yYE6mf4PhCGGQDP1IzuAvapgPsxWQvWQL4lMIGuzop8VV_iXOW5OguLTyIUIqgASH58t5XKLqgLCzVSQdc"
+VAPID_PRIVATE_KEY = "rhM8PI-eakz__-iN6aHMF8_ntgaP0NKawyIvmrFajVM"
