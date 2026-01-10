@@ -2107,6 +2107,11 @@ def chat_mark_read():
     return jsonify({'success': True})
 
 
+@app.route('/service-worker.js')
+def service_worker():
+    return send_from_directory('.', 'service-worker.js')
+
+
 @app.route('/chat-lobby')
 @login_required
 def chat_lobby():
