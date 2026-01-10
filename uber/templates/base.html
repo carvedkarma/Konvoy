@@ -129,6 +129,7 @@
                     <a href="{{ url_for('home') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Location</a>
                     <a href="{{ url_for('fetch_ride') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Rides</a>
                     <a href="{{ url_for('demand_intel') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Demand</a>
+                    <a href="{{ url_for('live_drivers_page') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Drivers</a>
                     <a href="{{ url_for('smart_route_page') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Planner</a>
                     {% if current_user.is_owner() %}
                     <a href="{{ url_for('admin') }}" class="text-sm text-zinc-600 hover:text-zinc-900 py-2">Users</a>
