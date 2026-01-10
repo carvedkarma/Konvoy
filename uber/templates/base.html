@@ -29,8 +29,8 @@
             visibility: visible;
             transform: translateY(0);
         }
-        {% block extra_styles %}{% endblock %}
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen bg-zinc-50">
     {% if current_user.is_authenticated %}
