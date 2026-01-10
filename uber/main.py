@@ -2073,19 +2073,34 @@ def admin_broadcast():
         if not message:
             flash('Message content is required.', 'danger')
         else:
-            all_user_ids = [u.id for u in User.query.all()]
+            all_users = User.query.all()
             total_sent = 0
-            for uid in all_user_ids:
-                total_sent += send_push_notification(
-                    uid, 
+            for user in all_users:
+                # First try push notification
+                sent_push = send_push_notification(
+                    user.id, 
                     title, 
                     message, 
                     url=url, 
                     tag='broadcast',
                     require_interaction=True
                 )
+                
+                # Also send email since they might not be subscribed to push
+                try:
+                    from replitmail import Mail
+                    mail = Mail()
+                    mail.send(
+                        user.email,
+                        title,
+                        message
+                    )
+                    total_sent += 1
+                except Exception:
+                    if sent_push > 0:
+                        total_sent += 1
             
-            flash(f'Broadcast sent! Reached {total_sent} active subscriptions.', 'success')
+            flash(f'Broadcast sent to {total_sent} users via push and/or email.', 'success')
             return redirect(url_for('admin_broadcast'))
             
     return render_template('admin_broadcast.html')
