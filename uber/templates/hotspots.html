@@ -301,12 +301,20 @@ function updateHotspotsSidebar(userLat, userLng) {
         return { ...h, demand, distance };
     });
 
-    // If user location is available, prioritize distance (within 10km) then demand
+    // If user location is available, prioritize distance (within 200km) then demand
     // Otherwise just sort by demand
     hotspotData.sort((a, b) => {
         if (a.distance !== null && b.distance !== null) {
-            // If both are within a reasonable "nearby" range (e.g. 15km), prioritize demand
-            // Otherwise prioritize distance
+            // Only show hotspots within 200km
+            const maxDistance = 200;
+            if (a.distance > maxDistance && b.distance > maxDistance) {
+                return a.distance - b.distance; // Still sort by distance if both are far
+            }
+            if (a.distance <= maxDistance && b.distance > maxDistance) return -1;
+            if (a.distance > maxDistance && b.distance <= maxDistance) return 1;
+
+            // If both are within 200km, prioritize those within a "nearby" 15km range by demand
+            // Otherwise sort by distance
             if (a.distance < 15 && b.distance < 15) {
                 return b.demand - a.demand;
             }
@@ -315,8 +323,11 @@ function updateHotspotsSidebar(userLat, userLng) {
         return b.demand - a.demand;
     });
     
+    // Filter to only show hotspots within 200km in the sidebar
+    const filteredHotspots = hotspotData.filter(h => h.distance === null || h.distance <= 200);
+    
     const topHotspotsEl = document.getElementById('top-hotspots');
-    topHotspotsEl.innerHTML = hotspotData.slice(0, 5).map(h => {
+    topHotspotsEl.innerHTML = filteredHotspots.slice(0, 5).map(h => {
         const demandInfo = getDemandLevel(h.demand);
         const distanceText = h.distance !== null ? `<p class="text-[10px] text-blue-500 font-medium">${h.distance.toFixed(1)} km away</p>` : '';
         return `
