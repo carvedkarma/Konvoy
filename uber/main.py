@@ -1744,182 +1744,159 @@ def api_hotspots():
     time_slot = hour * 2 + (1 if minute >= 30 else 0)
     
     # Enhanced hotspot data with more precise patterns
+    # Perth, Australia Hotspots
     HOTSPOTS = [
         {
             "id": 1,
-            "name": "Allama Iqbal Airport",
-            "lat": 31.5216,
-            "lng": 74.4036,
+            "name": "Perth Airport (T1/T2)",
+            "lat": -31.9430,
+            "lng": 115.9669,
             "type": "airport",
             "baseMultiplier": 1.5,
-            # Flight arrival times: early morning (5-7), morning (9-11), afternoon (14-16), evening (18-22)
-            "peakSlots": [10,11,12,13,14,18,19,20,21,22,23,28,29,30,31,32,36,37,38,39,40,41,42,43,44],
-            "weekendBoost": 1.1,
-            "description": "High demand after flight arrivals"
+            # Peak: early morning (5-7), afternoon (1-3pm), evening (6-8pm), night (10-12pm)
+            "peakSlots": [10, 11, 12, 13, 26, 27, 28, 29, 36, 37, 38, 39, 44, 45, 46, 47],
+            "description": "International and regional arrivals"
         },
         {
             "id": 2,
-            "name": "Lahore Railway Station",
-            "lat": 31.5669,
-            "lng": 74.3097,
-            "type": "transit",
+            "name": "Perth Airport (T3/T4)",
+            "lat": -31.9288,
+            "lng": 115.9525,
+            "type": "airport",
             "baseMultiplier": 1.4,
-            # Train arrival peaks: morning (6-10), evening (17-21)
-            "peakSlots": [12,13,14,15,16,17,18,19,20,34,35,36,37,38,39,40,41,42],
-            "weekendBoost": 0.9,
-            "description": "Surge during train arrivals/departures"
+            "peakSlots": [10, 11, 12, 13, 28, 29, 30, 31, 34, 35, 36, 37, 42, 43, 44, 45],
+            "description": "Qantas and domestic arrivals"
         },
         {
             "id": 3,
-            "name": "Packages Mall",
-            "lat": 31.4697,
-            "lng": 74.2728,
-            "type": "shopping",
+            "name": "Perth CBD (St Georges Tce)",
+            "lat": -31.9544,
+            "lng": 115.8567,
+            "type": "business",
             "baseMultiplier": 1.3,
-            # Shopping peaks: late morning (11-14), evening (18-22)
-            "peakSlots": [22,23,24,25,26,27,28,36,37,38,39,40,41,42,43,44],
-            "weekendBoost": 1.4,
-            "description": "Weekend shopping rush"
+            # Peak: 8-10am, 12pm, 5-7pm
+            "peakSlots": [16, 17, 18, 19, 24, 25, 34, 35, 36, 37],
+            "description": "Corporate offices and banking district"
         },
         {
             "id": 4,
-            "name": "Emporium Mall",
-            "lat": 31.5082,
-            "lng": 74.3604,
-            "type": "shopping",
-            "baseMultiplier": 1.35,
-            "peakSlots": [22,23,24,25,26,27,28,36,37,38,39,40,41,42,43,44],
-            "weekendBoost": 1.45,
-            "description": "Premium mall with high-value rides"
+            "name": "Northbridge Entertainment Zone",
+            "lat": -31.9472,
+            "lng": 115.8576,
+            "type": "entertainment",
+            "baseMultiplier": 1.6,
+            "peakSlots": [0, 1, 2, 3, 4, 5, 6, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
+            "description": "Bars, clubs, and late-night dining"
         },
         {
             "id": 5,
-            "name": "Gulberg Main Boulevard",
-            "lat": 31.5127,
-            "lng": 74.3407,
-            "type": "business",
-            "baseMultiplier": 1.4,
-            # Office hours: morning (8-10), lunch (12-14), evening (17-19)
-            "peakSlots": [16,17,18,19,20,24,25,26,27,28,34,35,36,37,38],
-            "weekendBoost": 0.6,
-            "description": "Corporate area - peak during work hours"
+            "name": "Elizabeth Quay",
+            "lat": -31.9575,
+            "lng": 115.8570,
+            "type": "entertainment",
+            "baseMultiplier": 1.2,
+            "peakSlots": [22, 23, 24, 25, 36, 37, 38, 39, 40, 41],
+            "description": "Tourist hub and riverside dining"
         },
         {
             "id": 6,
-            "name": "Liberty Market",
-            "lat": 31.5082,
-            "lng": 74.3359,
+            "name": "Crown Perth (Burswood)",
+            "lat": -31.9598,
+            "lng": 115.8943,
             "type": "entertainment",
-            "baseMultiplier": 1.4,
-            # Evening and night entertainment
-            "peakSlots": [34,35,36,37,38,39,40,41,42,43,44,45,46,47],
-            "weekendBoost": 1.5,
-            "description": "Nightlife and entertainment hub"
+            "baseMultiplier": 1.5,
+            "peakSlots": [0, 1, 2, 3, 4, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
+            "description": "Casino, hotels, and theaters"
         },
         {
             "id": 7,
-            "name": "DHA Phase 5",
-            "lat": 31.4663,
-            "lng": 74.3957,
-            "type": "residential",
-            "baseMultiplier": 1.2,
-            # Morning commute (7-9), evening return (18-21)
-            "peakSlots": [14,15,16,17,18,36,37,38,39,40,41,42],
-            "weekendBoost": 1.1,
-            "description": "Upscale residential - consistent demand"
+            "name": "Optus Stadium",
+            "lat": -31.9511,
+            "lng": 115.8891,
+            "type": "entertainment",
+            "baseMultiplier": 1.4,
+            "peakSlots": [34, 35, 36, 37, 38, 39, 40, 41, 42, 43],
+            "description": "Events and stadium traffic"
         },
         {
             "id": 8,
-            "name": "Johar Town",
-            "lat": 31.4697,
-            "lng": 74.2900,
-            "type": "residential",
-            "baseMultiplier": 1.15,
-            "peakSlots": [14,15,16,17,18,36,37,38,39,40,41,42],
-            "weekendBoost": 1.0,
-            "description": "Middle-class residential area"
+            "name": "Karrinyup Shopping Centre",
+            "lat": -31.8767,
+            "lng": 115.7839,
+            "type": "shopping",
+            "baseMultiplier": 1.3,
+            "peakSlots": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37],
+            "description": "Major shopping hub"
         },
         {
             "id": 9,
-            "name": "Model Town",
-            "lat": 31.4823,
-            "lng": 74.3155,
-            "type": "residential",
-            "baseMultiplier": 1.1,
-            "peakSlots": [14,15,16,17,18,36,37,38,39,40,41,42],
-            "weekendBoost": 1.05,
-            "description": "Established residential community"
+            "name": "Westfield Carousel",
+            "lat": -32.0201,
+            "lng": 115.9397,
+            "type": "shopping",
+            "baseMultiplier": 1.2,
+            "peakSlots": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37],
+            "description": "South-east shopping and cinema"
         },
         {
             "id": 10,
-            "name": "Food Street Gawalmandi",
-            "lat": 31.5827,
-            "lng": 74.3294,
-            "type": "food",
-            "baseMultiplier": 1.35,
-            # Dinner time (19-24)
-            "peakSlots": [38,39,40,41,42,43,44,45,46,47],
-            "weekendBoost": 1.6,
-            "description": "Famous food street - evening crowds"
+            "name": "Fremantle Markets",
+            "lat": -32.0569,
+            "lng": 115.7483,
+            "type": "shopping",
+            "baseMultiplier": 1.4,
+            "peakSlots": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
+            "description": "Weekend tourist and market traffic"
         },
         {
             "id": 11,
-            "name": "Expo Center",
-            "lat": 31.4721,
-            "lng": 74.3719,
-            "type": "events",
-            "baseMultiplier": 1.0,
-            # Event times vary, moderate during business hours
-            "peakSlots": [18,19,20,21,22,32,33,34,35,36],
-            "weekendBoost": 1.8,
-            "description": "High surge during exhibitions/events"
+            "name": "Subiaco (Rokeby Road)",
+            "lat": -31.9478,
+            "lng": 115.8239,
+            "type": "business",
+            "baseMultiplier": 1.2,
+            "peakSlots": [16, 17, 18, 19, 24, 25, 36, 37, 38, 39, 40, 41],
+            "description": "Boutique offices and dining"
         },
         {
             "id": 12,
-            "name": "Lahore Fort Area",
-            "lat": 31.5881,
-            "lng": 74.3107,
-            "type": "tourist",
-            "baseMultiplier": 1.2,
-            # Tourist hours (9-18)
-            "peakSlots": [18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36],
-            "weekendBoost": 1.5,
-            "description": "Historical site - tourist traffic"
+            "name": "Scarborough Beach",
+            "lat": -31.8943,
+            "lng": 115.7565,
+            "type": "entertainment",
+            "baseMultiplier": 1.3,
+            "peakSlots": [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41],
+            "description": "Beachfront dining and sunset traffic"
         },
         {
             "id": 13,
-            "name": "UET University",
-            "lat": 31.5800,
-            "lng": 74.3566,
-            "type": "education",
-            "baseMultiplier": 1.2,
-            # Class times (8-10, 12-14, 16-18)
-            "peakSlots": [16,17,18,19,20,24,25,26,27,28,32,33,34,35,36],
-            "weekendBoost": 0.4,
-            "description": "University - class schedule peaks"
+            "name": "Joondalup City Centre",
+            "lat": -31.7456,
+            "lng": 115.7667,
+            "type": "business",
+            "baseMultiplier": 1.1,
+            "peakSlots": [16, 17, 18, 19, 24, 25, 34, 35, 36, 37],
+            "description": "Northern hub, university, and hospital"
         },
         {
             "id": 14,
-            "name": "LUMS University",
-            "lat": 31.4716,
-            "lng": 74.4074,
+            "name": "Curtin University",
+            "lat": -32.0038,
+            "lng": 115.8944,
             "type": "education",
-            "baseMultiplier": 1.25,
-            "peakSlots": [16,17,18,19,20,24,25,26,27,28,32,33,34,35,36],
-            "weekendBoost": 0.3,
-            "description": "Premium university - consistent demand"
+            "baseMultiplier": 1.0,
+            "peakSlots": [16, 17, 18, 19, 24, 25, 32, 33, 34, 35, 36, 37],
+            "description": "Student commute peaks"
         },
         {
             "id": 15,
-            "name": "Doctors Hospital",
-            "lat": 31.4946,
-            "lng": 74.3666,
-            "type": "hospital",
-            "baseMultiplier": 1.3,
-            # 24/7 but peaks during visiting hours
-            "peakSlots": [16,17,18,19,20,21,22,34,35,36,37,38,39,40],
-            "weekendBoost": 1.1,
-            "description": "Hospital - emergency & visiting hours"
+            "name": "QEII Medical Centre",
+            "lat": -31.9667,
+            "lng": 115.8167,
+            "type": "business",
+            "baseMultiplier": 1.1,
+            "peakSlots": [14, 15, 16, 17, 24, 25, 30, 31, 32, 33, 34, 35, 36, 37],
+            "description": "Hospitals and medical offices"
         }
     ]
     
@@ -1973,7 +1950,7 @@ def api_hotspots():
             api_key = os.environ.get('OPENWEATHER_API_KEY')
             if api_key:
                 resp = requests.get(
-                    f"https://api.openweathermap.org/data/2.5/weather?lat=31.5204&lon=74.3587&appid={api_key}&units=metric",
+                    f"https://api.openweathermap.org/data/2.5/weather?lat=-31.9505&lon=115.8605&appid={api_key}&units=metric",
                     timeout=5
                 )
                 if resp.status_code == 200:
