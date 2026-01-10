@@ -54,6 +54,12 @@ Preferred communication style: Simple, everyday language.
   - Fetches fare estimates by ride type (UberX, Comfort, etc.)
   - Displays estimated driver earnings (73% of fare after Uber's cut)
   - Shows trip distance from API (`unmodifiedDistance`) and ETA calculation
+- **Live Driver Density Map**: Real-time driver position tracking across Perth
+  - Tiered coordinate grid polling: CBD (1km spacing), Metro (3km), Outer (8km), Regional (20km)
+  - Multi-product-type polling: UberX, Comfort, XL, Black
+  - Driver deduplication by unique vehicle ID for accurate counts
+  - Uses Uber's GetStatus GraphQL API (`m.uber.com/go/graphql`)
+  - 30-second auto-refresh with parallel batch requests for performance
 
 ### Uber Account Connection
 - Users can connect their Uber driver accounts via `/uber-connect`
@@ -132,6 +138,7 @@ uber/
 │   ├── uber_connect.html # Uber account connection page
 │   ├── chat_lobby.html  # Real-time chat with online users
 │   ├── demand_intel.html # Unified Demand Intelligence (Hotspots, Surge Map, Events tabs)
+│   ├── live_drivers.html # Live driver density map with product type breakdown
 │   ├── smart_route.html  # Smart Route Planner
 │   └── flight_center.html # Live flight arrivals
 └── static/
