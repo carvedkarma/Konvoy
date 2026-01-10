@@ -556,6 +556,10 @@ def send_push_notification(user_id, title, body, url='/', tag='default', require
                 sub.is_active = False
                 db.session.commit()
             print(f"Push notification failed: {e}")
+            if e.response:
+                print(f"Response body: {e.response.text}")
+            else:
+                print("No response body available")
     
     return sent
 
