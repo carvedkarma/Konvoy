@@ -99,11 +99,6 @@ def refreshToken(cookies, headers, refresh_token):
             timeout=10)
 
         data = response.json()
-        print(response.cookies.get_dict())
-        print(
-            f"refreshToken: Status {response.status_code}, Response keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}"
-        )
-
         if 'accessToken' in data:
             token = data['accessToken']
             _token_cache[cache_key] = {'token': token, 'time': time.time()}
@@ -113,10 +108,8 @@ def refreshToken(cookies, headers, refresh_token):
             _token_cache[cache_key] = {'token': token, 'time': time.time()}
             return token
         else:
-            print(f"refreshToken: No accessToken in response: {data}")
             raise KeyError('accessToken not in response')
     except Exception as e:
-        print(f"refreshToken error: {e}")
         raise
 
 
@@ -124,12 +117,10 @@ def vehicleDetails(cookies, headers, refresh_token):
     params = {'includeInaccessible': 'false'}
 
     headers = dict(headers)
-    print(f"vehicleDetails: Input headers keys: {list(headers.keys())}")
     try:
         token = refreshToken(cookies, headers, refresh_token)
         headers['authorization'] = 'Bearer ' + token
     except Exception as e:
-        print(f"vehicleDetails: Token refresh failed: {e}")
         return []
 
     try:
@@ -140,19 +131,12 @@ def vehicleDetails(cookies, headers, refresh_token):
             headers=headers,
             timeout=15)
 
-        print(
-            f"vehicleDetails: Status {response.status_code}, Response: {response.text[:500]}"
-        )
-
         if response.status_code != 200:
-            print(
-                f"vehicleDetails: Non-200 status code: {response.status_code}")
             return []
 
         data = response.json()
         return data.get('vehicles', [])
     except Exception as e:
-        print(f"vehicleDetails: Error: {e}")
         return []
 
 
@@ -180,11 +164,7 @@ def appLaunch(cookies, headers, refresh_token):
     try:
         new_token = refreshToken(cookies, headers, refresh_token)
         headers['authorization'] = 'Bearer ' + new_token
-        print(
-            f"appLaunch: Old auth prefix: {old_auth}..., New token prefix: {new_token[:50]}..."
-        )
     except Exception as e:
-        print(f"appLaunch: Token refresh failed: {e}")
         return [0, None]
 
     try:
@@ -194,29 +174,15 @@ def appLaunch(cookies, headers, refresh_token):
             headers=headers,
             json=json_data)
         # response = requests.get('https://pastebin.com/raw/SYMDNfFL')
-        print(
-            f"appLaunch: Status {response.status_code}, Raw response: {response.text[:1000]}"
-        )
         data = response.json()
     except Exception as e:
-        print(f"Error fetching app launch data: {e}")
         return [0, None]
-
-    print(f"appLaunch: Response keys: {list(data.keys())}")
-    if 'code' in data and 'message' in data:
-        print(
-            f"appLaunch ERROR: {data.get('code')}: {data.get('message')} - Full: {data}"
-        )
-    if 'vehicles' in data:
-        print(f"appLaunch: Found vehicles in response")
 
     task_scopes = data.get('driverTasks', {}).get('taskScopes', [])
     if len(task_scopes) == 0:
-        print("No Ride Found")
         return [0, data]
 
     try:
-        print("Ride Found")
         ride_type = task_scopes[0]['completionTask']['coalescedDataUnion'][
             'pickupCoalescedTaskData']['product']['name']
         job_id = task_scopes[0]['nonBlockingTasks'][0]['driverTaskDataUnion'][
@@ -519,7 +485,6 @@ def driverLocation(address, cookies, headers, refresh_token):
                 json=json_data,
             )
             time_stamp += 4000
-            print(response.json())
 
             time.sleep(2)
     except:
@@ -1521,7 +1486,6 @@ def uberCookieGrabber(headers, refresh_token):
             json=json_data,
             timeout=10)
 
-        print(f"uberCookieGrabber: Status {response.status_code}")
         print(
             f"uberCookieGrabber: Response cookies: {response.cookies.get_dict()}"
         )
@@ -1573,12 +1537,9 @@ def driverNavigation(cookies, access_token):
                                 timeout=10,
                                 allow_redirects=True)
 
-        print(f"driverNavigation: Status {response.status_code}")
-        print(f"driverNavigation: Final URL: {response.url}")
         print(
             f"driverNavigation: Response cookies: {response.cookies.get_dict()}"
         )
-        print(f"driverNavigation: Content length: {len(response.text)}")
 
         return {
             'status_code': response.status_code,
@@ -1653,12 +1614,6 @@ def uberRidersNearby(cookies,
                 'raw_response': result
             }
         else:
-            print(
-                f"uberRidersNearby: Failed with status {response.status_code}",
-                flush=True)
-            print(f"uberRidersNearby: Response: {response.text[:500]}",
-                  flush=True)
             return None
     except Exception as e:
-        print(f"uberRidersNearby error: {e}")
         return None

@@ -190,7 +190,7 @@ def landing():
         db.session.add(visit)
         db.session.commit()
     except Exception as e:
-        print(f"Error tracking page visit: {e}", flush=True)
+        pass
     
     return render_template('landing.html')
 
@@ -247,14 +247,11 @@ def home_data():
                 print(f"Error fetching ride: {e}")
                 return None
 
-        print(f"DEBUG: Starting home_data, caches: v={cached_vehicles is not None}, d={cached_driver is not None}, r={cached_ride is not None}", flush=True)
         if cached_vehicles is not None and cached_driver is not None and cached_ride is not None:
             vehicles = cached_vehicles
             driver_info = cached_driver
             full_ride_data = cached_ride
-            print("DEBUG: Using all cached data", flush=True)
         else:
-            print("DEBUG: Spawning API tasks", flush=True)
             tasks = {}
             if cached_vehicles is None:
                 tasks['vehicles'] = eventlet.spawn(fetch_vehicles)
@@ -281,9 +278,7 @@ def home_data():
                                  full_ride_data)
             else:
                 full_ride_data = cached_ride
-            print("DEBUG: All API tasks completed", flush=True)
 
-        print("DEBUG: Processing driver status", flush=True)
         driver_status = None
         active_ride = None
         
@@ -292,7 +287,6 @@ def home_data():
             if 'full_name' in full_ride_data:
                 # This is already a processed ride - use it directly
                 active_ride = full_ride_data
-                print(f"DEBUG: Found processed ride data: {full_ride_data.get('full_name')}", flush=True)
             elif 'driverTasks' in full_ride_data:
                 # This is raw API response - extract driver status
                 driver_tasks = full_ride_data.get('driverTasks', {})
@@ -2215,9 +2209,7 @@ def handle_send_message(data):
     db.session.add(chat_msg)
     db.session.commit()
 
-    print(f"Message saved with id {chat_msg.id}, broadcasting...", flush=True)
     emit('new_message', chat_msg.to_dict(), broadcast=True)
-    print("Broadcast complete", flush=True)
 
 
 @socketio.on('get_online_users')
