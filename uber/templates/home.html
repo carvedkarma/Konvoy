@@ -78,6 +78,65 @@
             </div>
         </div>
         
+        <div class="glass-panel p-4 rounded-xl premium-shadow mb-4 flex items-center justify-between border-2 border-emerald-100 bg-emerald-50/30">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1-1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Drivers Nearby</p>
+                    <p class="text-xl font-bold text-emerald-900 leading-tight">
+                        {{ drivers_nearby.total }} <span class="text-xs font-medium text-emerald-700/70">vehicles</span>
+                    </p>
+                </div>
+            </div>
+            <a href="{{ url_for('live_drivers_page') }}" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors">
+                <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <span class="text-[10px] font-bold text-white uppercase tracking-widest">Live</span>
+            </a>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-2.5 mb-4">
+            <div class="p-3 bg-emerald-50 border-2 border-emerald-100 rounded-xl text-center">
+                <div class="flex items-center justify-center gap-1.5 mb-1">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-sm"></div>
+                    <p class="text-[10px] text-emerald-700 font-bold">UBERX</p>
+                </div>
+                <p class="text-xl font-black text-emerald-900 tracking-tight">{{ drivers_nearby.uberx }}</p>
+                <div class="flex items-center justify-center mt-1">
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if drivers_nearby.changes.uberx.startswith('+') %}bg-emerald-100 text-emerald-600{% elif drivers_nearby.changes.uberx.startswith('-') %}bg-red-100 text-red-500{% else %}bg-zinc-100 text-zinc-500{% endif %}">
+                        {{ drivers_nearby.changes.uberx }}
+                    </span>
+                </div>
+            </div>
+            <div class="p-3 bg-amber-50 border-2 border-amber-100 rounded-xl text-center">
+                <div class="flex items-center justify-center gap-1.5 mb-1">
+                    <div class="w-2 h-2 bg-amber-500 rounded-full shadow-sm"></div>
+                    <p class="text-[10px] text-amber-700 font-bold">XL</p>
+                </div>
+                <p class="text-xl font-black text-amber-900 tracking-tight">{{ drivers_nearby.xl }}</p>
+                <div class="flex items-center justify-center mt-1">
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if drivers_nearby.changes.xl.startswith('+') %}bg-emerald-100 text-emerald-600{% elif drivers_nearby.changes.xl.startswith('-') %}bg-red-100 text-red-500{% else %}bg-zinc-100 text-zinc-500{% endif %}">
+                        {{ drivers_nearby.changes.xl }}
+                    </span>
+                </div>
+            </div>
+            <div class="p-3 bg-zinc-900 border-2 border-zinc-800 rounded-xl text-center">
+                <div class="flex items-center justify-center gap-1.5 mb-1">
+                    <div class="w-2 h-2 bg-white rounded-full shadow-sm"></div>
+                    <p class="text-[10px] text-zinc-400 font-bold">BLACK</p>
+                </div>
+                <p class="text-xl font-black text-white tracking-tight">{{ drivers_nearby.black }}</p>
+                <div class="flex items-center justify-center mt-1">
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if drivers_nearby.changes.black.startswith('+') %}bg-emerald-500/20 text-emerald-400{% elif drivers_nearby.changes.black.startswith('-') %}bg-red-500/20 text-red-400{% else %}bg-white/10 text-zinc-400{% endif %}">
+                        {{ drivers_nearby.changes.black }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
         {% if loading %}
         <div id="loading-skeleton">
             <div class="glass-panel rounded-xl premium-shadow p-6 mb-6">
@@ -87,19 +146,6 @@
                         <div class="h-5 w-32 skeleton rounded mb-2"></div>
                         <div class="h-3 w-20 skeleton rounded mb-2"></div>
                         <div class="h-5 w-24 skeleton rounded"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="glass-panel p-5 rounded-xl premium-shadow">
-                <div class="space-y-3">
-                    <div class="h-16 skeleton rounded-lg"></div>
-                    <div class="h-16 skeleton rounded-lg"></div>
-                </div>
-                <div class="pt-3 mt-3 border-t border-zinc-100">
-                    <div class="h-3 w-24 skeleton rounded mb-3"></div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="h-32 skeleton rounded-lg"></div>
-                        <div class="h-32 skeleton rounded-lg"></div>
                     </div>
                 </div>
             </div>
@@ -156,6 +202,7 @@
                     </button>
                 </div>
             </div>
+            {% endif %}
 
             <div class="glass-panel p-4 rounded-xl premium-shadow mb-4 flex items-center justify-between border-2 border-emerald-100 bg-emerald-50/30">
                 <div class="flex items-center gap-3">
@@ -391,7 +438,6 @@
                 </div>
             </div>
         </div>
-        {% endif %}
     </div>
 </div>
 
