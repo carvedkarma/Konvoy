@@ -270,6 +270,70 @@ function setUserLocation(lat, lng) {
     userMarker = L.marker([lat, lng], { icon }).addTo(map);
     userMarker.bindPopup('<b>Your Location</b>').openPopup();
     map.setView([lat, lng], 14);
+    
+    // Sort and update sidebar based on distance to user
+    updateHotspotsSidebar(lat, lng);
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+function updateHotspotsSidebar(userLat, userLng) {
+    const now = new Date();
+    const hour = now.getHours();
+    const day = now.getDay();
+    
+    const hotspotData = HOTSPOTS.map(h => {
+        const demand = calculateDemand(h, hour, day);
+        let distance = null;
+        if (userLat !== undefined && userLng !== undefined) {
+            distance = calculateDistance(userLat, userLng, h.lat, h.lng);
+        }
+        return { ...h, demand, distance };
+    });
+
+    // If user location is available, prioritize distance (within 10km) then demand
+    // Otherwise just sort by demand
+    hotspotData.sort((a, b) => {
+        if (a.distance !== null && b.distance !== null) {
+            // If both are within a reasonable "nearby" range (e.g. 15km), prioritize demand
+            // Otherwise prioritize distance
+            if (a.distance < 15 && b.distance < 15) {
+                return b.demand - a.demand;
+            }
+            return a.distance - b.distance;
+        }
+        return b.demand - a.demand;
+    });
+    
+    const topHotspotsEl = document.getElementById('top-hotspots');
+    topHotspotsEl.innerHTML = hotspotData.slice(0, 5).map(h => {
+        const demandInfo = getDemandLevel(h.demand);
+        const distanceText = h.distance !== null ? `<p class="text-[10px] text-blue-500 font-medium">${h.distance.toFixed(1)} km away</p>` : '';
+        return `
+            <div class="flex items-center justify-between p-3 bg-zinc-50 rounded-lg cursor-pointer hover:bg-zinc-100 transition-colors" onclick="map.setView([${h.lat}, ${h.lng}], 15)">
+                <div>
+                    <p class="text-sm font-semibold text-zinc-900">${h.name}</p>
+                    <p class="text-xs text-zinc-500">${h.type.charAt(0).toUpperCase() + h.type.slice(1)}</p>
+                    ${distanceText}
+                </div>
+                <span class="px-2 py-1 text-xs font-bold rounded-full ${
+                    demandInfo.level === 'high' ? 'bg-red-100 text-red-700' :
+                    demandInfo.level === 'medium' ? 'bg-amber-100 text-amber-700' :
+                    'bg-green-100 text-green-700'
+                }">${h.demand.toFixed(1)}x</span>
+            </div>
+        `;
+    }).join('');
 }
 
 function getUserLocation() {
