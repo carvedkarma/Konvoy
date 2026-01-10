@@ -67,7 +67,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-zinc-900 mb-2">Live Drivers</h1>
-                <p class="text-zinc-500">Real-time driver positions across Perth</p>
+                <p class="text-zinc-500">Sample of nearby active drivers in your area</p>
             </div>
             <button id="refresh-btn" onclick="fetchDrivers()" class="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-all text-sm font-semibold">
                 <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +88,7 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm text-zinc-500 font-medium">Total Drivers Online</p>
+                    <p class="text-sm text-zinc-500 font-medium">Nearby Active Drivers</p>
                     <p id="total-drivers" class="text-4xl font-black text-zinc-900">--</p>
                 </div>
             </div>
@@ -161,6 +161,7 @@
         </div>
         <div id="drivers-map"></div>
         <p id="map-status" class="text-xs text-zinc-400 mt-3 text-center"></p>
+        <p class="text-xs text-zinc-400 mt-2 text-center">Note: Shows a sample of nearby drivers. Actual totals may vary.</p>
     </div>
 </div>
 {% endblock %}

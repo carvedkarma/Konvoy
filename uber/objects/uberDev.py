@@ -1621,51 +1621,51 @@ def uberRidersNearby(cookies,
 
 def generate_perth_grid():
     """
-    Generate tiered coordinate grid covering 200km radius of Perth.
-    CBD: 1km spacing, Metro: 3km spacing, Outer: 8km spacing, Regional: 20km spacing
+    Generate comprehensive tiered coordinate grid covering 150km radius of Perth.
+    CBD: 2km spacing, Metro: 5km spacing, Outer: 10km spacing, Regional: 20km spacing
+    Optimized for maximum driver coverage with minimal overlap.
     """
     perth_center = (-31.9505, 115.8605)
     grid_points = []
     
-    # CBD area (5km radius) - 1km spacing
-    cbd_radius = 5
-    cbd_spacing = 0.009  # ~1km
-    for lat_offset in range(-5, 6):
-        for lng_offset in range(-5, 6):
+    # CBD area (8km radius) - 2km spacing for dense coverage
+    cbd_spacing = 0.018  # ~2km
+    for lat_offset in range(-4, 5):
+        for lng_offset in range(-4, 5):
             lat = perth_center[0] + (lat_offset * cbd_spacing)
             lng = perth_center[1] + (lng_offset * cbd_spacing)
             dist = calculate_distance(perth_center[0], perth_center[1], lat, lng)
-            if dist <= cbd_radius:
+            if dist <= 8:
                 grid_points.append({'lat': lat, 'lng': lng, 'tier': 'cbd'})
     
-    # Metro area (5-25km) - 3km spacing
-    metro_spacing = 0.027  # ~3km
-    for lat_offset in range(-10, 11):
-        for lng_offset in range(-10, 11):
+    # Metro area (8-30km) - 5km spacing
+    metro_spacing = 0.045  # ~5km
+    for lat_offset in range(-7, 8):
+        for lng_offset in range(-7, 8):
             lat = perth_center[0] + (lat_offset * metro_spacing)
             lng = perth_center[1] + (lng_offset * metro_spacing)
             dist = calculate_distance(perth_center[0], perth_center[1], lat, lng)
-            if 5 < dist <= 25:
+            if 8 < dist <= 30:
                 grid_points.append({'lat': lat, 'lng': lng, 'tier': 'metro'})
     
-    # Outer area (25-60km) - 8km spacing
-    outer_spacing = 0.072  # ~8km
-    for lat_offset in range(-10, 11):
-        for lng_offset in range(-10, 11):
+    # Outer suburbs (30-60km) - 10km spacing
+    outer_spacing = 0.09  # ~10km
+    for lat_offset in range(-7, 8):
+        for lng_offset in range(-7, 8):
             lat = perth_center[0] + (lat_offset * outer_spacing)
             lng = perth_center[1] + (lng_offset * outer_spacing)
             dist = calculate_distance(perth_center[0], perth_center[1], lat, lng)
-            if 25 < dist <= 60:
+            if 30 < dist <= 60:
                 grid_points.append({'lat': lat, 'lng': lng, 'tier': 'outer'})
     
-    # Regional area (60-200km) - 20km spacing
+    # Regional area (60-150km) - 20km spacing
     regional_spacing = 0.18  # ~20km
-    for lat_offset in range(-12, 13):
-        for lng_offset in range(-12, 13):
+    for lat_offset in range(-8, 9):
+        for lng_offset in range(-8, 9):
             lat = perth_center[0] + (lat_offset * regional_spacing)
             lng = perth_center[1] + (lng_offset * regional_spacing)
             dist = calculate_distance(perth_center[0], perth_center[1], lat, lng)
-            if 60 < dist <= 200:
+            if 60 < dist <= 150:
                 grid_points.append({'lat': lat, 'lng': lng, 'tier': 'regional'})
     
     return grid_points
@@ -1730,52 +1730,35 @@ def fetch_drivers_at_location(lat, lng):
         return []
 
 
-def fetch_all_perth_drivers(max_points=50):
+def fetch_all_perth_drivers(max_points=60):
     """
-    Fetch drivers from multiple grid points across Perth.
-    Returns deduplicated list of all drivers with counts by product type.
+    Fetch nearby drivers from Perth CBD area.
+    Returns list of drivers with counts by product type.
+    Note: Due to API limitations, this returns a sample of nearby drivers
+    rather than comprehensive Perth-wide coverage.
     """
-    import concurrent.futures
-    import time
+    # Single location fetch to avoid rate limits
+    # The API returns drivers visible from this location
+    perth_cbd = (-31.9505, 115.8605)
     
-    grid = generate_perth_grid()
-    cbd_points = [p for p in grid if p['tier'] == 'cbd']
-    metro_points = [p for p in grid if p['tier'] == 'metro']
-    outer_points = [p for p in grid if p['tier'] == 'outer']
+    drivers = fetch_drivers_at_location(perth_cbd[0], perth_cbd[1])
     
-    selected_points = cbd_points[:12] + metro_points[:15] + outer_points[:8]
-    selected_points = selected_points[:max_points]
+    counts_by_type = {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0}
+    for driver in drivers:
+        ptype = driver.get('product_type', 'UberX')
+        if ptype in counts_by_type:
+            counts_by_type[ptype] += 1
     
-    all_drivers = {}
-    counts_by_type = {'UberX': set(), 'Comfort': set(), 'XL': set(), 'Black': set()}
-    
-    def fetch_point(point):
-        time.sleep(0.1)
-        return fetch_drivers_at_location(point['lat'], point['lng'])
-    
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        results = list(executor.map(fetch_point, selected_points))
-    
-    for drivers in results:
-        for driver in drivers:
-            driver_id = driver.get('id')
-            if driver_id and driver_id not in all_drivers:
-                all_drivers[driver_id] = driver
-                ptype = driver.get('product_type', 'UberX')
-                if ptype in counts_by_type:
-                    counts_by_type[ptype].add(driver_id)
-    
-    unique_drivers = list(all_drivers.values())
     counts = {
-        'total': len(unique_drivers),
-        'uberx': len(counts_by_type['UberX']),
-        'comfort': len(counts_by_type['Comfort']),
-        'xl': len(counts_by_type['XL']),
-        'black': len(counts_by_type['Black']),
+        'total': len(drivers),
+        'uberx': counts_by_type['UberX'],
+        'comfort': counts_by_type['Comfort'],
+        'xl': counts_by_type['XL'],
+        'black': counts_by_type['Black'],
     }
     
     return {
-        'drivers': unique_drivers,
+        'drivers': drivers,
         'counts': counts,
-        'grid_points_polled': len(selected_points),
+        'grid_points_polled': 1,
     }
