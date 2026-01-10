@@ -347,7 +347,7 @@
             }
 
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                alert('Push notifications are not supported in this browser.');
+                alert('Push notifications are not supported in this browser. Please use a modern browser like Chrome or Firefox.');
                 return;
             }
             
@@ -363,6 +363,9 @@
                 await navigator.serviceWorker.ready;
                 console.log('Service worker ready');
 
+                // Force refresh registration if needed
+                registration = await navigator.serviceWorker.getRegistration();
+
                 const keyRes = await fetch('/api/push/vapid-public-key');
                 const keyData = await keyRes.json();
                 if (!keyData.success) {
@@ -370,20 +373,31 @@
                     return;
                 }
                 
-                console.log('Requesting permission...');
-                const permission = await Notification.requestPermission();
+                console.log('Requesting permission using modern API...');
+                let permission = Notification.permission;
+                
+                if (permission === 'default') {
+                    permission = await Notification.requestPermission();
+                }
+                
                 console.log('Permission status:', permission);
                 
                 if (permission !== 'granted') {
-                    alert('Notification permission denied. Please enable it in your browser settings.');
+                    if (permission === 'denied') {
+                        alert('Notification permission was denied. You need to reset the permission in your browser address bar settings (look for the lock icon) to enable notifications.');
+                    } else {
+                        alert('Notification permission is required to receive updates.');
+                    }
                     return;
                 }
                 
+                console.log('Subscribing to PushManager...');
                 const subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
                 });
                 
+                console.log('Sending subscription to server...');
                 const res = await fetch('/api/push/subscribe', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -394,10 +408,12 @@
                 if (data.success) {
                     checkPushStatus();
                     alert('Push notifications enabled!');
+                } else {
+                    throw new Error(data.message || 'Server failed to save subscription');
                 }
             } catch (e) {
                 console.error('Push subscription error:', e);
-                alert('Failed to enable push notifications: ' + e.message);
+                alert('Could not enable notifications: ' + e.message);
             }
         }
         
