@@ -72,12 +72,24 @@
                 </nav>
 
                 <div class="flex items-center space-x-3">
-                    <button id="push-notification-btn" class="relative p-2 text-zinc-400 hover:text-zinc-600 rounded-full hover:bg-zinc-100 transition-colors" title="Enable Notifications">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                        <span id="push-notification-dot" class="hidden absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full"></span>
-                    </button>
+                    <div class="dropdown relative">
+                        <button id="push-notification-btn" class="relative p-2 text-zinc-400 hover:text-zinc-600 rounded-full hover:bg-zinc-100 transition-colors" title="Notifications">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            <span id="push-notification-dot" class="hidden absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full"></span>
+                        </button>
+                        <div class="dropdown-menu absolute top-full right-0 mt-1 w-64 bg-white rounded-xl shadow-xl border border-zinc-100 p-4 z-[60]">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-bold text-zinc-900">Notifications</h3>
+                                <span id="push-status-badge" class="px-2 py-0.5 text-[10px] font-medium rounded-full bg-zinc-100 text-zinc-500">Checking...</span>
+                            </div>
+                            <p class="text-xs text-zinc-500 mb-4 leading-relaxed">Stay updated with real-time ride alerts and system announcements.</p>
+                            <button id="push-toggle-action" class="w-full py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 group">
+                                <span id="push-toggle-text">Enable Notifications</span>
+                            </button>
+                        </div>
+                    </div>
                     
                     <div class="dropdown relative">
                         <button class="flex items-center space-x-2">
@@ -265,6 +277,9 @@
         // Push Notifications
         const pushBtn = document.getElementById('push-notification-btn');
         const pushDot = document.getElementById('push-notification-dot');
+        const pushToggleAction = document.getElementById('push-toggle-action');
+        const pushToggleText = document.getElementById('push-toggle-text');
+        const pushStatusBadge = document.getElementById('push-status-badge');
         
         function urlBase64ToUint8Array(base64String) {
             const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -286,11 +301,29 @@
                     pushBtn.classList.add('text-emerald-500');
                     pushDot.classList.remove('hidden');
                     pushBtn.title = 'Notifications enabled';
+                    
+                    if (pushStatusBadge) {
+                        pushStatusBadge.textContent = 'Enabled';
+                        pushStatusBadge.className = 'px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-50 text-emerald-600';
+                    }
+                    if (pushToggleAction) {
+                        pushToggleAction.className = 'w-full py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 bg-zinc-100 text-red-500 hover:bg-red-50';
+                        pushToggleText.textContent = 'Disable Notifications';
+                    }
                 } else {
                     pushBtn.classList.add('text-zinc-400');
                     pushBtn.classList.remove('text-emerald-500');
                     pushDot.classList.add('hidden');
                     pushBtn.title = 'Enable notifications';
+
+                    if (pushStatusBadge) {
+                        pushStatusBadge.textContent = 'Disabled';
+                        pushStatusBadge.className = 'px-2 py-0.5 text-[10px] font-medium rounded-full bg-zinc-100 text-zinc-500';
+                    }
+                    if (pushToggleAction) {
+                        pushToggleAction.className = 'w-full py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 bg-black text-white hover:bg-zinc-800';
+                        pushToggleText.textContent = 'Enable Notifications';
+                    }
                 }
             } catch (e) {}
         }
@@ -348,7 +381,6 @@
                 const data = await res.json();
                 if (data.success) {
                     checkPushStatus();
-                    alert('Push notifications enabled!');
                 }
             } catch (e) {
                 console.error('Push subscription error:', e);
@@ -371,14 +403,14 @@
                     body: JSON.stringify({})
                 });
                 checkPushStatus();
-                alert('Push notifications disabled.');
             } catch (e) {
                 console.error('Push unsubscribe error:', e);
             }
         }
         
-        if (pushBtn) {
-            pushBtn.addEventListener('click', async () => {
+        if (pushToggleAction) {
+            pushToggleAction.addEventListener('click', async (e) => {
+                e.stopPropagation();
                 const res = await fetch('/api/push/status');
                 const data = await res.json();
                 if (data.subscribed) {
@@ -389,8 +421,9 @@
                     subscribeToPush();
                 }
             });
-            checkPushStatus();
         }
+
+        checkPushStatus();
     </script>
     {% endif %}
 </body>
