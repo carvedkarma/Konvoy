@@ -54,12 +54,16 @@ Preferred communication style: Simple, everyday language.
   - Fetches fare estimates by ride type (UberX, Comfort, etc.)
   - Displays estimated driver earnings (73% of fare after Uber's cut)
   - Shows trip distance from API (`unmodifiedDistance`) and ETA calculation
-- **Live Driver Sample View**: Shows nearby active drivers in Perth CBD area
+- **Live Driver Accumulation System**: Counts unique drivers near user's location
   - Uses Uber's GetStatus GraphQL API (`m.uber.com/go/graphql`)
-  - Displays driver positions on interactive map with product type breakdown
-  - Product type inference from vehicle icons (UberX, Comfort, XL, Black)
-  - 30-second auto-refresh for real-time updates
-  - Note: API limitations mean this shows a sample of ~10 nearby drivers, not comprehensive city-wide data
+  - **Coordinate-based deduplication**: Drivers within 100m are counted as one
+  - **Bearing check**: Drivers at same location facing opposite directions (>90°) counted separately
+  - **5 sample points**: Polls center + N/S/E/W within 1km radius of user location
+  - **3-second polling**: Rotates through sample points for broader coverage
+  - **3-minute rolling window**: Accumulates unique drivers, older entries expire
+  - **Per-user cache**: Each user has separate driver cache, cleared on logout
+  - **Geolocation support**: Uses browser location or defaults to Perth CBD
+  - Displays product type breakdown (UberX, Comfort, XL, Black) and sample counter
 
 ### Uber Account Connection
 - Users can connect their Uber driver accounts via `/uber-connect`
