@@ -13,473 +13,1962 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
 }
-.dark-skeleton {
-    background: linear-gradient(90deg, #3f3f46 25%, #52525b 50%, #3f3f46 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+@keyframes road-move {
+    0% { background-position: 0 0; }
+    100% { background-position: -20px 0; }
 }
 @keyframes glow-pulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); }
-    50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.4); }
+    0%, 100% { box-shadow: 0 0 15px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255,255,255,0.1); }
+    50% { box-shadow: 0 0 25px rgba(34, 197, 94, 0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
+}
+@keyframes dot-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
 }
 .active-ride-card {
     background: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%);
     animation: glow-pulse 2s ease-in-out infinite;
 }
+.road-line {
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.4) 0px, rgba(255,255,255,0.4) 8px, transparent 8px, transparent 16px);
+    animation: road-move 0.5s linear infinite;
+}
+.live-dot {
+    animation: dot-pulse 1.5s ease-in-out infinite;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-zinc-100 py-8 px-4">
-    <div class="max-w-xl mx-auto">
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-2xl">
+        <div id="permission-banner" class="hidden mb-6">
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-amber-800">Permissions Required</p>
+                        <p class="text-xs text-amber-600 mt-0.5" id="permission-message">Enable location and notifications for the best experience.</p>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            <button id="enable-location-btn" class="hidden px-3 py-1.5 text-xs font-bold bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1.5 shadow-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                Enable Location
+                            </button>
+                            <button id="enable-notifications-btn" class="hidden px-3 py-1.5 text-xs font-bold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-1.5 shadow-sm">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                </svg>
+                                Enable Notifications
+                            </button>
+                        </div>
+                    </div>
+                    <button id="dismiss-permission-banner" class="flex-shrink-0 text-amber-400 hover:text-amber-600 p-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        {% if loading %}
+        <div id="loading-skeleton">
+            <div class="glass-panel rounded-xl premium-shadow p-6 mb-6">
+                <div class="flex items-center">
+                    <div class="w-20 h-20 rounded-full skeleton"></div>
+                    <div class="ml-5 flex-1">
+                        <div class="h-5 w-32 skeleton rounded mb-2"></div>
+                        <div class="h-3 w-20 skeleton rounded mb-2"></div>
+                        <div class="h-5 w-24 skeleton rounded"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-panel p-5 rounded-xl premium-shadow">
+                <div class="space-y-3">
+                    <div class="h-16 skeleton rounded-lg"></div>
+                    <div class="h-16 skeleton rounded-lg"></div>
+                </div>
+                <div class="pt-3 mt-3 border-t border-zinc-100">
+                    <div class="h-3 w-24 skeleton rounded mb-3"></div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="h-32 skeleton rounded-lg"></div>
+                        <div class="h-32 skeleton rounded-lg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="home-content" class="hidden"></div>
+        {% else %}
         
         {% if driver_info %}
-        <div class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 mb-6">
+        <div class="glass-panel rounded-xl premium-shadow p-6 mb-6">
             <div class="flex items-center">
                 <div class="relative">
                     {% if driver_info.photo %}
-                    <img src="{{ driver_info.photo }}" alt="Profile" class="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md">
+                    <img src="{{ driver_info.photo }}" alt="Driver Photo" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg">
                     {% else %}
-                    <div class="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center border-4 border-white shadow-md">
-                        <span class="text-xl font-bold text-white">{{ current_user.username[:2].upper() }}</span>
+                    <div class="w-20 h-20 rounded-full bg-zinc-200 flex items-center justify-center border-4 border-white shadow-lg">
+                        <svg class="w-10 h-10 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                        </svg>
                     </div>
                     {% endif %}
-                    <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white"></div>
-                </div>
-                <div class="ml-4 flex-1">
-                    <h1 class="text-xl font-bold text-zinc-900">{{ driver_info.name }}</h1>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span class="px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-lg {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
-                        <span class="px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-lg bg-emerald-100 text-emerald-700">Connected</span>
+                    <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                        <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
                     </div>
                 </div>
-                <button id="disconnectBtn" class="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="ml-5 flex-1">
+                    <h1 class="text-xl font-bold text-zinc-900">{{ driver_info.name }}</h1>
+                    {% if driver_info.email %}
+                    <p class="text-sm text-zinc-500">{{ driver_info.email }}</p>
+                    {% endif %}
+                    {% if driver_info.phone %}
+                    <p class="text-xs text-zinc-400">{{ driver_info.phone }}</p>
+                    {% endif %}
+                    <div class="flex items-center mt-2 space-x-2">
+                        <span class="inline-block px-2.5 py-0.5 text-xs font-medium rounded-full border {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
+                        <span class="inline-block px-2.5 py-0.5 text-xs font-medium rounded-full bg-emerald-500 text-white">Connected</span>
+                    </div>
+                </div>
+                <button id="disconnectBtn" class="ml-auto p-2.5 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors" title="Disconnect Uber Account">
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                     </svg>
                 </button>
             </div>
         </div>
         {% else %}
-        <div class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 mb-6">
-            <div class="flex items-center">
-                <div class="w-16 h-16 rounded-full bg-zinc-200 flex items-center justify-center">
-                    <svg class="w-8 h-8 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <div class="ml-4 flex-1">
-                    <h1 class="text-xl font-bold text-zinc-900">{{ current_user.username }}</h1>
-                    <span class="inline-block mt-1 px-2.5 py-1 text-xs font-bold uppercase tracking-wide rounded-lg {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
-                </div>
-                <a href="{{ url_for('uber_connect') }}" class="px-4 py-2 bg-zinc-900 text-white text-sm font-semibold rounded-lg hover:bg-zinc-800 transition-colors">
-                    Connect Uber
-                </a>
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-zinc-100 flex items-center justify-center">
+                <svg class="w-8 h-8 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                </svg>
             </div>
+            <span class="inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full border {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
+            <p class="text-sm text-zinc-500 mt-2">Connect your Uber account to get started</p>
         </div>
         {% endif %}
 
-        <div class="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden mb-6">
+        <div class="glass-panel p-5 rounded-xl premium-shadow space-y-3">
             {% if current_user.has_permission('can_change_location') %}
-            <a href="/change-location" class="flex items-center p-5 bg-zinc-900 text-white hover:bg-zinc-800 transition-colors">
-                <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <a href="/change-location" class="flex items-center p-4 bg-black text-white rounded-lg hover:bg-zinc-800 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                </svg>
+                <div>
+                    <p class="font-semibold text-sm">Change Location</p>
+                    <p class="text-xs text-zinc-400">Update driver position</p>
+                </div>
+            </a>
+            {% else %}
+            <div class="flex items-center p-4 bg-zinc-100 border border-zinc-200 rounded-lg opacity-60">
+                <svg class="w-5 h-5 mr-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <div>
+                    <p class="font-semibold text-sm text-zinc-500">Change Location</p>
+                    <p class="text-xs text-zinc-400">Locked - No permission</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if current_user.has_permission('can_fetch_ride') %}
+            <div class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors group/fetch relative">
+                <a href="/fetch-ride" class="flex items-center flex-1">
+                    <svg class="w-5 h-5 mr-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                    <div>
+                        <p class="font-semibold text-sm text-zinc-900">Fetch Ride</p>
+                        <p class="text-xs text-zinc-500">Get ride details</p>
+                    </div>
+                </a>
+                <button id="pip-btn" class="p-2 ml-2 bg-black text-white rounded-lg hover:bg-zinc-800 transition-all shadow-xl z-20" style="display: flex !important; align-items: center; justify-content: center;" title="Open Floating View">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </button>
+            </div>
+            {% else %}
+            <div class="flex items-center p-4 bg-zinc-100 border border-zinc-200 rounded-lg opacity-60">
+                <svg class="w-5 h-5 mr-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <div>
+                    <p class="font-semibold text-sm text-zinc-500">Fetch Ride</p>
+                    <p class="text-xs text-zinc-400">Locked - No permission</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <a href="{{ url_for('flight_center') }}" class="flex items-center p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
                     </svg>
                 </div>
                 <div class="flex-1">
-                    <p class="font-semibold text-base">Change Location</p>
-                    <p class="text-sm text-zinc-400">Update driver position</p>
+                    <p class="font-semibold text-sm">Flight Center</p>
+                    <p class="text-xs text-blue-100">Perth Airport arrivals</p>
                 </div>
-                <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
             </a>
-            {% else %}
-            <div class="flex items-center p-5 bg-zinc-100 opacity-60">
-                <div class="w-10 h-10 bg-zinc-200 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                    </svg>
+
+            <a href="{{ url_for('chat_lobby') }}" class="flex items-center p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl relative group">
+                <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>
+                <div class="w-12 h-10 flex items-center mr-3 relative z-10">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 3c5.5 0 10 3.58 10 8s-4.5 8-10 8c-1.24 0-2.43-.18-3.53-.5C5.55 21 2 21 2 21c2.33-2.33 2.7-3.9 2.75-4.5C3.05 15.07 2 13.13 2 11c0-4.42 4.5-8 10-8z"/>
+                        </svg>
+                    </div>
+                    <span id="unread-badge-container" class="absolute top-0 right-0"></span>
                 </div>
                 <div class="flex-1">
-                    <p class="font-semibold text-base text-zinc-500">Change Location</p>
-                    <p class="text-sm text-zinc-400">Locked</p>
+                    <p class="font-semibold text-sm">Chat Lobby</p>
+                    <p class="text-xs text-purple-100">Real-time team chat</p>
+                </div>
+                <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+
+            {% if not current_user.uber_connected %}
+            <a href="{{ url_for('uber_connect') }}" class="flex items-center p-4 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
+                <svg class="w-5 h-5 mr-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                <div>
+                    <p class="font-semibold text-sm text-amber-900">Connect Uber</p>
+                    <p class="text-xs text-amber-700">Link your driver account</p>
+                </div>
+            </a>
+            {% endif %}
+
+            {% if vehicles %}
+            <div class="pt-3 border-t border-zinc-100">
+                <p class="text-xs text-zinc-400 mb-3">Your Vehicles</p>
+                <div class="grid grid-cols-2 gap-3">
+                    {% for vehicle in vehicles %}
+                    <div class="relative p-3 rounded-lg border-2 {% if vehicle.isDefault %}border-green-400 bg-green-50{% else %}border-zinc-200 bg-zinc-50{% endif %}">
+                        {% if vehicle.isDefault %}
+                        <span class="absolute top-2 right-2 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded">DEFAULT</span>
+                        {% endif %}
+                        {% if vehicle.imageUrl %}
+                        <img src="{{ vehicle.imageUrl }}" alt="{{ vehicle.make }} {{ vehicle.model }}" class="w-full h-20 object-contain mb-2">
+                        {% else %}
+                        <div class="w-full h-20 bg-zinc-200 rounded flex items-center justify-center mb-2">
+                            <svg class="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                        <p class="text-sm font-semibold text-zinc-900">{{ vehicle.make }} {{ vehicle.model }}</p>
+                        <p class="text-xs text-zinc-500">{{ vehicle.year }} · {{ vehicle.licensePlate }}</p>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
             {% endif %}
 
-            <div class="border-t border-zinc-100">
-                {% if current_user.has_permission('can_fetch_ride') %}
-                <div class="flex items-center p-5 hover:bg-zinc-50 transition-colors">
-                    <a href="/fetch-ride" class="flex items-center flex-1">
-                        <div class="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center mr-4">
-                            <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                            </svg>
+            <div id="drivers-nearby-section" class="pt-3 border-t border-zinc-100">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-zinc-400">Drivers Nearby</p>
+                        <span id="drivers-scanning-badge" class="hidden px-1.5 py-0.5 bg-emerald-100 text-emerald-600 text-[10px] font-semibold rounded-full animate-pulse">Scanning</span>
+                    </div>
+                    <p id="drivers-updated" class="text-[10px] text-zinc-400">--</p>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-lg text-center">
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
+                            <p class="text-xs text-emerald-700 font-medium">UberX</p>
                         </div>
-                        <div class="flex-1">
-                            <p class="font-semibold text-base text-zinc-900">Fetch Ride</p>
-                            <p class="text-sm text-zinc-500">Get ride details</p>
+                        <p id="hp-uberx-count" class="text-xl font-bold text-emerald-900">--</p>
+                        <p id="hp-uberx-change" class="text-[10px] text-zinc-500 mt-0.5">--</p>
+                    </div>
+                    <div class="p-3 bg-amber-50 border border-amber-100 rounded-lg text-center">
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <div class="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
+                            <p class="text-xs text-amber-700 font-medium">XL</p>
                         </div>
+                        <p id="hp-xl-count" class="text-xl font-bold text-amber-900">--</p>
+                        <p id="hp-xl-change" class="text-[10px] text-zinc-500 mt-0.5">--</p>
+                    </div>
+                    <div class="p-3 bg-zinc-100 border border-zinc-200 rounded-lg text-center">
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <div class="w-2.5 h-2.5 bg-zinc-900 rounded-full"></div>
+                            <p class="text-xs text-zinc-700 font-medium">Black</p>
+                        </div>
+                        <p id="hp-black-count" class="text-xl font-bold text-zinc-900">--</p>
+                        <p id="hp-black-change" class="text-[10px] text-zinc-500 mt-0.5">--</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('live_drivers_page') }}" class="mt-2 flex items-center justify-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 transition-colors">
+                    <span>View Live Map</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+
+            {% if current_user.is_owner() %}
+            <div class="pt-3 border-t border-zinc-100">
+                <p class="text-xs text-zinc-400 mb-2">Admin</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="{{ url_for('admin') }}" class="p-3 bg-zinc-50 border border-zinc-200 rounded-lg text-center hover:bg-zinc-100 transition-colors">
+                        <p class="text-sm font-medium text-zinc-700">Users</p>
                     </a>
-                    <button id="pip-btn" class="w-10 h-10 bg-zinc-900 text-white rounded-xl flex items-center justify-center hover:bg-zinc-800 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
+                    <a href="{{ url_for('roles') }}" class="p-3 bg-zinc-50 border border-zinc-200 rounded-lg text-center hover:bg-zinc-100 transition-colors">
+                        <p class="text-sm font-medium text-zinc-700">Roles</p>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div id="flightCenter" class="mt-6">
+            <div class="glass-panel rounded-xl premium-shadow overflow-hidden">
+                <div class="bg-black px-4 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                            </svg>
+                            <span class="text-white font-semibold text-sm">Flight Center</span>
+                            <span id="flightTotal" class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">--</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select id="terminalSelect" class="text-xs bg-white/10 border-0 rounded px-2 py-1 text-white focus:ring-1 focus:ring-white/20">
+                                <option value="" class="text-zinc-900">All</option>
+                            </select>
+                            <a href="{{ url_for('flight_center') }}" class="text-xs text-zinc-400 hover:text-white">View All</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-3">
+                    <div id="flightGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>
+                    <p id="flightFooter" class="text-zinc-400 text-[10px] text-center mt-2">Loading...</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if disconnect_form %}
+<div id="disconnectModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+        <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-white font-bold text-lg">Disconnect Account</h3>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-zinc-600 text-sm mb-6">Are you sure you want to disconnect your Uber account? You'll need to reconnect to use driver features.</p>
+            <div class="flex gap-3">
+                <button id="cancelDisconnect" class="flex-1 bg-zinc-100 text-zinc-700 py-3 rounded-xl font-semibold text-sm hover:bg-zinc-200 transition-colors">
+                    Cancel
+                </button>
+                <form action="/uber-disconnect" method="POST" class="flex-1">
+                    {{ disconnect_form.hidden_tag() }}
+                    <button type="submit" class="w-full bg-red-500 text-white py-3 rounded-xl font-semibold text-sm hover:bg-red-600 transition-colors">
+                        Disconnect
                     </button>
-                </div>
-                {% else %}
-                <div class="flex items-center p-5 opacity-60">
-                    <div class="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center mr-4">
-                        <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                        </svg>
-                    </div>
-                    <div class="flex-1">
-                        <p class="font-semibold text-base text-zinc-500">Fetch Ride</p>
-                        <p class="text-sm text-zinc-400">Locked</p>
-                    </div>
-                </div>
-                {% endif %}
+                </form>
             </div>
-
-            <a href="/flight-center" class="flex items-center p-5 bg-gradient-to-r from-cyan-400 to-blue-500 text-white hover:from-cyan-500 hover:to-blue-600 transition-all border-t border-cyan-300/20">
-                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="font-semibold text-base">Flight Center</p>
-                    <p class="text-sm text-white/80">Perth Airport arrivals</p>
-                </div>
-                <svg class="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-
-            <a href="/chat" class="flex items-center p-5 bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:from-pink-600 hover:to-rose-600 transition-all">
-                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="font-semibold text-base">Chat Lobby</p>
-                    <p class="text-sm text-white/80">Real-time team chat</p>
-                </div>
-                <svg class="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-        </div>
-
-        {% if vehicles and vehicles|length > 0 %}
-        <div class="mb-6">
-            <p class="text-sm font-semibold text-zinc-500 uppercase tracking-wide mb-3">Your Vehicles</p>
-            <div class="grid grid-cols-2 gap-4">
-                {% for vehicle in vehicles %}
-                <div class="bg-white rounded-2xl shadow-sm border-2 {% if vehicle.is_default %}border-emerald-400{% else %}border-zinc-200{% endif %} p-4 relative">
-                    {% if vehicle.is_default %}
-                    <span class="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-emerald-500 text-white rounded-full">Default</span>
-                    {% endif %}
-                    {% if vehicle.image_url %}
-                    <img src="{{ vehicle.image_url }}" alt="{{ vehicle.make }}" class="w-full h-24 object-contain mb-3">
-                    {% else %}
-                    <div class="w-full h-24 bg-zinc-50 rounded-xl flex items-center justify-center mb-3">
-                        <svg class="w-12 h-12 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 17h8M8 17v-4m8 4v-4m-8 0h8m-8 0V9a2 2 0 012-2h4a2 2 0 012 2v4"/>
-                        </svg>
-                    </div>
-                    {% endif %}
-                    <p class="font-bold text-zinc-900">{{ vehicle.make }} {{ vehicle.model }}</p>
-                    <p class="text-sm text-zinc-500">{{ vehicle.year }} · {{ vehicle.plate }}</p>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if current_user.has_permission('can_access_admin') %}
-        <div class="mb-6">
-            <p class="text-sm font-semibold text-zinc-500 uppercase tracking-wide mb-3">Admin</p>
-            <div class="grid grid-cols-2 gap-4">
-                <a href="/admin" class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-5 text-center hover:bg-zinc-50 hover:border-zinc-300 transition-all">
-                    <p class="font-semibold text-zinc-900">Users</p>
-                </a>
-                <a href="/roles" class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-5 text-center hover:bg-zinc-50 hover:border-zinc-300 transition-all">
-                    <p class="font-semibold text-zinc-900">Roles</p>
-                </a>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="bg-zinc-900 rounded-2xl overflow-hidden shadow-lg mb-6">
-            <div class="px-5 py-4 flex items-center justify-between border-b border-zinc-800">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                        </svg>
-                    </div>
-                    <span class="font-semibold text-white">Flight Center</span>
-                    <span id="flight-count" class="px-2 py-0.5 text-xs font-bold bg-zinc-700 text-zinc-300 rounded-full">--</span>
-                </div>
-                <a href="/flight-center" class="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1">
-                    View All
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
-                </a>
-            </div>
-            <div class="p-5">
-                <div id="flight-timeline" class="flex gap-4 overflow-x-auto pb-2">
-                    <div class="flex-shrink-0 text-center">
-                        <p class="text-xs text-zinc-500 mb-2">00:00</p>
-                        <div class="bg-zinc-800 rounded-xl px-4 py-3 min-w-[60px]">
-                            <p class="text-2xl font-bold text-white dark-skeleton w-8 h-8 rounded mx-auto"></p>
-                        </div>
-                    </div>
-                    <div class="flex-shrink-0 text-center">
-                        <p class="text-xs text-zinc-500 mb-2">01:00</p>
-                        <div class="bg-zinc-800 rounded-xl px-4 py-3 min-w-[60px]">
-                            <p class="text-2xl font-bold text-white dark-skeleton w-8 h-8 rounded mx-auto"></p>
-                        </div>
-                    </div>
-                    <div class="flex-shrink-0 text-center">
-                        <p class="text-xs text-zinc-500 mb-2">02:00</p>
-                        <div class="bg-zinc-800 rounded-xl px-4 py-3 min-w-[60px]">
-                            <p class="text-2xl font-bold text-white dark-skeleton w-8 h-8 rounded mx-auto"></p>
-                        </div>
-                    </div>
-                </div>
-                <p id="flight-remaining" class="text-center text-xs text-zinc-500 mt-3">Loading flight data...</p>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden mb-6">
-            <a href="/demand" class="flex items-center p-5 hover:bg-zinc-50 transition-colors border-b border-zinc-100">
-                <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="font-semibold text-base text-zinc-900">Demand Intelligence</p>
-                    <p class="text-sm text-zinc-500">Live events & hotspots</p>
-                </div>
-                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-            <a href="/smart-route" class="flex items-center p-5 hover:bg-zinc-50 transition-colors border-b border-zinc-100">
-                <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="font-semibold text-base text-zinc-900">Smart Route</p>
-                    <p class="text-sm text-zinc-500">AI-powered profitability</p>
-                </div>
-                <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide bg-blue-100 text-blue-600 rounded-full mr-2">Beta</span>
-                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-            <a href="{{ url_for('live_drivers_page') }}" class="flex items-center p-5 hover:bg-zinc-50 transition-colors">
-                <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mr-4">
-                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="font-semibold text-base text-zinc-900">Live Drivers</p>
-                    <p class="text-sm text-zinc-500">{{ drivers_nearby.total }} nearby</p>
-                </div>
-                <div class="flex items-center gap-2 mr-2">
-                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span class="text-xs font-semibold text-emerald-600">Live</span>
-                </div>
-                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-        </div>
-
-        <div class="text-center py-6">
-            <p class="text-xs text-zinc-400 font-medium uppercase tracking-widest">RizTar &copy; 2026</p>
         </div>
     </div>
 </div>
+{% endif %}
 
-<div id="pip-container" class="hidden fixed bottom-6 right-6 w-80 bg-white rounded-2xl shadow-2xl border border-zinc-200 overflow-hidden z-[100]">
-    <div class="p-4 bg-zinc-900 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-            <span class="text-sm font-bold text-white">Live Feed</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <button id="pip-refresh" class="p-1.5 text-zinc-400 hover:text-white transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            </button>
-            <button id="pip-close" class="p-1.5 text-zinc-400 hover:text-white transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-    </div>
-    <div id="pip-content" class="p-5 min-h-[140px]">
-        <div class="flex flex-col items-center justify-center h-full py-4">
-            <div class="w-8 h-8 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin mb-3"></div>
-            <p class="text-sm text-zinc-500">Loading...</p>
-        </div>
-    </div>
-</div>
-
-<form id="disconnectForm" method="POST" action="{{ url_for('uber_disconnect') }}" class="hidden">
-    {{ disconnect_form.csrf_token if disconnect_form else '' }}
-</form>
 {% endblock %}
 
 {% block extra_scripts %}
+{% if loading %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const disconnectBtn = document.getElementById('disconnectBtn');
-    const disconnectForm = document.getElementById('disconnectForm');
-    
-    if (disconnectBtn && disconnectForm) {
-        disconnectBtn.addEventListener('click', function() {
-            if (confirm('Disconnect your Uber account?')) {
-                disconnectForm.submit();
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+fetch('/api/home-data')
+    .then(response => response.json())
+    .then(data => {
+        const loadingEl = document.getElementById('loading-skeleton');
+        const contentEl = document.getElementById('home-content');
+        
+        const di = data.driver_info;
+        const vehicles = data.vehicles || [];
+        const defaultVehicle = data.default_vehicle;
+        const activeRide = data.active_ride;
+        const driverStatus = data.driver_status;
+        const nearbyDrivers = data.nearby_drivers;
+        const unreadCount = data.unread_chat_count || 0;
+        
+        // Update unread badge
+        const unreadBadge = document.getElementById('unread-badge-container');
+        if (unreadBadge) {
+            if (unreadCount > 0) {
+                unreadBadge.innerHTML = `<span class="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg">${unreadCount > 99 ? '99+' : unreadCount}</span>`;
+            } else {
+                unreadBadge.innerHTML = '';
             }
-        });
-    }
+        }
+        
+        const isOwner = {{ 'true' if current_user.is_owner() else 'false' }};
+        const hasLocationPerm = {{ 'true' if current_user.has_permission('can_change_location') else 'false' }};
+        const hasRidePerm = {{ 'true' if current_user.has_permission('can_fetch_ride') else 'false' }};
+        const uberConnected = {{ 'true' if current_user.uber_connected else 'false' }};
+        const userName = "{{ current_user.get_display_name()|e }}";
+        const roleDisplay = "{{ current_user.get_role_display()|e }}";
+        const roleBadgeClasses = "{{ current_user.get_role_badge_classes()|e }}";
+        const userProfileImage = "{{ current_user.profile_image or '' }}";
+        function updatePermissionUI() {
+            const banner = document.getElementById('permission-banner');
+            const locationBtn = document.getElementById('enable-location-btn');
+            const notificationBtn = document.getElementById('enable-notifications-btn');
+            const messageEl = document.getElementById('permission-message');
 
-    const pipBtn = document.getElementById('pip-btn');
-    const pipContainer = document.getElementById('pip-container');
-    const pipClose = document.getElementById('pip-close');
-    const pipRefresh = document.getElementById('pip-refresh');
-    const pipContent = document.getElementById('pip-content');
+            if (!banner) return;
+            if (localStorage.getItem('permissionBannerDismissed')) return;
+            
+            // Check if both permissions already granted
+            const locationGranted = localStorage.getItem('locationPermissionGranted') === 'true';
+            const notifyGranted = 'Notification' in window && Notification.permission === 'granted';
+            
+            if (locationGranted && notifyGranted) {
+                banner.classList.add('hidden');
+                return;
+            }
 
-    let pipInterval = null;
-
-    function updatePipContent() {
-        fetch('/api/home-data')
-            .then(response => response.json())
-            .then(data => {
-                if (data.active_ride) {
-                    const ride = data.active_ride;
-                    pipContent.innerHTML = `
-                        <div class="active-ride-card p-4 rounded-xl text-white">
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="text-xs font-bold uppercase tracking-wide bg-white/20 px-2 py-1 rounded-lg">Active Trip</span>
-                                <span class="text-xs font-medium text-white/70">${ride.trip_type || 'UberX'}</span>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-white/80" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-                                </div>
-                                <div>
-                                    <p class="font-bold">${ride.full_name}</p>
-                                    <p class="text-sm text-white/70">${ride.rating} ★ Rating</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    pipContent.innerHTML = `
-                        <div class="flex flex-col items-center justify-center py-6 text-center">
-                            <div class="w-14 h-14 bg-zinc-100 rounded-xl flex items-center justify-center mb-3">
-                                <svg class="w-7 h-7 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1-1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
-                            </div>
-                            <p class="font-semibold text-zinc-900">No Active Ride</p>
-                            <p class="text-sm text-zinc-500 mt-1">Waiting for ride signal...</p>
-                        </div>
-                    `;
+            const geoPromise = new Promise(resolve => {
+                // First check localStorage
+                if (localStorage.getItem('locationPermissionGranted') === 'true') {
+                    if (locationBtn) locationBtn.classList.add('hidden');
+                    resolve(false);
+                    return;
                 }
-            })
-            .catch(err => console.error('PiP error:', err));
-    }
+                // Then check browser permission
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+                        const granted = result.state === 'granted';
+                        if (granted) {
+                            localStorage.setItem('locationPermissionGranted', 'true');
+                            if (locationBtn) locationBtn.classList.add('hidden');
+                        } else if (locationBtn) {
+                            locationBtn.classList.remove('hidden');
+                        }
+                        resolve(!granted);
+                    }).catch(() => resolve(true));
+                } else resolve(true);
+            });
 
-    if (pipBtn) {
-        pipBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            pipContainer.classList.remove('hidden');
-            updatePipContent();
-            if (pipInterval) clearInterval(pipInterval);
-            pipInterval = setInterval(updatePipContent, 5000);
-        });
-    }
+            const notifyPromise = new Promise(resolve => {
+                const granted = 'Notification' in window && Notification.permission === 'granted';
+                if (granted) {
+                    if (notificationBtn) notificationBtn.classList.add('hidden');
+                } else if (notificationBtn) {
+                    notificationBtn.classList.remove('hidden');
+                }
+                resolve(!granted);
+            });
 
-    if (pipClose) {
-        pipClose.addEventListener('click', function() {
-            pipContainer.classList.add('hidden');
-            if (pipInterval) {
-                clearInterval(pipInterval);
-                pipInterval = null;
+            Promise.all([geoPromise, notifyPromise]).then(([needsLoc, needsNotify]) => {
+                if (!needsLoc && !needsNotify) {
+                    banner.classList.add('hidden');
+                } else {
+                    banner.classList.remove('hidden');
+                    if (needsLoc && needsNotify) messageEl.textContent = 'Enable location and notifications for the best experience.';
+                    else if (needsLoc) messageEl.textContent = 'Enable location access for driver features.';
+                    else messageEl.textContent = 'Enable notifications to stay updated.';
+                }
+            });
+            
+            // Wire up notification button for direct notification enabling
+            if (notificationBtn) {
+                notificationBtn.addEventListener('click', async () => {
+                    if (!('Notification' in window)) {
+                        alert('Notifications not supported in this browser.');
+                        return;
+                    }
+                    
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        notificationBtn.classList.add('hidden');
+                        
+                        // Subscribe to push notifications
+                        if ('serviceWorker' in navigator && 'PushManager' in window) {
+                            try {
+                                const keyRes = await fetch('/api/push/vapid-public-key');
+                                const keyData = await keyRes.json();
+                                if (keyData.success) {
+                                    const registration = await navigator.serviceWorker.register('/static/service-worker.js');
+                                    await navigator.serviceWorker.ready;
+                                    
+                                    function urlBase64ToUint8Array(base64String) {
+                                        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                                        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                                        const rawData = window.atob(base64);
+                                        const outputArray = new Uint8Array(rawData.length);
+                                        for (let i = 0; i < rawData.length; ++i) {
+                                            outputArray[i] = rawData.charCodeAt(i);
+                                        }
+                                        return outputArray;
+                                    }
+                                    
+                                    const subscription = await registration.pushManager.subscribe({
+                                        userVisibleOnly: true,
+                                        applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+                                    });
+                                    
+                                    await fetch('/api/push/subscribe', {
+                                        method: 'POST',
+                                        headers: {'Content-Type': 'application/json'},
+                                        body: JSON.stringify(subscription.toJSON())
+                                    });
+                                    
+                                    const pushDot = document.getElementById('push-notification-dot');
+                                    const pushBtn = document.getElementById('push-notification-btn');
+                                    if (pushDot) pushDot.classList.remove('hidden');
+                                    if (pushBtn) {
+                                        pushBtn.classList.remove('text-zinc-400');
+                                        pushBtn.classList.add('text-emerald-500');
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Push subscription error:', e);
+                            }
+                        }
+                        
+                        // Update banner
+                        updatePermissionUI();
+                    } else {
+                        alert('Notification permission denied.');
+                    }
+                });
             }
-        });
-    }
+        }
 
-    if (pipRefresh) {
-        pipRefresh.addEventListener('click', updatePipContent);
-    }
+        updatePermissionUI();
 
-    function loadFlightWidget() {
-        fetch('/api/flights-summary')
-            .then(response => {
-                if (!response.ok) throw new Error('Not authorized');
-                return response.json();
-            })
-            .then(data => {
-                const timeline = document.getElementById('flight-timeline');
-                const countEl = document.getElementById('flight-count');
-                const remainingEl = document.getElementById('flight-remaining');
+        function updateLocationUI(state) {
+            const banner = document.getElementById('permission-banner');
+            const locBtn = document.getElementById('enable-location-btn');
+            
+            if (state === 'granted') {
+                if (locBtn) locBtn.classList.add('hidden');
+                // Check if we still need the banner for notifications
+                if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+                    if (banner) banner.classList.add('hidden');
+                }
                 
-                if (data.error) {
-                    timeline.innerHTML = '<p class="text-sm text-zinc-500 py-3">Unable to load flights</p>';
+                // Get current location and display it
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const { latitude, longitude } = position.coords;
+                    
+                    // Direct update to any existing element first
+                    const existingLocInfo = document.getElementById('user-location-info');
+                    if (existingLocInfo) {
+                        existingLocInfo.innerHTML = `
+                            <p class="text-[10px] font-bold text-blue-600 flex items-center justify-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                </svg>
+                                YOUR LOCATION: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}
+                            </p>
+                        `;
+                    }
+
+                    // Also poll for dynamic content
+                    const checkInterval = setInterval(() => {
+                        const nearbyGrid = document.getElementById('nearby-drivers-grid');
+                        if (nearbyGrid) {
+                            clearInterval(checkInterval);
+                            let locInfo = document.getElementById('user-location-info');
+                            if (!locInfo) {
+                                locInfo = document.createElement('div');
+                                locInfo.id = 'user-location-info';
+                                locInfo.className = 'col-span-full p-2 mb-2 bg-blue-50 border border-blue-100 rounded-lg text-center';
+                                nearbyGrid.prepend(locInfo);
+                            }
+                            locInfo.innerHTML = `
+                                <p class="text-[10px] font-bold text-blue-600 flex items-center justify-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                    </svg>
+                                    YOUR LOCATION: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}
+                                </p>
+                            `;
+                        }
+                    }, 100);
+                    setTimeout(() => clearInterval(checkInterval), 5000);
+                }, (err) => {
+                    console.error("Geolocation error:", err);
+                });
+            } else {
+                if (banner) banner.classList.remove('hidden');
+                if (locBtn) locBtn.classList.remove('hidden');
+            }
+        }
+        
+        let driverSection = '';
+        if (di) {
+            const displayPhoto = userProfileImage || di.photo;
+            driverSection = `
+                <div class="glass-panel rounded-xl premium-shadow p-3 md:p-6 mb-4 md:mb-6">
+                    <div class="flex items-center gap-3 md:gap-5">
+                        <div class="relative flex-shrink-0">
+                            ${displayPhoto ? `<img src="${escapeHtml(displayPhoto)}" alt="Driver Photo" class="w-12 h-12 md:w-20 md:h-20 rounded-full object-cover border-2 md:border-4 border-white shadow-md md:shadow-lg">` : `
+                            <div class="w-12 h-12 md:w-20 md:h-20 rounded-full bg-zinc-200 flex items-center justify-center border-2 md:border-4 border-white shadow-md md:shadow-lg">
+                                <svg class="w-6 h-6 md:w-10 md:h-10 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>`}
+                            <div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 md:w-6 md:h-6 bg-black rounded-full flex items-center justify-center">
+                                <svg class="w-2 h-2 md:w-3 md:h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h1 class="text-base md:text-xl font-bold text-zinc-900 truncate">${escapeHtml(di.name)}</h1>
+                            <div class="flex flex-wrap items-center mt-1 gap-1.5 md:gap-2">
+                                <span class="inline-block px-1.5 py-0.5 text-[9px] md:text-xs font-medium rounded-full border ${roleBadgeClasses}">${roleDisplay}</span>
+                                <span class="inline-block px-1.5 py-0.5 text-[9px] md:text-xs font-medium rounded-full bg-emerald-500 text-white">Connected</span>
+                            </div>
+                        </div>
+                        <button id="disconnectBtn" class="p-1.5 md:p-2 bg-red-50 border border-red-200 rounded-lg md:rounded-xl hover:bg-red-100 transition-colors" title="Disconnect Uber Account">
+                            <svg class="w-3.5 h-3.5 md:w-5 md:h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="driver-status-section" class="mt-3 pt-3 border-t border-zinc-100">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                                <div id="status-online" class="flex items-center ${driverStatus && driverStatus.online ? 'text-emerald-600' : 'text-zinc-400'}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus && driverStatus.online ? 'bg-emerald-500' : 'bg-zinc-300'} mr-1"></span>
+                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus && driverStatus.online ? 'Online' : 'Offline'}</span>
+                                </div>
+                                <div id="status-available" class="flex items-center ${driverStatus && driverStatus.available ? 'text-blue-600' : 'text-zinc-400'}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus && driverStatus.available ? 'bg-blue-500' : 'bg-zinc-300'} mr-1"></span>
+                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus && driverStatus.available ? 'Available' : 'Busy'}</span>
+                                </div>
+                                <div id="status-dispatchable" class="flex items-center ${driverStatus && driverStatus.dispatchable ? 'text-purple-600' : 'text-zinc-400'}">
+                                    <span class="w-1.5 h-1.5 rounded-full ${driverStatus && driverStatus.dispatchable ? 'bg-purple-500' : 'bg-zinc-300'} mr-1"></span>
+                                    <span class="text-[9px] md:text-xs font-medium">${driverStatus && driverStatus.dispatchable ? 'Dispatchable' : 'No'}</span>
+                                </div>
+                            </div>
+                            <button id="refresh-status-btn" class="p-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors" title="Refresh status">
+                                <svg class="w-3 h-3 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            driverSection = `
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-zinc-100 flex items-center justify-center">
+                        <svg class="w-8 h-8 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <span class="inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full border ${roleBadgeClasses}">${roleDisplay}</span>
+                    <p class="text-sm text-zinc-500 mt-2">Connect your Uber account to get started</p>
+                </div>
+            `;
+        }
+        
+        let nearbySection = '';
+        if (uberConnected) {
+            nearbySection = `
+                <div id="nearby-drivers-section" class="glass-panel rounded-xl premium-shadow p-4 mb-6 bg-zinc-50 border border-zinc-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center mr-3">
+                                <svg class="w-5 h-5 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                                    <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-3a1 1 0 00-.293-.707l-3-3A1 1 0 0016 6h-1V5a1 1 0 00-1-1H3z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs text-zinc-500 font-medium">Drivers Nearby</p>
+                                <p id="nearby-count" class="text-lg font-bold text-zinc-400">Getting location...</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <span id="nearby-dot" class="relative flex h-3 w-3">
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-zinc-300"></span>
+                            </span>
+                            <span id="nearby-status" class="ml-2 text-xs text-zinc-400">Waiting</span>
+                        </div>
+                    </div>
+                    <div id="user-location-info" class="mt-3 pt-3 border-t border-zinc-200">
+                        <p class="text-[10px] font-bold text-zinc-400 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            </svg>
+                            <span id="user-coords">Fetching your location...</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        let vehiclesSection = '';
+        if (vehicles.length > 0) {
+            vehiclesSection = `
+                <div class="pt-3 border-t border-zinc-100">
+                    <p class="text-xs text-zinc-400 mb-3">Your Vehicles</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        ${vehicles.map(v => `
+                            <div class="relative p-3 rounded-lg border-2 ${v.isDefault ? 'border-green-400 bg-green-50' : 'border-zinc-200 bg-zinc-50'}">
+                                ${v.isDefault ? '<span class="absolute top-2 right-2 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded">DEFAULT</span>' : ''}
+                                ${v.imageUrl ? `<img src="${escapeHtml(v.imageUrl)}" alt="${escapeHtml(v.make)} ${escapeHtml(v.model)}" class="w-full h-20 object-contain mb-2">` : `
+                                <div class="w-full h-20 bg-zinc-200 rounded flex items-center justify-center mb-2">
+                                    <svg class="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                                    </svg>
+                                </div>`}
+                                <p class="text-sm font-semibold text-zinc-900">${escapeHtml(v.make)} ${escapeHtml(v.model)}</p>
+                                <p class="text-xs text-zinc-500">${escapeHtml(v.year)} · ${escapeHtml(v.licensePlate)}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        let activeRideSection = '';
+        if (activeRide) {
+            const riderInitials = activeRide.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            activeRideSection = `
+                <a href="/fetch-ride" class="block mb-5 transform hover:scale-[1.01] transition-all duration-300">
+                    <div class="active-ride-card rounded-xl p-4 text-white relative overflow-hidden">
+                        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iNCIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+                        
+                        <div class="relative z-10">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center">
+                                    <span class="live-dot w-2 h-2 bg-white rounded-full mr-2"></span>
+                                    <span class="text-xs font-bold tracking-wide">ACTIVE RIDE</span>
+                                </div>
+                                <span class="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-xs font-medium">${escapeHtml(activeRide.ride_type)}</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-11 h-11 bg-white rounded-full flex items-center justify-center text-emerald-700 text-sm font-bold shadow-md">
+                                            ${escapeHtml(riderInitials)}
+                                        </div>
+                                        <div class="flex items-center mt-1 bg-white/15 rounded-full px-1.5 py-0.5">
+                                            <svg class="w-2.5 h-2.5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                            <span class="text-[10px] font-medium ml-0.5">${escapeHtml(String(activeRide.rating))}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center">
+                                        <div class="road-line h-0.5 w-6 rounded-full"></div>
+                                        <svg class="w-5 h-5 text-white/60 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                        <div class="road-line h-0.5 w-6 rounded-full"></div>
+                                    </div>
+                                    
+                                    <div class="">
+                                        ${defaultVehicle && defaultVehicle.imageUrl ? `
+                                            <img src="${escapeHtml(defaultVehicle.imageUrl)}" alt="Car" class="w-16 h-12 object-contain drop-shadow-lg">
+                                        ` : `
+                                            <svg class="w-12 h-12 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                                            </svg>
+                                        `}
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center text-white/90">
+                                    ${activeRide.trip_distance ? `<span class="text-lg font-bold mr-1">${escapeHtml(String(activeRide.trip_distance))} km</span>` : ''}
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            `;
+        }
+        
+        contentEl.innerHTML = `
+            ${driverSection}
+            ${nearbySection}
+            ${activeRideSection}
+            <div class="glass-panel p-5 rounded-xl premium-shadow space-y-3">
+                ${hasLocationPerm ? `
+                <a href="/change-location" class="flex items-center p-4 bg-black text-white rounded-lg hover:bg-zinc-800 transition-colors">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    </svg>
+                    <div>
+                        <p class="font-semibold text-sm">Change Location</p>
+                        <p class="text-xs text-zinc-400">Update driver position</p>
+                    </div>
+                </a>
+                ` : `
+                <div class="flex items-center p-4 bg-zinc-100 border border-zinc-200 rounded-lg opacity-60">
+                    <svg class="w-5 h-5 mr-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    <div>
+                        <p class="font-semibold text-sm text-zinc-500">Change Location</p>
+                        <p class="text-xs text-zinc-400">Locked - No permission</p>
+                    </div>
+                </div>
+                `}
+                
+                ${hasRidePerm ? `
+                <div class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors relative">
+                    <a href="/fetch-ride" class="flex items-center flex-1">
+                        <svg class="w-5 h-5 mr-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                        <div>
+                            <p class="font-semibold text-sm text-zinc-900">Fetch Ride</p>
+                            <p class="text-xs text-zinc-500">Get ride details</p>
+                        </div>
+                    </a>
+                    <button id="pip-btn" class="p-2 ml-2 bg-black text-white rounded-lg hover:bg-zinc-800 transition-all shadow-xl z-20" title="Open Floating View">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    </button>
+                </div>
+                ` : `
+                <div class="flex items-center p-4 bg-zinc-100 border border-zinc-200 rounded-lg opacity-60">
+                    <svg class="w-5 h-5 mr-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    <div>
+                        <p class="font-semibold text-sm text-zinc-500">Fetch Ride</p>
+                        <p class="text-xs text-zinc-400">Locked - No permission</p>
+                    </div>
+                </div>
+                `}
+                
+                <a href="/flight-center" class="flex items-center p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm">Flight Center</p>
+                        <p class="text-xs text-blue-100">Perth Airport arrivals</p>
+                    </div>
+                    <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                
+                <a href="/chat-lobby" class="flex items-center p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 3c5.5 0 10 3.58 10 8s-4.5 8-10 8c-1.24 0-2.43-.18-3.53-.5C5.55 21 2 21 2 21c2.33-2.33 2.7-3.9 2.75-4.5C3.05 15.07 2 13.13 2 11c0-4.42 4.5-8 10-8z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm">Chat Lobby</p>
+                        <p class="text-xs text-purple-100">Real-time team chat</p>
+                    </div>
+                    <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                
+                ${!uberConnected ? `
+                <a href="/uber-connect" class="flex items-center p-4 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
+                    <svg class="w-5 h-5 mr-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                    <div>
+                        <p class="font-semibold text-sm text-amber-900">Connect Uber</p>
+                        <p class="text-xs text-amber-700">Link your driver account</p>
+                    </div>
+                </a>
+                ` : ''}
+                
+                ${vehiclesSection}
+                
+                ${isOwner ? `
+                <div class="pt-3 border-t border-zinc-100">
+                    <p class="text-xs text-zinc-400 mb-2">Admin</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <a href="/admin" class="p-3 bg-zinc-50 border border-zinc-200 rounded-lg text-center hover:bg-zinc-100 transition-colors">
+                            <p class="text-sm font-medium text-zinc-700">Users</p>
+                        </a>
+                        <a href="/roles" class="p-3 bg-zinc-50 border border-zinc-200 rounded-lg text-center hover:bg-zinc-100 transition-colors">
+                            <p class="text-sm font-medium text-zinc-700">Roles</p>
+                        </a>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div id="flightCenter" class="mt-6">
+                <div class="glass-panel rounded-xl premium-shadow overflow-hidden">
+                    <div class="bg-black px-4 py-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                                </svg>
+                                <span class="text-white font-semibold text-sm">Flight Center</span>
+                                <span id="flightTotal" class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">--</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <select id="terminalSelect" class="text-xs bg-white/10 border-0 rounded px-2 py-1 text-white focus:ring-1 focus:ring-white/20">
+                                    <option value="" class="text-zinc-900">All</option>
+                                </select>
+                                <a href="/flight-center" class="text-xs text-zinc-400 hover:text-white">View All</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <div id="flightGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>
+                        <p id="flightFooter" class="text-zinc-400 text-[10px] text-center mt-2">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        loadingEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+        loadFlightData();
+        
+        // Setup PiP button handler
+        const pipBtn = document.getElementById('pip-btn');
+        if (pipBtn) {
+            let pipActive = false;
+            pipBtn.addEventListener('click', async () => {
+                if (pipActive) return;
+                
+                // Detection for iOS/Safari specific issues
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                
+                if (isIOS) {
+                    alert('Floating View is currently not supported on iOS due to Apple/Safari technical restrictions with canvas streaming. Please use a desktop browser (Chrome, Edge, or Safari on Mac) for this feature.');
                     return;
                 }
                 
-                countEl.textContent = data.total_flights || 0;
+                // Check if running in an iframe (PiP doesn't work in iframes)
+                const isInIframe = window.self !== window.top;
+                if (isInIframe) {
+                    alert('Floating View requires opening this page in a new browser tab.\n\nClick the "Open in new tab" button at the top right of the preview, then try again.');
+                    return;
+                }
                 
-                if (data.hourly_slots && data.hourly_slots.length > 0) {
-                    const airlineColors = {
-                        'QF': 'bg-red-500', 'VA': 'bg-purple-500', 'JQ': 'bg-orange-500',
-                        'SQ': 'bg-yellow-500', 'MH': 'bg-blue-500', 'EK': 'bg-red-600',
-                        'CX': 'bg-green-500', 'NZ': 'bg-black', 'TL': 'bg-sky-500'
+                // Check if PiP is supported
+                const supportsStandardPiP = document.pictureInPictureEnabled;
+                const supportsWebkitPiP = HTMLVideoElement.prototype.webkitSetPresentationMode !== undefined;
+                
+                if (!supportsStandardPiP && !supportsWebkitPiP) {
+                    alert('Floating View is not supported in your browser. Please try Chrome, Edge, or Safari.');
+                    return;
+                }
+                
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 400;
+                    canvas.height = 300;
+                    const ctx = canvas.getContext('2d');
+                    
+                    const video = document.createElement('video');
+                    video.muted = true;
+                    video.autoplay = true;
+                    video.playsInline = true; // Important for iOS/Safari
+                    video.srcObject = canvas.captureStream();
+                    
+                    const updateCanvas = () => {
+                        const isPiPActive = document.pictureInPictureElement || 
+                                          (video.webkitPresentationMode === 'picture-in-picture');
+                                          
+                        if (!isPiPActive) {
+                            pipActive = false;
+                            return;
+                        }
+
+                        ctx.fillStyle = '#18181b';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 22px sans-serif';
+                        ctx.fillText('RizTar | Nearby', 20, 45);
+                        
+                        ctx.strokeStyle = '#27272a';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(20, 65);
+                        ctx.lineTo(380, 65);
+                        ctx.stroke();
+
+                        ctx.font = '14px sans-serif';
+                        ctx.fillStyle = '#a1a1aa';
+                        ctx.fillText(`${nearbyDrivers ? nearbyDrivers.length : 0} vehicles detected`, 20, 90);
+                        
+                        if (nearbyDrivers && nearbyDrivers.length > 0) {
+                            nearbyDrivers.slice(0, 5).forEach((d, i) => {
+                                const y = 130 + (i * 40);
+                                
+                                ctx.fillStyle = '#27272a';
+                                ctx.fillRect(20, y - 25, 360, 35);
+
+                                ctx.fillStyle = '#10b981';
+                                ctx.beginPath();
+                                ctx.arc(40, y - 7, 4, 0, Math.PI * 2);
+                                ctx.fill();
+                                
+                                ctx.fillStyle = '#ffffff';
+                                ctx.font = '500 14px sans-serif';
+                                ctx.fillText(`${d.vehicleViewName || 'Uber'}`, 60, y - 2);
+                                
+                                ctx.fillStyle = '#71717a';
+                                ctx.font = '12px monospace';
+                                ctx.fillText(`${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`, 260, y - 2);
+                            });
+                        } else {
+                            ctx.fillStyle = '#71717a';
+                            ctx.font = 'italic 14px sans-serif';
+                            ctx.fillText('No vehicles found in your area.', 20, 130);
+                        }
+                        
+                        requestAnimationFrame(updateCanvas);
                     };
                     
-                    timeline.innerHTML = data.hourly_slots.map(slot => {
-                        const dots = (slot.airlines || []).slice(0, 3).map(code => {
-                            const color = airlineColors[code] || 'bg-zinc-500';
-                            return `<div class="w-3 h-3 ${color} rounded-sm" title="${code}"></div>`;
-                        }).join('');
-                        
-                        return `
-                            <div class="flex-shrink-0 text-center">
-                                <p class="text-xs text-zinc-500 mb-2">${slot.hour}</p>
-                                <div class="bg-zinc-800 rounded-xl px-4 py-3 min-w-[60px]">
-                                    <p class="text-2xl font-bold text-white">${slot.count}</p>
-                                    <div class="flex justify-center gap-1 mt-2">${dots}</div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
+                    await video.play();
                     
-                    remainingEl.textContent = data.hours_remaining ? `${data.hours_remaining} hours remaining today` : '';
+                    if (video.requestPictureInPicture) {
+                        await video.requestPictureInPicture();
+                    } else if (video.webkitSetPresentationMode) {
+                        video.webkitSetPresentationMode('picture-in-picture');
+                    }
+                    
+                    pipActive = true;
+                    updateCanvas();
+                } catch (err) {
+                    console.error('PiP error:', err);
+                    if (err.name === 'NotAllowedError') {
+                        alert('Floating View was blocked. Please open this page in a new browser tab and try again.');
+                    } else {
+                        alert('Floating view failed: ' + err.message);
+                    }
                 }
+            });
+        }
+        
+        // Fetch nearby drivers using browser geolocation with auto-refresh every 19 seconds
+        if (uberConnected && navigator.geolocation) {
+            const nearbyCountEl = document.getElementById('nearby-count');
+            const nearbyDotEl = document.getElementById('nearby-dot');
+            const nearbySectionEl = document.getElementById('nearby-drivers-section');
+            const nearbyStatusEl = document.getElementById('nearby-status');
+            const userCoordsEl = document.getElementById('user-coords');
+            
+            let userLat = null;
+            let userLng = null;
+            let nearbyRefreshInterval = null;
+            
+            // Function to fetch nearby drivers count
+            function fetchNearbyDrivers(lat, lng, isRefresh = false) {
+                if (!isRefresh && nearbyCountEl) nearbyCountEl.textContent = 'Fetching...';
+                
+                fetch(`/api/nearby-drivers?lat=${lat}&lng=${lng}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const count = parseInt(data.nearby_drivers) || 0;
+                        const countColor = count > 10 ? 'text-emerald-600' : count > 5 ? 'text-amber-600' : 'text-red-500';
+                        const bgColor = count > 10 ? 'bg-emerald-50 border-emerald-200' : count > 5 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200';
+                        const dotColor = count > 10 ? 'bg-emerald-500' : count > 5 ? 'bg-amber-500' : 'bg-red-500';
+                        
+                        if (nearbyCountEl) {
+                            nearbyCountEl.innerHTML = `${count} <span class="text-sm font-normal text-zinc-500">vehicles</span>`;
+                            nearbyCountEl.className = `text-lg font-bold ${countColor}`;
+                        }
+                        if (nearbySectionEl) {
+                            nearbySectionEl.className = `glass-panel rounded-xl premium-shadow p-4 mb-6 ${bgColor} border`;
+                        }
+                        if (nearbyDotEl) {
+                            nearbyDotEl.innerHTML = `
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 ${dotColor}"></span>
+                            `;
+                        }
+                        if (nearbyStatusEl) {
+                            nearbyStatusEl.textContent = 'Live';
+                            nearbyStatusEl.className = 'ml-2 text-xs text-zinc-500';
+                        }
+                    })
+                    .catch(err => {
+                        if (nearbyCountEl) nearbyCountEl.textContent = 'Error loading';
+                    });
+            }
+            
+            // Function to update location display
+            function updateLocationDisplay(lat, lng) {
+                if (!userCoordsEl) return;
+                
+                userCoordsEl.innerHTML = `<span class="text-zinc-500">Finding your location...</span>`;
+                
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, {
+                    headers: { 'User-Agent': 'RizTar/1.0' }
+                })
+                .then(res => res.json())
+                .then(geoData => {
+                    const addr = geoData.address || {};
+                    let locationParts = [];
+                    if (addr.road) locationParts.push(addr.road);
+                    if (addr.suburb) locationParts.push(addr.suburb);
+                    else if (addr.neighbourhood) locationParts.push(addr.neighbourhood);
+                    else if (addr.city) locationParts.push(addr.city);
+                    else if (addr.town) locationParts.push(addr.town);
+                    
+                    const locationName = locationParts.length > 0 
+                        ? locationParts.join(', ') 
+                        : geoData.display_name?.split(',').slice(0, 2).join(',') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    
+                    userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600 font-semibold">${locationName}</span>`;
+                    userCoordsEl.parentElement.classList.remove('text-zinc-400');
+                    userCoordsEl.parentElement.classList.add('text-blue-600');
+                })
+                .catch(() => {
+                    userCoordsEl.innerHTML = `YOUR LOCATION: <span class="text-blue-600">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>`;
+                    userCoordsEl.parentElement.classList.remove('text-zinc-400');
+                    userCoordsEl.parentElement.classList.add('text-blue-600');
+                });
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLat = position.coords.latitude;
+                    userLng = position.coords.longitude;
+                    
+                    // Display location name
+                    updateLocationDisplay(userLat, userLng);
+                    
+                    // Fetch nearby drivers initially
+                    fetchNearbyDrivers(userLat, userLng, false);
+                    
+                    // Auto-refresh every 10 seconds
+                    nearbyRefreshInterval = setInterval(() => {
+                        // Update location each refresh for accuracy
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                userLat = pos.coords.latitude;
+                                userLng = pos.coords.longitude;
+                                fetchNearbyDrivers(userLat, userLng, true);
+                            },
+                            () => {
+                                // Use last known location if current fails
+                                if (userLat && userLng) {
+                                    fetchNearbyDrivers(userLat, userLng, true);
+                                }
+                            },
+                            { enableHighAccuracy: true, timeout: 5000 }
+                        );
+                    }, 10000);
+                },
+                (error) => {
+                    if (nearbyCountEl) {
+                        nearbyCountEl.textContent = 'Location denied';
+                        nearbyCountEl.className = 'text-lg font-bold text-zinc-400';
+                    }
+                    if (nearbyStatusEl) {
+                        nearbyStatusEl.textContent = 'Unavailable';
+                    }
+                    if (userCoordsEl) {
+                        userCoordsEl.textContent = 'Location access denied - enable in browser settings';
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+        
+        document.getElementById('terminalSelect').addEventListener('change', function() {
+            loadFlightData(this.value);
+        });
+        
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const disconnectModal = document.getElementById('disconnectModal');
+        const cancelDisconnect = document.getElementById('cancelDisconnect');
+        
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', () => {
+                disconnectModal.classList.remove('hidden');
+            });
+        }
+        
+        if (cancelDisconnect) {
+            cancelDisconnect.addEventListener('click', () => {
+                disconnectModal.classList.add('hidden');
+            });
+        }
+        
+        if (disconnectModal) {
+            disconnectModal.addEventListener('click', (e) => {
+                if (e.target === disconnectModal) {
+                    disconnectModal.classList.add('hidden');
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading home data:', error);
+        document.getElementById('loading-skeleton').innerHTML = `
+            <div class="glass-panel p-6 rounded-xl premium-shadow text-center">
+                <p class="text-zinc-500">Failed to load. <a href="/" class="text-black underline">Retry</a></p>
+            </div>
+        `;
+    });
+
+const airlineColors = {
+    'QF': '#e31837', 'VA': '#e4002b', 'JQ': '#ff6d00', 'SQ': '#f4c300',
+    'EK': '#d71921', 'MH': '#0033a0', 'NZ': '#000000', 'CZ': '#0066b3'
+};
+
+function getHourClass(count) {
+    if (count === 0) return 'bg-zinc-100';
+    if (count <= 3) return 'bg-blue-50';
+    if (count <= 6) return 'bg-emerald-50';
+    return 'bg-amber-50';
+}
+
+let flightCache = null;
+
+function loadFlightData(terminal = '') {
+    const render = () => {
+        const grid = document.getElementById('flightGrid');
+        const footer = document.getElementById('flightFooter');
+        const totalEl = document.getElementById('flightTotal');
+        const terminalSelect = document.getElementById('terminalSelect');
+        
+        if (!flightCache || !flightCache.flights_by_terminal) {
+            grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+            footer.textContent = '';
+            if (totalEl) totalEl.textContent = '0';
+            return;
+        }
+        
+        if (terminalSelect && terminalSelect.options.length <= 1) {
+            Object.keys(flightCache.flights_by_terminal).sort().forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = `T${t}`;
+                opt.className = 'text-zinc-900';
+                terminalSelect.appendChild(opt);
+            });
+        }
+        
+        const allFlights = [];
+        if (terminal) {
+            const flights = flightCache.flights_by_terminal[terminal] || [];
+            flights.forEach(f => allFlights.push(f));
+        } else {
+            Object.values(flightCache.flights_by_terminal).forEach(flights => {
+                flights.forEach(f => allFlights.push(f));
+            });
+        }
+        
+        if (totalEl) totalEl.textContent = allFlights.length;
+        
+        const hourlyData = {};
+        allFlights.forEach(flight => {
+            const hour = parseInt(flight.time.split(':')[0]);
+            if (!hourlyData[hour]) hourlyData[hour] = { count: 0, airlines: [] };
+            hourlyData[hour].count++;
+            const airline = flight.flight.substring(0, 2);
+            if (!hourlyData[hour].airlines.includes(airline)) {
+                hourlyData[hour].airlines.push(airline);
+            }
+        });
+        
+        grid.innerHTML = '';
+        const hours = Object.keys(hourlyData).map(Number).sort((a, b) => a - b);
+        
+        if (hours.length === 0) {
+            grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+            footer.textContent = '';
+            return;
+        }
+        
+        hours.forEach(hour => {
+            const info = hourlyData[hour];
+            const icons = info.airlines.slice(0, Math.min(3, info.count)).map(a => 
+                `<div class="w-4 h-4 rounded text-[6px] font-bold text-white flex items-center justify-center" style="background:${airlineColors[a] || '#18181b'}">${a}</div>`
+            ).join('');
+            
+            grid.innerHTML += `
+                <div class="${getHourClass(info.count)} rounded-lg p-2">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] text-zinc-500">${String(hour).padStart(2,'0')}:00</span>
+                        <span class="text-sm font-bold text-zinc-900">${info.count}</span>
+                    </div>
+                    <div class="flex gap-0.5">${icons}</div>
+                </div>
+            `;
+        });
+        
+        footer.textContent = `${hours.length} hours remaining`;
+    };
+    
+    if (flightCache) {
+        render();
+    } else {
+        fetch('/api/flight-details')
+            .then(response => response.json())
+            .then(data => {
+                flightCache = data;
+                render();
             })
-            .catch(err => {
-                console.error('Flight widget error:', err);
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('flightFooter').textContent = 'Error loading';
             });
     }
+}
+
+let currentActiveRide = null;
+let refreshInterval = null;
+let statusRefreshInterval = null;
+const uberConnected = {{ 'true' if current_user.uber_connected else 'false' }};
+
+function updateDriverStatusUI(driverStatus) {
+    const onlineEl = document.getElementById('status-online');
+    const availableEl = document.getElementById('status-available');
+    const dispatchableEl = document.getElementById('status-dispatchable');
     
-    loadFlightWidget();
-    setInterval(loadFlightWidget, 300000);
+    if (!onlineEl || !availableEl || !dispatchableEl) return;
+    
+    const online = driverStatus && driverStatus.online;
+    const available = driverStatus && driverStatus.available;
+    const dispatchable = driverStatus && driverStatus.dispatchable;
+    
+    onlineEl.className = `flex items-center ${online ? 'text-emerald-600' : 'text-zinc-400'}`;
+    onlineEl.innerHTML = `
+        <span class="w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-zinc-300'} mr-1"></span>
+        <span class="text-[9px] md:text-xs font-medium">${online ? 'Online' : 'Offline'}</span>
+    `;
+    
+    availableEl.className = `flex items-center ${available ? 'text-blue-600' : 'text-zinc-400'}`;
+    availableEl.innerHTML = `
+        <span class="w-1.5 h-1.5 rounded-full ${available ? 'bg-blue-500' : 'bg-zinc-300'} mr-1"></span>
+        <span class="text-[9px] md:text-xs font-medium">${available ? 'Available' : 'Busy'}</span>
+    `;
+    
+    dispatchableEl.className = `flex items-center ${dispatchable ? 'text-purple-600' : 'text-zinc-400'}`;
+    dispatchableEl.innerHTML = `
+        <span class="w-1.5 h-1.5 rounded-full ${dispatchable ? 'bg-purple-500' : 'bg-zinc-300'} mr-1"></span>
+        <span class="text-[9px] md:text-xs font-medium">${dispatchable ? 'Dispatchable' : 'No'}</span>
+    `;
+}
+
+function refreshDriverStatus() {
+    if (!uberConnected || document.hidden) return;
+    
+    const refreshBtn = document.getElementById('refresh-status-btn');
+    if (refreshBtn) {
+        refreshBtn.querySelector('svg').classList.add('animate-spin');
+    }
+    
+    fetch('/api/driver-status')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.driver_status) {
+                updateDriverStatusUI(data.driver_status);
+            }
+            if (data.active_ride) {
+                if (JSON.stringify(currentActiveRide) !== JSON.stringify(data.active_ride)) {
+                    currentActiveRide = data.active_ride;
+                    updateActiveRideSection(data.active_ride);
+                }
+            }
+        })
+        .catch(err => console.error('Error refreshing status:', err))
+        .finally(() => {
+            if (refreshBtn) {
+                refreshBtn.querySelector('svg').classList.remove('animate-spin');
+            }
+        });
+}
+
+function refreshActiveRide() {
+    if (!uberConnected || document.hidden) return;
+    
+    fetch('/api/ride-data')
+        .then(r => r.json())
+        .then(data => {
+            const activeRide = data.active_ride;
+            
+            if (JSON.stringify(currentActiveRide) !== JSON.stringify(activeRide)) {
+                currentActiveRide = activeRide;
+                updateActiveRideSection(activeRide);
+            }
+        })
+        .catch(err => console.error('Error refreshing ride:', err));
+}
+
+function startAutoRefresh() {
+    if (refreshInterval) return;
+    refreshInterval = setInterval(refreshActiveRide, 15000);
+    statusRefreshInterval = setInterval(refreshDriverStatus, 30000);
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+    if (statusRefreshInterval) {
+        clearInterval(statusRefreshInterval);
+        statusRefreshInterval = null;
+    }
+}
+
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        stopAutoRefresh();
+    } else {
+        startAutoRefresh();
+        refreshActiveRide();
+        refreshDriverStatus();
+    }
 });
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('#refresh-status-btn')) {
+        refreshDriverStatus();
+    }
+});
+
+function updateActiveRideSection(activeRide) {
+    const existingSection = document.querySelector('.active-ride-card');
+    const contentEl = document.getElementById('home-content');
+    if (!contentEl) return;
+    
+    const driverSection = contentEl.querySelector('.glass-panel.rounded-xl.premium-shadow.p-6.mb-6') || 
+                          contentEl.querySelector('.text-center.mb-6');
+    
+    if (existingSection) {
+        existingSection.closest('a').remove();
+    }
+    
+    if (activeRide) {
+        const riderInitials = activeRide.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const rideHtml = `
+            <a href="/fetch-ride" class="block mb-5 transform hover:scale-[1.01] transition-all duration-300" id="active-ride-link">
+                <div class="active-ride-card rounded-xl p-4 text-white relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iNCIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <span class="live-dot w-2 h-2 bg-white rounded-full mr-2"></span>
+                                <span class="text-xs font-bold tracking-wide">ACTIVE RIDE</span>
+                            </div>
+                            <span class="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-xs font-medium">${activeRide.ride_type}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-11 h-11 bg-white rounded-full flex items-center justify-center text-emerald-700 text-sm font-bold shadow-md">
+                                        ${riderInitials}
+                                    </div>
+                                    <div class="flex items-center mt-1 bg-white/15 rounded-full px-1.5 py-0.5">
+                                        <svg class="w-2.5 h-2.5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                        <span class="text-[10px] font-medium ml-0.5">${activeRide.rating}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="road-line h-0.5 w-6 rounded-full"></div>
+                                    <svg class="w-5 h-5 text-white/60 mx-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                    <div class="road-line h-0.5 w-6 rounded-full"></div>
+                                </div>
+                                <div class="">
+                                    <svg class="w-12 h-12 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="flex items-center text-white/90">
+                                ${activeRide.trip_distance ? `<span class="text-lg font-bold mr-1">${activeRide.trip_distance} km</span>` : ''}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        `;
+        
+        const mainPanel = contentEl.querySelector('.glass-panel.p-5.rounded-xl');
+        if (mainPanel && !document.getElementById('active-ride-link')) {
+            mainPanel.insertAdjacentHTML('beforebegin', rideHtml);
+        }
+    }
+}
+
+if (uberConnected) {
+    startAutoRefresh();
+}
+</script>
+{% else %}
+<script>
+const airlineColors = {
+    'QF': '#e31837', 'VA': '#e4002b', 'JQ': '#ff6d00', 'SQ': '#f4c300',
+    'EK': '#d71921', 'MH': '#0033a0', 'NZ': '#000000', 'CZ': '#0066b3'
+};
+
+function getHourClass(count) {
+    if (count === 0) return 'bg-zinc-100';
+    if (count <= 3) return 'bg-blue-50';
+    if (count <= 6) return 'bg-emerald-50';
+    return 'bg-amber-50';
+}
+
+let flightCache = null;
+
+function loadFlightData(terminal = '') {
+    const render = () => {
+        const grid = document.getElementById('flightGrid');
+        const footer = document.getElementById('flightFooter');
+        const totalEl = document.getElementById('flightTotal');
+        const terminalSelect = document.getElementById('terminalSelect');
+        
+        if (!flightCache || !flightCache.flights_by_terminal) {
+            grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+            footer.textContent = '';
+            if (totalEl) totalEl.textContent = '0';
+            return;
+        }
+        
+        if (terminalSelect && terminalSelect.options.length <= 1) {
+            Object.keys(flightCache.flights_by_terminal).sort().forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = `T${t}`;
+                opt.className = 'text-zinc-900';
+                terminalSelect.appendChild(opt);
+            });
+        }
+        
+        const allFlights = [];
+        if (terminal) {
+            const flights = flightCache.flights_by_terminal[terminal] || [];
+            flights.forEach(f => allFlights.push(f));
+        } else {
+            Object.values(flightCache.flights_by_terminal).forEach(flights => {
+                flights.forEach(f => allFlights.push(f));
+            });
+        }
+        
+        if (totalEl) totalEl.textContent = allFlights.length;
+        
+        const hourlyData = {};
+        allFlights.forEach(flight => {
+            const hour = parseInt(flight.time.split(':')[0]);
+            if (!hourlyData[hour]) hourlyData[hour] = { count: 0, airlines: [] };
+            hourlyData[hour].count++;
+            const airline = flight.flight.substring(0, 2);
+            if (!hourlyData[hour].airlines.includes(airline)) {
+                hourlyData[hour].airlines.push(airline);
+            }
+        });
+        
+        grid.innerHTML = '';
+        const hours = Object.keys(hourlyData).map(Number).sort((a, b) => a - b);
+        
+        if (hours.length === 0) {
+            grid.innerHTML = '<p class="col-span-6 text-center text-zinc-400 py-3 text-xs">No flights</p>';
+            footer.textContent = '';
+            return;
+        }
+        
+        hours.forEach(hour => {
+            const info = hourlyData[hour];
+            const icons = info.airlines.slice(0, Math.min(3, info.count)).map(a => 
+                `<div class="w-4 h-4 rounded text-[6px] font-bold text-white flex items-center justify-center" style="background:${airlineColors[a] || '#18181b'}">${a}</div>`
+            ).join('');
+            
+            grid.innerHTML += `
+                <div class="${getHourClass(info.count)} rounded-lg p-2">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] text-zinc-500">${String(hour).padStart(2,'0')}:00</span>
+                        <span class="text-sm font-bold text-zinc-900">${info.count}</span>
+                    </div>
+                    <div class="flex gap-0.5">${icons}</div>
+                </div>
+            `;
+        });
+        
+        footer.textContent = `${hours.length} hours remaining`;
+    };
+    
+    if (flightCache) {
+        render();
+    } else {
+        fetch('/api/flight-details')
+            .then(response => response.json())
+            .then(data => {
+                flightCache = data;
+                render();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('flightFooter').textContent = 'Error loading';
+            });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadFlightData();
+    
+    const terminalSelect = document.getElementById('terminalSelect');
+    if (terminalSelect) {
+        terminalSelect.addEventListener('change', function() {
+            loadFlightData(this.value);
+        });
+    }
+    
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const disconnectModal = document.getElementById('disconnectModal');
+    const cancelDisconnect = document.getElementById('cancelDisconnect');
+    
+    if (disconnectBtn) {
+        disconnectBtn.addEventListener('click', () => {
+            disconnectModal.classList.remove('hidden');
+        });
+    }
+    
+    if (cancelDisconnect) {
+        cancelDisconnect.addEventListener('click', () => {
+            disconnectModal.classList.add('hidden');
+        });
+    }
+    
+    if (disconnectModal) {
+        disconnectModal.addEventListener('click', (e) => {
+            if (e.target === disconnectModal) {
+                disconnectModal.classList.add('hidden');
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+
+<script>
+(function() {
+    const banner = document.getElementById('permission-banner');
+    const locationBtn = document.getElementById('enable-location-btn');
+    const notificationBtn = document.getElementById('enable-notifications-btn');
+    const dismissBtn = document.getElementById('dismiss-permission-banner');
+    const messageEl = document.getElementById('permission-message');
+    
+    if (!banner) return;
+    
+    if (localStorage.getItem('permissionBannerDismissed') === 'true') return;
+    if (localStorage.getItem('locationPermissionGranted') === 'true' && Notification.permission === 'granted') return;
+    
+    let needsLocation = false;
+    let needsNotification = false;
+    
+    function checkPermissions() {
+        if (localStorage.getItem('locationPermissionGranted') === 'true') {
+            needsLocation = false;
+            locationBtn.classList.add('hidden');
+            checkNotifications();
+            return;
+        }
+        
+        if ('geolocation' in navigator && 'permissions' in navigator) {
+            navigator.permissions.query({name: 'geolocation'}).then(result => {
+                if (result.state === 'granted') {
+                    needsLocation = false;
+                    locationBtn.classList.add('hidden');
+                    localStorage.setItem('locationPermissionGranted', 'true');
+                } else if (result.state === 'prompt') {
+                    needsLocation = true;
+                    locationBtn.classList.remove('hidden');
+                } else {
+                    needsLocation = false;
+                    locationBtn.classList.add('hidden');
+                }
+                checkNotifications();
+                
+                result.onchange = function() {
+                    if (this.state === 'granted') {
+                        needsLocation = false;
+                        locationBtn.classList.add('hidden');
+                        localStorage.setItem('locationPermissionGranted', 'true');
+                        updateBanner();
+                    }
+                };
+            }).catch(() => {
+                needsLocation = false;
+                locationBtn.classList.add('hidden');
+                checkNotifications();
+            });
+        } else {
+            needsLocation = false;
+            locationBtn.classList.add('hidden');
+            checkNotifications();
+        }
+    }
+    
+    function checkNotifications() {
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                needsNotification = false;
+                notificationBtn.classList.add('hidden');
+            } else if (Notification.permission === 'default') {
+                needsNotification = true;
+                notificationBtn.classList.remove('hidden');
+            } else {
+                needsNotification = false;
+                notificationBtn.classList.add('hidden');
+            }
+        }
+        updateBanner();
+    }
+    
+    function updateBanner() {
+        if (!needsLocation && !needsNotification) {
+            banner.classList.add('hidden');
+            return;
+        }
+        
+        let messages = [];
+        if (needsLocation) messages.push('location');
+        if (needsNotification) messages.push('notifications');
+        
+        if (messages.length === 2) {
+            messageEl.textContent = 'Enable location and notifications for the best experience.';
+        } else if (messages.includes('location')) {
+            messageEl.textContent = 'Enable location access for nearby drivers feature.';
+        } else {
+            messageEl.textContent = 'Enable notifications to stay updated on rides.';
+        }
+        
+        banner.classList.remove('hidden');
+    }
+    
+    locationBtn.addEventListener('click', () => {
+        navigator.geolocation.getCurrentPosition(
+            () => {
+                needsLocation = false;
+                locationBtn.classList.add('hidden');
+                localStorage.setItem('locationPermissionGranted', 'true');
+                updateBanner();
+            },
+            () => {
+                alert('Location permission denied. Please enable it in your browser settings.');
+            },
+            {enableHighAccuracy: true}
+        );
+    });
+    
+    notificationBtn.addEventListener('click', async () => {
+        if (!('Notification' in window)) {
+            alert('Notifications not supported in this browser.');
+            return;
+        }
+        
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            needsNotification = false;
+            notificationBtn.classList.add('hidden');
+            
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                try {
+                    const keyRes = await fetch('/api/push/vapid-public-key');
+                    const keyData = await keyRes.json();
+                    if (keyData.success) {
+                        const registration = await navigator.serviceWorker.register('/static/service-worker.js');
+                        await navigator.serviceWorker.ready;
+                        
+                        function urlBase64ToUint8Array(base64String) {
+                            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                            const rawData = window.atob(base64);
+                            const outputArray = new Uint8Array(rawData.length);
+                            for (let i = 0; i < rawData.length; ++i) {
+                                outputArray[i] = rawData.charCodeAt(i);
+                            }
+                            return outputArray;
+                        }
+                        
+                        const subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+                        });
+                        
+                        await fetch('/api/push/subscribe', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(subscription.toJSON())
+                        });
+                        
+                        const pushDot = document.getElementById('push-notification-dot');
+                        const pushBtn = document.getElementById('push-notification-btn');
+                        if (pushDot) pushDot.classList.remove('hidden');
+                        if (pushBtn) {
+                            pushBtn.classList.remove('text-zinc-400');
+                            pushBtn.classList.add('text-emerald-500');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Push subscription error:', e);
+                }
+            }
+            
+            updateBanner();
+        } else {
+            alert('Notification permission denied.');
+        }
+    });
+    
+    dismissBtn.addEventListener('click', () => {
+        localStorage.setItem('permissionBannerDismissed', 'true');
+        banner.classList.add('hidden');
+    });
+    
+    checkPermissions();
+})();
+</script>
+
+<!-- Real-time unread message updates -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
+<script>
+(function() {
+    const socket = io({
+        transports: ['polling', 'websocket'],
+        reconnectionDelay: 1000,
+        timeout: 10000
+    });
+    
+    let unreadCount = 0;
+    
+    function updateUnreadBadge(count) {
+        unreadCount = count;
+        const badge = document.getElementById('unread-badge-container');
+        if (badge) {
+            if (count > 0) {
+                badge.innerHTML = `<span class="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg">${count > 99 ? '99+' : count}</span>`;
+            } else {
+                badge.innerHTML = '';
+            }
+        }
+    }
+    
+    socket.on('new_message', function(msg) {
+        // Only increment if not from current user
+        if (msg.user_id !== {{ current_user.id }}) {
+            unreadCount++;
+            updateUnreadBadge(unreadCount);
+        }
+    });
+    
+    socket.on('chat_cleared', function() {
+        updateUnreadBadge(0);
+    });
+})();
+</script>
+
+<script>
+(function() {
+    const REFRESH_INTERVAL = 300000;
+    
+    async function fetchDriversNearby() {
+        try {
+            const response = await fetch('/api/homepage-drivers', {
+                credentials: 'same-origin'
+            });
+            if (!response.ok) {
+                console.error('Drivers nearby API returned status:', response.status);
+                return;
+            }
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('hp-uberx-count').textContent = data.current.uberx.toLocaleString();
+                document.getElementById('hp-xl-count').textContent = data.current.xl.toLocaleString();
+                document.getElementById('hp-black-count').textContent = data.current.black.toLocaleString();
+                
+                const uberxChange = document.getElementById('hp-uberx-change');
+                const xlChange = document.getElementById('hp-xl-change');
+                const blackChange = document.getElementById('hp-black-change');
+                
+                function formatChange(change) {
+                    if (change.startsWith('+')) {
+                        return `<span class="text-emerald-600">${change}</span>`;
+                    } else if (change.startsWith('-')) {
+                        return `<span class="text-red-500">${change}</span>`;
+                    }
+                    return change;
+                }
+                
+                uberxChange.innerHTML = formatChange(data.changes.uberx);
+                xlChange.innerHTML = formatChange(data.changes.xl);
+                blackChange.innerHTML = formatChange(data.changes.black);
+                
+                const scanningBadge = document.getElementById('drivers-scanning-badge');
+                if (data.scanning) {
+                    scanningBadge.classList.remove('hidden');
+                } else {
+                    scanningBadge.classList.add('hidden');
+                }
+                
+                const updatedEl = document.getElementById('drivers-updated');
+                if (data.updated) {
+                    updatedEl.textContent = `Updated ${data.updated}`;
+                } else {
+                    updatedEl.textContent = 'Scanning...';
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching drivers nearby:', error);
+        }
+    }
+    
+    fetchDriversNearby();
+    setInterval(fetchDriversNearby, REFRESH_INTERVAL);
+})();
 </script>
 {% endblock %}

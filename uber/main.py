@@ -167,43 +167,11 @@ def root():
     if current_user.is_authenticated:
         disconnect_form = UberDisconnectForm(
         ) if current_user.uber_connected else None
-        
-        # Get cached driver counts for home page
-        current = homepage_driver_cache['current']
-        previous = homepage_driver_cache['previous']
-        
-        def calc_change(curr, prev):
-            diff = curr - prev
-            if diff > 0:
-                return f'+{diff}'
-            elif diff < 0:
-                return str(diff)
-            return '0'
-        
-        # Total nearby drivers from background scan
-        nearby_total = current.get('total', 0)
-        
-        drivers_nearby = {
-            'uberx': current.get('uberx', 0),
-            'xl': current.get('xl', 0),
-            'black': current.get('black', 0),
-            'total': nearby_total,
-            'changes': {
-                'uberx': calc_change(current.get('uberx', 0), previous.get('uberx', 0)),
-                'xl': calc_change(current.get('xl', 0), previous.get('xl', 0)),
-                'black': calc_change(current.get('black', 0), previous.get('black', 0)),
-            },
-            'updated': current.get('updated').strftime('%H:%M') if current.get('updated') else None,
-            'scanning': homepage_driver_cache.get('scanning', False),
-            'nearby_summary': nearby_total
-        }
-        
         return render_template('home.html',
                                loading=current_user.uber_connected,
                                vehicles=[],
                                driver_info=None,
-                               disconnect_form=disconnect_form,
-                               drivers_nearby=drivers_nearby)
+                               disconnect_form=disconnect_form)
     return redirect(url_for('landing'))
 
 @app.route('/welcome')
@@ -3413,72 +3381,6 @@ def api_flight_arrivals():
             'total_flights': 0,
             'message': 'Error occurred'
         })
-
-
-@app.route('/api/flights-summary')
-@login_required
-def api_flights_summary():
-    from datetime import datetime, timezone, timedelta
-    
-    try:
-        def fetch_flights():
-            response = flightArrivals(None)
-            if response is None:
-                return {'flights': [], 'error': True}
-            try:
-                return response.json()
-            except:
-                return {'flights': [], 'error': True}
-        
-        cache_key = "flights_all"
-        data = cache.get_cached('global', cache_key)
-        if data is None:
-            data = fetch_flights()
-            cache.set_cached('global', cache_key, data)
-        
-        if data.get('error'):
-            return jsonify({'error': True, 'total_flights': 0, 'hourly_slots': []})
-        
-        flights = data.get('flights', [])
-        perth_tz = timezone(timedelta(hours=8))
-        perth_now = datetime.now(perth_tz)
-        current_hour = perth_now.hour
-        
-        hourly_slots = {}
-        for flight in flights:
-            try:
-                time_str = flight.get('time', '')
-                if ':' in time_str:
-                    hour = int(time_str.split(':')[0])
-                    if hour >= current_hour:
-                        if hour not in hourly_slots:
-                            hourly_slots[hour] = {'count': 0, 'airlines': []}
-                        hourly_slots[hour]['count'] += 1
-                        airline_code = flight.get('flight', '')[:2]
-                        if airline_code and airline_code not in hourly_slots[hour]['airlines']:
-                            hourly_slots[hour]['airlines'].append(airline_code)
-            except:
-                continue
-        
-        result = []
-        for hour in sorted(hourly_slots.keys())[:6]:
-            result.append({
-                'hour': f"{hour:02d}:00",
-                'count': hourly_slots[hour]['count'],
-                'airlines': hourly_slots[hour]['airlines'][:3]
-            })
-        
-        total_flights = sum(s['count'] for s in result)
-        hours_remaining = 24 - current_hour if current_hour < 24 else 0
-        
-        return jsonify({
-            'total_flights': total_flights,
-            'hourly_slots': result,
-            'hours_remaining': hours_remaining
-        })
-    except Exception as e:
-        print(f"Error in flights-summary: {e}")
-        return jsonify({'error': True, 'total_flights': 0, 'hourly_slots': []})
 
 
 @app.route('/api/heartbeat', methods=['POST'])
