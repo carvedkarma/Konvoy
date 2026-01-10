@@ -337,6 +337,7 @@
         }
         
         async function subscribeToPush() {
+            console.log('Starting push subscription process...');
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
@@ -351,6 +352,17 @@
             }
             
             try {
+                // Ensure service worker is registered first
+                let registration = await navigator.serviceWorker.getRegistration();
+                if (!registration) {
+                    console.log('Registering service worker...');
+                    registration = await navigator.serviceWorker.register('/static/service-worker.js');
+                }
+                
+                // Wait for service worker to be active
+                await navigator.serviceWorker.ready;
+                console.log('Service worker ready');
+
                 const keyRes = await fetch('/api/push/vapid-public-key');
                 const keyData = await keyRes.json();
                 if (!keyData.success) {
@@ -358,14 +370,14 @@
                     return;
                 }
                 
+                console.log('Requesting permission...');
                 const permission = await Notification.requestPermission();
+                console.log('Permission status:', permission);
+                
                 if (permission !== 'granted') {
-                    alert('Notification permission denied.');
+                    alert('Notification permission denied. Please enable it in your browser settings.');
                     return;
                 }
-                
-                const registration = await navigator.serviceWorker.register('/static/service-worker.js');
-                await navigator.serviceWorker.ready;
                 
                 const subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
@@ -381,10 +393,11 @@
                 const data = await res.json();
                 if (data.success) {
                     checkPushStatus();
+                    alert('Push notifications enabled!');
                 }
             } catch (e) {
                 console.error('Push subscription error:', e);
-                alert('Failed to enable push notifications.');
+                alert('Failed to enable push notifications: ' + e.message);
             }
         }
         
