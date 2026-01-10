@@ -1917,7 +1917,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function fetchDriversNearby() {
         try {
-            const response = await fetch('/api/homepage-drivers');
+            const response = await fetch('/api/homepage-drivers', {
+                credentials: 'same-origin'
+            });
+            if (!response.ok) {
+                console.error('Drivers nearby API returned status:', response.status);
+                return;
+            }
             const data = await response.json();
             
             if (data.success) {
