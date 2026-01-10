@@ -2438,6 +2438,7 @@ def smart_route_page():
     return render_template('smart_route.html')
 
 
+@app.route('/api/airport-queue')
 @login_required
 def api_airport_queue():
     """
