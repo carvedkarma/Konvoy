@@ -729,6 +729,7 @@ def register():
 @app.route('/logout')
 @login_required
 def logout():
+    clear_driver_cache_for_user(current_user.id)
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
@@ -1724,26 +1725,137 @@ def live_drivers_page():
     return render_template('live_drivers.html')
 
 
+driver_cache = {}
+driver_cache_lock = {}
+
+def calculate_distance_meters(lat1, lng1, lat2, lng2):
+    """Calculate distance between two coordinates in meters using Haversine formula."""
+    import math
+    R = 6371000
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lng2 - lng1)
+    a = math.sin(delta_phi/2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+def bearing_difference(b1, b2):
+    """Calculate the absolute difference between two bearings (0-180)."""
+    if b1 is None or b2 is None:
+        return 0
+    diff = abs(b1 - b2) % 360
+    return min(diff, 360 - diff)
+
+def is_duplicate_driver(new_driver, existing_drivers, distance_threshold=100, bearing_threshold=90):
+    """Check if a driver is duplicate based on coordinates and bearing."""
+    new_lat = new_driver.get('lat')
+    new_lng = new_driver.get('lng')
+    new_bearing = new_driver.get('bearing')
+    
+    if new_lat is None or new_lng is None:
+        return True
+    
+    for existing in existing_drivers:
+        ex_lat = existing.get('lat')
+        ex_lng = existing.get('lng')
+        ex_bearing = existing.get('bearing')
+        
+        if ex_lat is None or ex_lng is None:
+            continue
+        
+        dist = calculate_distance_meters(new_lat, new_lng, ex_lat, ex_lng)
+        if dist <= distance_threshold:
+            b_diff = bearing_difference(new_bearing, ex_bearing)
+            if b_diff < bearing_threshold:
+                return True
+    return False
+
 @app.route('/api/live-drivers')
 @login_required
 def api_live_drivers():
     """
-    Fetch all drivers in Perth area using multi-coordinate grid polling.
-    Returns deduplicated driver positions and counts by product type.
+    Fetch drivers near user's location using coordinate-based deduplication.
+    Accumulates unique drivers over 3-minute rolling window.
     """
-    from datetime import datetime
+    from datetime import datetime, timedelta
+    from objects.uberDev import fetch_drivers_at_location
+    
+    user_id = current_user.id
+    lat = request.args.get('lat', type=float)
+    lng = request.args.get('lng', type=float)
+    
+    if lat is None or lng is None:
+        lat, lng = -31.9505, 115.8605
+    
+    if user_id not in driver_cache:
+        driver_cache[user_id] = {'drivers': [], 'last_cleanup': datetime.now(), 'sample_count': 0}
+    
+    cache = driver_cache[user_id]
+    now = datetime.now()
+    
+    cutoff = now - timedelta(minutes=3)
+    cache['drivers'] = [d for d in cache['drivers'] if d.get('timestamp', now) > cutoff]
+    
     try:
-        result = fetch_all_perth_drivers(max_points=40)
+        new_drivers = fetch_drivers_at_location(lat, lng)
+        cache['sample_count'] += 1
+        
+        for driver in new_drivers:
+            driver['timestamp'] = now
+            if not is_duplicate_driver(driver, cache['drivers']):
+                cache['drivers'].append(driver)
+        
+        counts_by_type = {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0}
+        type_mapping = {
+            'UBERX': 'UberX', 'COMFORT': 'Comfort', 'XL': 'XL', 'BLACK': 'Black',
+            'UberX': 'UberX', 'Comfort': 'Comfort', 'Black': 'Black'
+        }
+        for driver in cache['drivers']:
+            raw_type = driver.get('product_type', 'UberX')
+            ptype = type_mapping.get(raw_type, 'UberX')
+            counts_by_type[ptype] += 1
+        
+        counts = {
+            'total': len(cache['drivers']),
+            'uberx': counts_by_type['UberX'],
+            'comfort': counts_by_type['Comfort'],
+            'xl': counts_by_type['XL'],
+            'black': counts_by_type['Black'],
+        }
+        
+        drivers_for_response = []
+        for d in cache['drivers']:
+            driver_copy = {k: v for k, v in d.items() if k != 'timestamp'}
+            age_seconds = (now - d.get('timestamp', now)).total_seconds()
+            driver_copy['opacity'] = max(0.4, 1 - (age_seconds / 180))
+            drivers_for_response.append(driver_copy)
+        
         return jsonify({
             'success': True,
-            'drivers': result['drivers'],
-            'counts': result['counts'],
-            'gridPointsPolled': result['grid_points_polled'],
-            'updated': datetime.now().strftime('%H:%M:%S')
+            'drivers': drivers_for_response,
+            'counts': counts,
+            'sampleCount': cache['sample_count'],
+            'updated': now.strftime('%H:%M:%S'),
+            'userLocation': {'lat': lat, 'lng': lng}
         })
     except Exception as e:
         print(f"Live drivers API error: {e}")
         return jsonify(success=False, message=str(e)), 500
+
+@app.route('/api/live-drivers/reset')
+@login_required
+def api_live_drivers_reset():
+    """Reset the driver cache for current user."""
+    user_id = current_user.id
+    if user_id in driver_cache:
+        del driver_cache[user_id]
+    return jsonify(success=True)
+
+def clear_driver_cache_for_user(user_id):
+    """Clear driver cache when user logs out."""
+    if user_id in driver_cache:
+        del driver_cache[user_id]
 
 
 @app.route('/api/hotspots')

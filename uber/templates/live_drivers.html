@@ -58,6 +58,24 @@
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
     }
+    .scanning-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .scanning-dot {
+        width: 6px;
+        height: 6px;
+        background: #22c55e;
+        border-radius: 50%;
+        animation: scanning 1s infinite;
+    }
+    .scanning-dot:nth-child(2) { animation-delay: 0.2s; }
+    .scanning-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes scanning {
+        0%, 100% { opacity: 0.3; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1); }
+    }
 </style>
 {% endblock %}
 
@@ -67,14 +85,26 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-zinc-900 mb-2">Live Drivers</h1>
-                <p class="text-zinc-500">Sample of nearby active drivers in your area</p>
+                <p class="text-zinc-500">Accumulating unique drivers near your location</p>
             </div>
-            <button id="refresh-btn" onclick="fetchDrivers()" class="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-all text-sm font-semibold">
-                <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                Refresh
-            </button>
+            <div class="flex gap-2">
+                <button id="reset-btn" onclick="resetCache()" class="flex items-center gap-2 px-4 py-2 bg-zinc-200 text-zinc-700 rounded-xl hover:bg-zinc-300 transition-all text-sm font-semibold">
+                    Reset
+                </button>
+                <button id="toggle-btn" onclick="toggleScanning()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all text-sm font-semibold">
+                    <span id="toggle-icon">⏸</span>
+                    <span id="toggle-text">Pause</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="location-status" class="glass-panel rounded-xl p-4 premium-shadow mb-4 bg-amber-50 border border-amber-200 hidden">
+        <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            </svg>
+            <p class="text-sm text-amber-800">Enable location access for accurate results. Using Perth CBD as default.</p>
         </div>
     </div>
 
@@ -88,13 +118,19 @@
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm text-zinc-500 font-medium">Nearby Active Drivers</p>
+                    <p class="text-sm text-zinc-500 font-medium">Unique Drivers Found</p>
                     <p id="total-drivers" class="text-4xl font-black text-zinc-900">--</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2 text-sm text-zinc-400">
-                <span id="pulse-indicator" class="w-2 h-2 bg-emerald-500 rounded-full pulse-dot"></span>
-                <span id="last-updated">Waiting for data...</span>
+            <div class="text-right">
+                <div id="scanning-status" class="scanning-indicator mb-1">
+                    <span class="scanning-dot"></span>
+                    <span class="scanning-dot"></span>
+                    <span class="scanning-dot"></span>
+                    <span class="text-sm text-emerald-600 font-medium">Scanning...</span>
+                </div>
+                <p id="sample-count" class="text-xs text-zinc-400">0 samples collected</p>
+                <p id="last-updated" class="text-xs text-zinc-400">Waiting for data...</p>
             </div>
         </div>
     </div>
@@ -161,7 +197,7 @@
         </div>
         <div id="drivers-map"></div>
         <p id="map-status" class="text-xs text-zinc-400 mt-3 text-center"></p>
-        <p class="text-xs text-zinc-400 mt-2 text-center">Note: Shows a sample of nearby drivers. Actual totals may vary.</p>
+        <p class="text-xs text-zinc-400 mt-2 text-center">Drivers within 100m are counted as one. Data resets after 3 minutes of inactivity per driver.</p>
     </div>
 </div>
 {% endblock %}
@@ -171,14 +207,29 @@
 <script>
     let map;
     let driverMarkers = [];
-    let isLoading = false;
-    let autoRefreshInterval;
+    let userMarker = null;
+    let isScanning = true;
+    let pollInterval = null;
+    let userLocation = { lat: -31.9505, lng: 115.8605 };
+    let samplePoints = [];
+    let currentPointIndex = 0;
+    
+    function generateSamplePoints(centerLat, centerLng, radiusKm = 1) {
+        const offset = radiusKm / 111;
+        return [
+            { lat: centerLat, lng: centerLng },
+            { lat: centerLat + offset, lng: centerLng },
+            { lat: centerLat - offset, lng: centerLng },
+            { lat: centerLat, lng: centerLng + offset },
+            { lat: centerLat, lng: centerLng - offset }
+        ];
+    }
 
     function initMap() {
         map = L.map('drivers-map', {
             zoomControl: true,
             scrollWheelZoom: true
-        }).setView([-31.9505, 115.8605], 11);
+        }).setView([userLocation.lat, userLocation.lng], 13);
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
@@ -186,9 +237,99 @@
             maxZoom: 19
         }).addTo(map);
 
-        fetchDrivers();
+        getUserLocation();
+    }
+
+    function getUserLocation() {
+        samplePoints = generateSamplePoints(userLocation.lat, userLocation.lng);
         
-        autoRefreshInterval = setInterval(fetchDrivers, 30000);
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    samplePoints = generateSamplePoints(userLocation.lat, userLocation.lng);
+                    map.setView([userLocation.lat, userLocation.lng], 13);
+                    
+                    if (userMarker) map.removeLayer(userMarker);
+                    userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
+                        radius: 8,
+                        fillColor: '#3b82f6',
+                        color: '#fff',
+                        weight: 3,
+                        opacity: 1,
+                        fillOpacity: 1
+                    }).addTo(map);
+                    userMarker.bindPopup('<div class="p-2"><p class="text-sm font-semibold">Your Location</p></div>');
+                    
+                    document.getElementById('location-status').classList.add('hidden');
+                },
+                (error) => {
+                    console.log('Geolocation error:', error);
+                    document.getElementById('location-status').classList.remove('hidden');
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        } else {
+            document.getElementById('location-status').classList.remove('hidden');
+        }
+        
+        startPolling();
+    }
+
+    function startPolling() {
+        fetchDrivers();
+        pollInterval = setInterval(fetchDrivers, 3000);
+    }
+
+    function stopPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+
+    function toggleScanning() {
+        isScanning = !isScanning;
+        const toggleBtn = document.getElementById('toggle-btn');
+        const toggleIcon = document.getElementById('toggle-icon');
+        const toggleText = document.getElementById('toggle-text');
+        const scanningStatus = document.getElementById('scanning-status');
+        
+        if (isScanning) {
+            toggleBtn.classList.remove('bg-zinc-600');
+            toggleBtn.classList.add('bg-emerald-600');
+            toggleIcon.textContent = '⏸';
+            toggleText.textContent = 'Pause';
+            scanningStatus.innerHTML = '<span class="scanning-dot"></span><span class="scanning-dot"></span><span class="scanning-dot"></span><span class="text-sm text-emerald-600 font-medium">Scanning...</span>';
+            startPolling();
+        } else {
+            toggleBtn.classList.remove('bg-emerald-600');
+            toggleBtn.classList.add('bg-zinc-600');
+            toggleIcon.textContent = '▶';
+            toggleText.textContent = 'Resume';
+            scanningStatus.innerHTML = '<span class="text-sm text-zinc-500 font-medium">Paused</span>';
+            stopPolling();
+        }
+    }
+
+    async function resetCache() {
+        try {
+            await fetch('/api/live-drivers/reset');
+            clearMarkers();
+            document.getElementById('total-drivers').textContent = '0';
+            document.getElementById('count-uberx').textContent = '0';
+            document.getElementById('count-comfort').textContent = '0';
+            document.getElementById('count-xl').textContent = '0';
+            document.getElementById('count-black').textContent = '0';
+            document.getElementById('sample-count').textContent = '0 samples collected';
+            document.getElementById('driver-count-badge').textContent = '0 visible';
+            document.getElementById('map-status').textContent = 'Cache reset. Scanning...';
+        } catch (error) {
+            console.error('Reset error:', error);
+        }
     }
 
     function clearMarkers() {
@@ -198,27 +339,22 @@
 
     function getMarkerColor(productType) {
         switch(productType) {
-            case 'UBERX': return '#22c55e';
-            case 'COMFORT': return '#3b82f6';
+            case 'UberX': return '#22c55e';
+            case 'Comfort': return '#3b82f6';
             case 'XL': return '#f59e0b';
-            case 'BLACK': return '#18181b';
+            case 'Black': return '#18181b';
             default: return '#3b82f6';
         }
     }
 
     async function fetchDrivers() {
-        if (isLoading) return;
-        isLoading = true;
+        if (!isScanning) return;
         
-        const refreshIcon = document.getElementById('refresh-icon');
-        const refreshBtn = document.getElementById('refresh-btn');
-        refreshIcon.classList.add('refresh-spin');
-        refreshBtn.disabled = true;
-        
-        document.getElementById('map-status').textContent = 'Scanning Perth area for drivers...';
+        const point = samplePoints[currentPointIndex];
+        currentPointIndex = (currentPointIndex + 1) % samplePoints.length;
         
         try {
-            const response = await fetch('/api/live-drivers');
+            const response = await fetch(`/api/live-drivers?lat=${point.lat}&lng=${point.lng}`);
             const data = await response.json();
             
             if (data.success) {
@@ -230,18 +366,20 @@
                 document.getElementById('count-xl').textContent = data.counts.xl.toLocaleString();
                 document.getElementById('count-black').textContent = data.counts.black.toLocaleString();
                 document.getElementById('last-updated').textContent = `Updated ${data.updated}`;
+                document.getElementById('sample-count').textContent = `${data.sampleCount} samples collected`;
                 document.getElementById('driver-count-badge').textContent = `${data.drivers.length} visible`;
                 
                 data.drivers.forEach(driver => {
                     if (driver.lat && driver.lng) {
                         const color = getMarkerColor(driver.product_type);
+                        const opacity = driver.opacity || 0.9;
                         const marker = L.circleMarker([driver.lat, driver.lng], {
                             radius: 5,
                             fillColor: color,
                             color: '#fff',
                             weight: 2,
-                            opacity: 1,
-                            fillOpacity: 0.9
+                            opacity: opacity,
+                            fillOpacity: opacity
                         }).addTo(map);
                         
                         marker.bindPopup(`
@@ -255,20 +393,19 @@
                     }
                 });
                 
-                document.getElementById('map-status').textContent = `Polled ${data.gridPointsPolled} grid points across Perth`;
-            } else {
-                document.getElementById('map-status').textContent = 'Error loading driver data';
+                const pointLabel = ['Center', 'North', 'South', 'East', 'West'][currentPointIndex];
+                document.getElementById('map-status').textContent = `Scanning ${pointLabel} area...`;
             }
         } catch (error) {
             console.error('Error fetching drivers:', error);
-            document.getElementById('map-status').textContent = 'Failed to connect to server';
-        } finally {
-            isLoading = false;
-            refreshIcon.classList.remove('refresh-spin');
-            refreshBtn.disabled = false;
+            document.getElementById('map-status').textContent = 'Connection error. Retrying...';
         }
     }
 
     document.addEventListener('DOMContentLoaded', initMap);
+    
+    window.addEventListener('beforeunload', () => {
+        stopPolling();
+    });
 </script>
 {% endblock %}
