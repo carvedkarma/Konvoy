@@ -130,7 +130,10 @@ uber/
 │   ├── roles.html       # Role & permission management
 │   ├── profile.html     # User profile & Uber connection status
 │   ├── uber_connect.html # Uber account connection page
-│   └── chat_lobby.html  # Real-time chat with online users
+│   ├── chat_lobby.html  # Real-time chat with online users
+│   ├── demand_intel.html # Unified Demand Intelligence (Hotspots, Surge Map, Events tabs)
+│   ├── smart_route.html  # Smart Route Planner
+│   └── flight_center.html # Live flight arrivals
 └── static/
     ├── images/          # Static assets
     └── service-worker.js # Push notification handler
@@ -144,6 +147,8 @@ uber/
 ### Third-Party APIs
 - **Uber Internal APIs** (`cn-geo1.uber.com`): Vehicle data, driver status, location updates
 - **OpenStreetMap Nominatim**: Address geocoding for location tracking
+- **Ticketmaster Discovery API**: Perth event calendar integration
+- **Perth Airport Web Scraping**: Live flight arrival data
 
 ### Required Environment Variables
 - `DATABASE_URL`: PostgreSQL connection string (auto-configured)
