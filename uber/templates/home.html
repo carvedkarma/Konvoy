@@ -13,398 +13,219 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
 }
-@keyframes road-move {
-    0% { background-position: 0 0; }
-    100% { background-position: -20px 0; }
-}
 @keyframes glow-pulse {
-    0%, 100% { box-shadow: 0 0 15px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255,255,255,0.1); }
-    50% { box-shadow: 0 0 25px rgba(34, 197, 94, 0.5), inset 0 1px 0 rgba(255,255,255,0.2); }
-}
-@keyframes dot-pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.3); opacity: 0.7; }
+    0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); }
+    50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.4); }
 }
 .active-ride-card {
     background: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%);
     animation: glow-pulse 2s ease-in-out infinite;
 }
-.road-line {
-    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.4) 0px, rgba(255,255,255,0.4) 8px, transparent 8px, transparent 16px);
-    animation: road-move 0.5s linear infinite;
+.premium-card {
+    background: white;
+    border-radius: 1.25rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.04);
 }
-.live-dot {
-    animation: dot-pulse 1.5s ease-in-out infinite;
+.nav-item {
+    transition: all 0.2s ease;
+}
+.nav-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
-    <div class="w-full max-w-2xl">
-        <div id="permission-banner" class="hidden mb-6">
-            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
-                <div class="flex items-start gap-3">
-                    <div class="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
+<div class="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100/50 px-4 py-6">
+    <div class="w-full max-w-lg mx-auto">
+        
+        <div class="premium-card p-5 mb-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    {% if driver_info and driver_info.photo %}
+                    <img src="{{ driver_info.photo }}" alt="Profile" class="w-14 h-14 rounded-2xl object-cover shadow-lg">
+                    {% else %}
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center shadow-lg">
+                        <span class="text-xl font-black text-white">{{ current_user.username[:2].upper() }}</span>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold text-amber-800">Permissions Required</p>
-                        <p class="text-xs text-amber-600 mt-0.5" id="permission-message">Enable location and notifications for the best experience.</p>
-                        <div class="flex flex-wrap gap-2 mt-3">
-                            <button id="enable-location-btn" class="hidden px-3 py-1.5 text-xs font-bold bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1.5 shadow-sm">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                                Enable Location
-                            </button>
-                            <button id="enable-notifications-btn" class="hidden px-3 py-1.5 text-xs font-bold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-1.5 shadow-sm">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                                </svg>
-                                Enable Notifications
-                            </button>
+                    {% endif %}
+                    <div>
+                        <h1 class="text-lg font-bold text-zinc-900">
+                            {% if driver_info %}{{ driver_info.name }}{% else %}{{ current_user.username }}{% endif %}
+                        </h1>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
+                            {% if driver_info %}
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                            {% endif %}
                         </div>
                     </div>
-                    <button id="dismiss-permission-banner" class="flex-shrink-0 text-amber-400 hover:text-amber-600 p-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
                 </div>
-            </div>
-        </div>
-        
-        <div class="glass-panel p-4 rounded-xl premium-shadow mb-4 flex items-center justify-between border-2 border-emerald-100 bg-emerald-50/30">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1-1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                {% if driver_info %}
+                <button id="disconnectBtn" class="p-2.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Disconnect">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                     </svg>
-                </div>
-                <div>
-                    <p class="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Drivers Nearby</p>
-                    <p class="text-xl font-bold text-emerald-900 leading-tight">
-                        {{ drivers_nearby.total }} <span class="text-xs font-medium text-emerald-700/70">vehicles</span>
-                    </p>
-                </div>
+                </button>
+                {% endif %}
             </div>
-            <a href="{{ url_for('live_drivers_page') }}" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors">
-                <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                <span class="text-[10px] font-bold text-white uppercase tracking-widest">Live</span>
-            </a>
         </div>
-        
-        <div class="grid grid-cols-3 gap-2.5 mb-6">
-            <div class="p-3 bg-emerald-50 border-2 border-emerald-100 rounded-xl text-center">
-                <div class="flex items-center justify-center gap-1.5 mb-1">
-                    <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-sm"></div>
-                    <p class="text-[10px] text-emerald-700 font-bold uppercase tracking-tight">UberX</p>
-                </div>
-                <p class="text-xl font-black text-emerald-900 tracking-tight">{{ drivers_nearby.uberx }}</p>
-                <div class="flex items-center justify-center mt-1">
-                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if drivers_nearby.changes.uberx.startswith('+') %}bg-emerald-100 text-emerald-600{% elif drivers_nearby.changes.uberx.startswith('-') %}bg-red-100 text-red-500{% else %}bg-zinc-100 text-zinc-500{% endif %}">
-                        {{ drivers_nearby.changes.uberx }}
-                    </span>
-                </div>
+
+        <div class="premium-card p-4 mb-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-bold text-zinc-900">Drivers Nearby</h2>
+                <a href="{{ url_for('live_drivers_page') }}" class="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 rounded-full hover:bg-zinc-800 transition-colors">
+                    <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                    <span class="text-[10px] font-bold text-white uppercase tracking-wider">Live Map</span>
+                </a>
             </div>
-            <div class="p-3 bg-amber-50 border-2 border-amber-100 rounded-xl text-center">
-                <div class="flex items-center justify-center gap-1.5 mb-1">
-                    <div class="w-2 h-2 bg-amber-500 rounded-full shadow-sm"></div>
-                    <p class="text-[10px] text-amber-700 font-bold uppercase tracking-tight">XL</p>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="text-center p-3 bg-zinc-50 rounded-xl">
+                    <p class="text-2xl font-black text-zinc-900">{{ drivers_nearby.uberx }}</p>
+                    <p class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mt-1">UberX</p>
                 </div>
-                <p class="text-xl font-black text-amber-900 tracking-tight">{{ drivers_nearby.xl }}</p>
-                <div class="flex items-center justify-center mt-1">
-                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if drivers_nearby.changes.xl.startswith('+') %}bg-emerald-100 text-emerald-600{% elif drivers_nearby.changes.xl.startswith('-') %}bg-red-100 text-red-500{% else %}bg-zinc-100 text-zinc-500{% endif %}">
-                        {{ drivers_nearby.changes.xl }}
-                    </span>
+                <div class="text-center p-3 bg-zinc-50 rounded-xl">
+                    <p class="text-2xl font-black text-zinc-900">{{ drivers_nearby.xl }}</p>
+                    <p class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mt-1">XL</p>
                 </div>
-            </div>
-            <div class="p-3 bg-zinc-900 border-2 border-zinc-800 rounded-xl text-center">
-                <div class="flex items-center justify-center gap-1.5 mb-1">
-                    <div class="w-2 h-2 bg-white rounded-full shadow-sm"></div>
-                    <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-tight">Black</p>
-                </div>
-                <p class="text-xl font-black text-white tracking-tight">{{ drivers_nearby.black }}</p>
-                <div class="flex items-center justify-center mt-1">
-                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if drivers_nearby.changes.black.startswith('+') %}bg-emerald-500/20 text-emerald-400{% elif drivers_nearby.changes.black.startswith('-') %}bg-red-500/20 text-red-400{% else %}bg-white/10 text-zinc-400{% endif %}">
-                        {{ drivers_nearby.changes.black }}
-                    </span>
+                <div class="text-center p-3 bg-zinc-900 rounded-xl">
+                    <p class="text-2xl font-black text-white">{{ drivers_nearby.black }}</p>
+                    <p class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mt-1">Black</p>
                 </div>
             </div>
         </div>
 
-        {% if loading %}
-        <div id="loading-skeleton">
-            <div class="glass-panel rounded-xl premium-shadow p-6 mb-6">
-                <div class="flex items-center">
-                    <div class="w-20 h-20 rounded-full skeleton"></div>
-                    <div class="ml-5 flex-1">
-                        <div class="h-5 w-32 skeleton rounded mb-2"></div>
-                        <div class="h-3 w-20 skeleton rounded mb-2"></div>
-                        <div class="h-5 w-24 skeleton rounded"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="drivers-info-container">
-            {% if driver_info %}
-            <div class="glass-panel rounded-xl premium-shadow p-6 mb-4">
-                <div class="flex items-center">
-                    <div class="relative">
-                        {% if driver_info.photo %}
-                        <img src="{{ driver_info.photo }}" alt="Driver Photo" class="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg">
-                        {% else %}
-                        <div class="w-16 h-16 rounded-full bg-zinc-200 flex items-center justify-center border-4 border-white shadow-lg">
-                            <svg class="w-8 h-8 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                            </svg>
-                        </div>
-                        {% endif %}
-                        <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-black rounded-full flex items-center justify-center">
-                            <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="ml-4 flex-1">
-                        <h1 class="text-lg font-bold text-zinc-900 leading-tight">{{ driver_info.name }}</h1>
-                        <div class="flex items-center mt-1 space-x-2">
-                            <span class="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
-                            <span class="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md bg-emerald-500 text-white shadow-sm">Connected</span>
-                        </div>
-                    </div>
-                    <button id="disconnectBtn" class="ml-auto p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all" title="Disconnect Account">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                        </svg>
-                    </button>
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-zinc-100 grid grid-cols-3 gap-2">
-                    <div class="flex items-center gap-1.5 text-zinc-400">
-                        <div class="w-1.5 h-1.5 rounded-full bg-zinc-300"></div>
-                        <span class="text-[10px] font-medium">Offline</span>
-                    </div>
-                    <div class="flex items-center gap-1.5 text-zinc-400">
-                        <div class="w-1.5 h-1.5 rounded-full bg-zinc-300"></div>
-                        <span class="text-[10px] font-medium">Busy</span>
-                    </div>
-                    <div class="flex items-center gap-1.5 text-zinc-400">
-                        <div class="w-1.5 h-1.5 rounded-full bg-zinc-300"></div>
-                        <span class="text-[10px] font-medium">No</span>
-                    </div>
-                    <button class="ml-auto flex items-center justify-center w-6 h-6 rounded-full bg-zinc-50 border border-zinc-100 text-zinc-400 hover:text-zinc-600">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    </button>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-        {% else %}
-        <div id="no-uber-connected">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-zinc-100 flex items-center justify-center">
-                    <svg class="w-8 h-8 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <span class="inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full border {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
-                <p class="text-sm text-zinc-500 mt-2">Connect your Uber account to get started</p>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="glass-panel p-5 rounded-xl premium-shadow space-y-3">
+        <div class="space-y-3 mb-5">
             {% if current_user.has_permission('can_change_location') %}
-            <a href="/change-location" class="flex items-center p-4 bg-black text-white rounded-lg hover:bg-zinc-800 transition-colors">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                </svg>
-                <div>
-                    <p class="font-semibold text-sm">Change Location</p>
-                    <p class="text-xs text-zinc-400">Update driver position</p>
+            <a href="/change-location" class="nav-item premium-card p-4 flex items-center gap-4 group">
+                <div class="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    </svg>
                 </div>
+                <div class="flex-1">
+                    <p class="font-bold text-zinc-900">Change Location</p>
+                    <p class="text-xs text-zinc-500">Update your driver position</p>
+                </div>
+                <svg class="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
             </a>
-            {% else %}
-            <div class="flex items-center p-4 bg-zinc-100 border border-zinc-200 rounded-lg opacity-60">
-                <svg class="w-5 h-5 mr-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-                <div>
-                    <p class="font-semibold text-sm text-zinc-500">Change Location</p>
-                    <p class="text-xs text-zinc-400">Locked - No permission</p>
-                </div>
-            </div>
             {% endif %}
             
             {% if current_user.has_permission('can_fetch_ride') %}
-            <div class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors group/fetch relative">
-                <a href="/fetch-ride" class="flex items-center flex-1">
-                    <svg class="w-5 h-5 mr-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                    </svg>
-                    <div>
-                        <p class="font-semibold text-sm text-zinc-900">Fetch Ride</p>
-                        <p class="text-xs text-zinc-500">Get ride details</p>
+            <div class="nav-item premium-card p-4 flex items-center gap-4">
+                <a href="/fetch-ride" class="flex items-center gap-4 flex-1">
+                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-zinc-900">Fetch Ride</p>
+                        <p class="text-xs text-zinc-500">Get current ride details</p>
                     </div>
                 </a>
-                <button id="pip-btn" class="p-2 ml-2 bg-black text-white rounded-lg hover:bg-zinc-800 transition-all shadow-xl z-20" style="display: flex !important; align-items: center; justify-content: center;" title="Open Floating View">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                <button id="pip-btn" class="p-3 bg-zinc-100 hover:bg-zinc-200 rounded-xl transition-colors" title="Live Feed">
+                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                     </svg>
                 </button>
             </div>
-            {% else %}
-            <div class="flex items-center p-4 bg-zinc-100 border border-zinc-200 rounded-lg opacity-60">
-                <svg class="w-5 h-5 mr-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-                <div>
-                    <p class="font-semibold text-sm text-zinc-500">Fetch Ride</p>
-                    <p class="text-xs text-zinc-400">Locked - No permission</p>
-                </div>
-            </div>
             {% endif %}
+        </div>
 
-            <a href="/flight-center" class="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-400 to-blue-500 text-white rounded-xl hover:from-cyan-500 hover:to-blue-600 transition-all shadow-lg shadow-cyan-500/20">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center mr-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="font-bold text-sm">Flight Center</p>
-                        <p class="text-xs text-white/80">Perth Airport arrivals</p>
-                    </div>
+        <div class="grid grid-cols-2 gap-3 mb-5">
+            <a href="/flight-center" class="nav-item p-5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl text-white shadow-lg shadow-blue-500/20">
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
                 </div>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
+                <p class="font-bold text-sm">Flights</p>
+                <p class="text-[11px] text-white/70 mt-0.5">Airport arrivals</p>
             </a>
             
-            <a href="/chat" class="flex items-center justify-between p-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg shadow-pink-500/20">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center mr-3">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="font-bold text-sm">Chat Lobby</p>
-                        <p class="text-xs text-white/80">Real-time team chat</p>
-                    </div>
+            <a href="/chat" class="nav-item p-5 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl text-white shadow-lg shadow-pink-500/20">
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
                 </div>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
+                <p class="font-bold text-sm">Chat</p>
+                <p class="text-[11px] text-white/70 mt-0.5">Team lobby</p>
+            </a>
+            
+            <a href="/demand" class="nav-item p-5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl text-white shadow-lg shadow-orange-500/20">
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <p class="font-bold text-sm">Demand</p>
+                <p class="text-[11px] text-white/70 mt-0.5">Events & hotspots</p>
+            </a>
+            
+            <a href="/smart-route" class="nav-item p-5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl text-white shadow-lg shadow-purple-500/20">
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                    </svg>
+                </div>
+                <p class="font-bold text-sm">Routes</p>
+                <p class="text-[11px] text-white/70 mt-0.5">Smart planning</p>
             </a>
         </div>
-        
+
         {% if vehicles and vehicles|length > 0 %}
-        <div class="mt-6">
-            <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Your Vehicles</p>
-            <div class="grid grid-cols-2 gap-3">
+        <div class="premium-card p-4 mb-5">
+            <h2 class="text-sm font-bold text-zinc-900 mb-3">Your Vehicles</h2>
+            <div class="flex gap-3 overflow-x-auto pb-1">
                 {% for vehicle in vehicles %}
-                <div class="relative p-4 bg-white border-2 {% if vehicle.is_default %}border-emerald-400{% else %}border-zinc-200{% endif %} rounded-xl hover:shadow-lg transition-all">
+                <div class="flex-shrink-0 w-36 p-3 bg-zinc-50 rounded-xl {% if vehicle.is_default %}ring-2 ring-emerald-500{% endif %}">
                     {% if vehicle.is_default %}
-                    <span class="absolute top-2 right-2 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-emerald-500 text-white rounded-full">Default</span>
+                    <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Default</span>
                     {% endif %}
                     {% if vehicle.image_url %}
-                    <img src="{{ vehicle.image_url }}" alt="{{ vehicle.make }} {{ vehicle.model }}" class="w-full h-20 object-contain mb-2">
+                    <img src="{{ vehicle.image_url }}" alt="{{ vehicle.make }}" class="w-full h-16 object-contain my-2">
                     {% else %}
-                    <div class="w-full h-20 bg-zinc-100 rounded-lg flex items-center justify-center mb-2">
-                        <svg class="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-full h-16 flex items-center justify-center my-2">
+                        <svg class="w-8 h-8 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 17h8M8 17v-4m8 4v-4m-8 0h8m-8 0V9a2 2 0 012-2h4a2 2 0 012 2v4"/>
                         </svg>
                     </div>
                     {% endif %}
-                    <p class="font-bold text-sm text-zinc-900">{{ vehicle.make }} {{ vehicle.model }}</p>
-                    <p class="text-xs text-zinc-500">{{ vehicle.year }} · {{ vehicle.plate }}</p>
+                    <p class="text-xs font-bold text-zinc-900 truncate">{{ vehicle.make }} {{ vehicle.model }}</p>
+                    <p class="text-[10px] text-zinc-500">{{ vehicle.year }}</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
         {% endif %}
-        
+
         {% if current_user.has_permission('can_access_admin') %}
-        <div class="mt-6">
-            <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Admin</p>
-            <div class="grid grid-cols-2 gap-3">
-                <a href="/admin" class="p-4 bg-white border border-zinc-200 rounded-xl text-center hover:bg-zinc-50 hover:border-zinc-300 transition-all">
-                    <p class="font-semibold text-sm text-zinc-900">Users</p>
+        <div class="premium-card p-4 mb-5">
+            <h2 class="text-sm font-bold text-zinc-900 mb-3">Admin</h2>
+            <div class="flex gap-3">
+                <a href="/admin" class="flex-1 p-3 bg-zinc-50 hover:bg-zinc-100 rounded-xl text-center transition-colors">
+                    <p class="text-sm font-semibold text-zinc-900">Users</p>
                 </a>
-                <a href="/roles" class="p-4 bg-white border border-zinc-200 rounded-xl text-center hover:bg-zinc-50 hover:border-zinc-300 transition-all">
-                    <p class="font-semibold text-sm text-zinc-900">Roles</p>
+                <a href="/roles" class="flex-1 p-3 bg-zinc-50 hover:bg-zinc-100 rounded-xl text-center transition-colors">
+                    <p class="text-sm font-semibold text-zinc-900">Roles</p>
                 </a>
             </div>
         </div>
         {% endif %}
-        
-        <div class="mt-6">
-            <a href="/demand" class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-xl hover:bg-zinc-100 transition-colors">
-                <svg class="w-5 h-5 mr-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-                <div>
-                    <p class="font-semibold text-sm text-zinc-900">Demand Intelligence</p>
-                    <p class="text-xs text-zinc-500">Live events & hotspots</p>
-                </div>
-            </a>
-            
-            <a href="/smart-route" class="flex items-center p-4 mt-3 bg-zinc-50 border border-zinc-200 rounded-xl hover:bg-zinc-100 transition-colors group">
-                <svg class="w-5 h-5 mr-3 text-zinc-600 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                </svg>
-                <div>
-                    <p class="font-semibold text-sm text-zinc-900">Smart Route</p>
-                    <p class="text-xs text-zinc-500">AI-powered profitability</p>
-                </div>
-                <span class="ml-auto text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Beta</span>
-            </a>
-        </div>
-        
-        <div id="flight-widget" class="mt-6 bg-zinc-900 rounded-2xl overflow-hidden shadow-xl">
-            <div class="px-4 py-3 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                    </svg>
-                    <span class="text-sm font-bold text-white">Flight Center</span>
-                    <span id="flight-count" class="px-2 py-0.5 text-[10px] font-bold bg-zinc-700 text-zinc-300 rounded-full">--</span>
-                </div>
-                <a href="/flight-center" class="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">View All</a>
-            </div>
-            <div class="px-4 pb-4">
-                <div id="flight-timeline" class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                    <div class="flex-shrink-0 w-16 text-center">
-                        <div class="h-8 bg-zinc-800 rounded-lg skeleton"></div>
-                        <div class="mt-1.5 h-3 w-10 mx-auto bg-zinc-800 rounded skeleton"></div>
-                    </div>
-                    <div class="flex-shrink-0 w-16 text-center">
-                        <div class="h-8 bg-zinc-800 rounded-lg skeleton"></div>
-                        <div class="mt-1.5 h-3 w-10 mx-auto bg-zinc-800 rounded skeleton"></div>
-                    </div>
-                    <div class="flex-shrink-0 w-16 text-center">
-                        <div class="h-8 bg-zinc-800 rounded-lg skeleton"></div>
-                        <div class="mt-1.5 h-3 w-10 mx-auto bg-zinc-800 rounded skeleton"></div>
-                    </div>
-                </div>
-                <p id="flight-remaining" class="text-center text-[10px] text-zinc-500 mt-2">Loading...</p>
-            </div>
-        </div>
-        
-        <div class="mt-8 text-center">
-            <p class="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em]">RizTar &copy; 2026</p>
+
+        <div class="text-center py-4">
+            <p class="text-[10px] text-zinc-400 font-semibold uppercase tracking-widest">RizTar &copy; 2026</p>
         </div>
     </div>
 </div>
 
-<div id="pip-container" class="hidden fixed bottom-6 right-6 w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 overflow-hidden z-[100] transition-all transform hover:scale-[1.02]">
+<div id="pip-container" class="hidden fixed bottom-6 right-6 w-80 bg-white rounded-2xl shadow-2xl border border-zinc-100 overflow-hidden z-[100]">
     <div class="p-3 bg-zinc-900 flex items-center justify-between">
         <div class="flex items-center gap-2">
             <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -412,17 +233,17 @@
         </div>
         <div class="flex items-center gap-1">
             <button id="pip-refresh" class="p-1.5 text-zinc-400 hover:text-white transition-colors">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             </button>
             <button id="pip-close" class="p-1.5 text-zinc-400 hover:text-white transition-colors">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
     </div>
-    <div id="pip-content" class="p-4 bg-zinc-50 min-h-[120px]">
+    <div id="pip-content" class="p-4 min-h-[120px]">
         <div class="flex flex-col items-center justify-center h-full py-4">
             <div class="w-8 h-8 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin mb-3"></div>
-            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Initializing Feed...</p>
+            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Loading...</p>
         </div>
     </div>
 </div>
@@ -440,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (disconnectBtn && disconnectForm) {
         disconnectBtn.addEventListener('click', function() {
-            if (confirm('Are you sure you want to disconnect your Uber account?')) {
+            if (confirm('Disconnect your Uber account?')) {
                 disconnectForm.submit();
             }
         });
@@ -463,41 +284,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     pipContent.innerHTML = `
                         <div class="active-ride-card p-4 rounded-xl text-white">
                             <div class="flex items-center justify-between mb-3">
-                                <span class="text-[9px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">Active Trip</span>
-                                <span class="text-[9px] font-black text-white/70">${ride.trip_type || 'UberX'}</span>
+                                <span class="text-[9px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">Active</span>
+                                <span class="text-[9px] font-bold text-white/70">${ride.trip_type || 'UberX'}</span>
                             </div>
-                            <div class="flex items-center gap-3 mb-3">
-                                <div class="w-10 h-10 rounded-full border-2 border-white/30 overflow-hidden bg-white/10 flex items-center justify-center">
-                                    <svg class="w-5 h-5 text-white/50" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white/80" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-black truncate">${ride.full_name}</p>
-                                    <p class="text-[10px] text-white/70 font-bold">${ride.rating} ★ Rating</p>
-                                </div>
-                            </div>
-                            <div class="space-y-2">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
-                                    <p class="text-[10px] font-bold truncate opacity-90">${ride.pickup_address}</p>
+                                <div>
+                                    <p class="text-sm font-bold">${ride.full_name}</p>
+                                    <p class="text-[10px] text-white/70">${ride.rating} ★</p>
                                 </div>
                             </div>
                         </div>
                     `;
                 } else {
                     pipContent.innerHTML = `
-                        <div class="flex flex-col items-center justify-center py-4 text-center">
-                            <div class="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center mb-2">
-                                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1-1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+                        <div class="flex flex-col items-center justify-center py-6 text-center">
+                            <div class="w-12 h-12 bg-zinc-100 rounded-xl flex items-center justify-center mb-3">
+                                <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1-1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
                             </div>
-                            <p class="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Awaiting Ride</p>
-                            <p class="text-[9px] text-zinc-400 font-bold mt-1 uppercase tracking-tight">Monitoring Signal...</p>
+                            <p class="text-xs font-bold text-zinc-900">No Active Ride</p>
+                            <p class="text-[10px] text-zinc-500 mt-1">Waiting for signal...</p>
                         </div>
                     `;
                 }
             })
-            .catch(err => {
-                console.error('PiP update error:', err);
-            });
+            .catch(err => console.error('PiP error:', err));
     }
 
     if (pipBtn) {
@@ -522,79 +335,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (pipRefresh) {
-        pipRefresh.addEventListener('click', function() {
-            pipContent.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full py-4">
-                    <div class="w-8 h-8 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin mb-3"></div>
-                    <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Refreshing...</p>
-                </div>
-            `;
-            updatePipContent();
-        });
+        pipRefresh.addEventListener('click', updatePipContent);
     }
-
-    // Load initial home data for skeletons
-    fetch('/api/home-data')
-        .then(response => response.json())
-        .then(data => {
-            const skeleton = document.getElementById('loading-skeleton');
-            if (skeleton) skeleton.classList.add('hidden');
-        })
-        .catch(err => console.error('Error loading initial data:', err));
-    
-    // Flight widget
-    function loadFlightWidget() {
-        fetch('/api/flights-summary')
-            .then(response => {
-                if (!response.ok) throw new Error('Not authorized');
-                return response.json();
-            })
-            .then(data => {
-                const timeline = document.getElementById('flight-timeline');
-                const countEl = document.getElementById('flight-count');
-                const remainingEl = document.getElementById('flight-remaining');
-                
-                if (data.error) {
-                    timeline.innerHTML = '<p class="text-xs text-zinc-500 py-2">Unable to load flights</p>';
-                    return;
-                }
-                
-                countEl.textContent = data.total_flights || 0;
-                
-                if (data.hourly_slots && data.hourly_slots.length > 0) {
-                    const airlineColors = {
-                        'QF': 'bg-red-500', 'VA': 'bg-purple-500', 'JQ': 'bg-orange-500',
-                        'SQ': 'bg-yellow-500', 'MH': 'bg-blue-500', 'EK': 'bg-red-600',
-                        'CX': 'bg-green-500', 'NZ': 'bg-black', 'TL': 'bg-sky-500'
-                    };
-                    
-                    timeline.innerHTML = data.hourly_slots.map(slot => {
-                        const dots = (slot.airlines || []).slice(0, 3).map(code => {
-                            const color = airlineColors[code] || 'bg-zinc-500';
-                            return `<div class="w-3 h-3 ${color} rounded-sm" title="${code}"></div>`;
-                        }).join('');
-                        
-                        return `
-                            <div class="flex-shrink-0 text-center">
-                                <p class="text-[10px] text-zinc-400 mb-1">${slot.hour}</p>
-                                <div class="bg-zinc-800 rounded-lg px-2 py-1.5 min-w-[50px]">
-                                    <p class="text-lg font-black text-white">${slot.count}</p>
-                                    <div class="flex justify-center gap-0.5 mt-1">${dots}</div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                    
-                    remainingEl.textContent = data.hours_remaining ? `${data.hours_remaining} hours remaining` : '';
-                }
-            })
-            .catch(err => {
-                console.error('Flight widget error:', err);
-            });
-    }
-    
-    loadFlightWidget();
-    setInterval(loadFlightWidget, 300000); // Refresh every 5 minutes
 });
 </script>
 {% endblock %}
