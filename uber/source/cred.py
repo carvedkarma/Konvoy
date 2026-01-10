@@ -196,6 +196,56 @@ flight_cookies = {
     '_ga_TV9RFRH56F': 'GS2.1.s1766805592$o1$g1$t1766805998$j35$l0$h946430354',
 }
 
+rider_graphql_query = '''query GetStatus($latitude: Float!, $longitude: Float!, $share: InputShare, $targetProductType: EnumRVWebCommonTargetProductType) {
+  status(
+    latitude: $latitude
+    longitude: $longitude
+    share: $share
+    targetProductType: $targetProductType
+  ) {
+    ...StatusFragment
+    __typename
+  }
+}
+
+fragment StatusFragment on RVWebCommonStatus {
+  city {
+    countryIso2
+    currencyCode
+    id
+    name
+    timezone
+    __typename
+  }
+  clientStatus
+  coordinate {
+    latitude
+    longitude
+    __typename
+  }
+  nearbyVehicles {
+    ...NearbyVehicleFragment
+    __typename
+  }
+  pollingIntervalMs
+  productsUnavailableMessage
+  __typename
+}
+
+fragment NearbyVehicleFragment on RVWebCommonVehicle {
+  bearing
+  coordinate {
+    latitude
+    longitude
+    __typename
+  }
+  etaInMin
+  etaStringShort
+  id
+  mapImageUrl
+  __typename
+}'''
+
 flight_headers = {
     'accept':
     'application/json, text/plain, */*',

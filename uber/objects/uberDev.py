@@ -6,7 +6,7 @@ import math
 import uuid
 import random
 
-from source.cred import loc_headers, fare_cookies, fare_headers, fare_query, flight_cookies, flight_headers
+from source.cred import loc_headers, fare_cookies, fare_headers, fare_query, flight_cookies, flight_headers, rider_graphql_query
 import config
 
 with_ride = 0
@@ -1617,3 +1617,173 @@ def uberRidersNearby(cookies,
             return None
     except Exception as e:
         return None
+
+
+def generate_perth_grid():
+    """
+    Generate tiered coordinate grid covering 200km radius of Perth.
+    CBD: 1km spacing, Metro: 3km spacing, Outer: 8km spacing, Regional: 20km spacing
+    """
+    perth_center = (-31.9505, 115.8605)
+    grid_points = []
+    
+    # CBD area (5km radius) - 1km spacing
+    cbd_radius = 5
+    cbd_spacing = 0.009  # ~1km
+    for lat_offset in range(-5, 6):
+        for lng_offset in range(-5, 6):
+            lat = perth_center[0] + (lat_offset * cbd_spacing)
+            lng = perth_center[1] + (lng_offset * cbd_spacing)
+            dist = calculate_distance(perth_center[0], perth_center[1], lat, lng)
+            if dist <= cbd_radius:
+                grid_points.append({'lat': lat, 'lng': lng, 'tier': 'cbd'})
+    
+    # Metro area (5-25km) - 3km spacing
+    metro_spacing = 0.027  # ~3km
+    for lat_offset in range(-10, 11):
+        for lng_offset in range(-10, 11):
+            lat = perth_center[0] + (lat_offset * metro_spacing)
+            lng = perth_center[1] + (lng_offset * metro_spacing)
+            dist = calculate_distance(perth_center[0], perth_center[1], lat, lng)
+            if 5 < dist <= 25:
+                grid_points.append({'lat': lat, 'lng': lng, 'tier': 'metro'})
+    
+    # Outer area (25-60km) - 8km spacing
+    outer_spacing = 0.072  # ~8km
+    for lat_offset in range(-10, 11):
+        for lng_offset in range(-10, 11):
+            lat = perth_center[0] + (lat_offset * outer_spacing)
+            lng = perth_center[1] + (lng_offset * outer_spacing)
+            dist = calculate_distance(perth_center[0], perth_center[1], lat, lng)
+            if 25 < dist <= 60:
+                grid_points.append({'lat': lat, 'lng': lng, 'tier': 'outer'})
+    
+    # Regional area (60-200km) - 20km spacing
+    regional_spacing = 0.18  # ~20km
+    for lat_offset in range(-12, 13):
+        for lng_offset in range(-12, 13):
+            lat = perth_center[0] + (lat_offset * regional_spacing)
+            lng = perth_center[1] + (lng_offset * regional_spacing)
+            dist = calculate_distance(perth_center[0], perth_center[1], lat, lng)
+            if 60 < dist <= 200:
+                grid_points.append({'lat': lat, 'lng': lng, 'tier': 'regional'})
+    
+    return grid_points
+
+
+def fetch_drivers_at_location(lat, lng, product_type=None):
+    """
+    Fetch nearby drivers at a specific location using Uber's GetStatus GraphQL API.
+    Returns list of drivers with id, lat, lng, bearing.
+    Uses the same fare_cookies and fare_headers from cred.py for authentication.
+    """
+    variables = {
+        'latitude': lat,
+        'longitude': lng,
+    }
+    if product_type:
+        variables['targetProductType'] = product_type
+    
+    json_data = {
+        'operationName': 'GetStatus',
+        'variables': variables,
+        'query': rider_graphql_query,
+    }
+    
+    try:
+        response = requests.post(
+            'https://m.uber.com/go/graphql',
+            cookies=fare_cookies,
+            headers=fare_headers,
+            json=json_data,
+            timeout=8
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            status = data.get('data', {}).get('status', {})
+            nearby_vehicles = status.get('nearbyVehicles', [])
+            
+            drivers = []
+            for vehicle in nearby_vehicles:
+                coord = vehicle.get('coordinate', {})
+                drivers.append({
+                    'id': vehicle.get('id'),
+                    'lat': coord.get('latitude'),
+                    'lng': coord.get('longitude'),
+                    'bearing': vehicle.get('bearing'),
+                    'eta': vehicle.get('etaInMin'),
+                    'product_type': product_type or 'ALL'
+                })
+            return drivers
+        else:
+            return []
+    except Exception as e:
+        print(f"fetch_drivers_at_location error: {e}")
+        return []
+
+
+def fetch_all_perth_drivers(max_points=50):
+    """
+    Fetch drivers from multiple grid points and product types.
+    Returns deduplicated list of all drivers with counts by product type.
+    """
+    import concurrent.futures
+    
+    grid = generate_perth_grid()
+    # Prioritize CBD and metro points, limit total for performance
+    cbd_points = [p for p in grid if p['tier'] == 'cbd']
+    metro_points = [p for p in grid if p['tier'] == 'metro']
+    outer_points = [p for p in grid if p['tier'] == 'outer']
+    
+    # Take balanced sample
+    selected_points = cbd_points[:15] + metro_points[:20] + outer_points[:15]
+    selected_points = selected_points[:max_points]
+    
+    product_types = ['UBERX', 'COMFORT', 'XL', 'BLACK']
+    
+    all_drivers = {}
+    drivers_by_type = {pt: set() for pt in product_types}
+    
+    def fetch_point_type(args):
+        point, product_type = args
+        return fetch_drivers_at_location(point['lat'], point['lng'], product_type)
+    
+    # Create all tasks
+    tasks = []
+    for point in selected_points:
+        for pt in product_types:
+            tasks.append((point, pt))
+    
+    # Execute in parallel with thread pool
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        results = list(executor.map(fetch_point_type, tasks))
+    
+    # Process results
+    task_idx = 0
+    for point in selected_points:
+        for pt in product_types:
+            drivers = results[task_idx]
+            task_idx += 1
+            for driver in drivers:
+                driver_id = driver.get('id')
+                if driver_id:
+                    drivers_by_type[pt].add(driver_id)
+                    if driver_id not in all_drivers:
+                        all_drivers[driver_id] = driver
+    
+    # Build response
+    unique_drivers = list(all_drivers.values())
+    counts = {
+        'total': len(unique_drivers),
+        'uberx': len(drivers_by_type['UBERX']),
+        'comfort': len(drivers_by_type['COMFORT']),
+        'xl': len(drivers_by_type['XL']),
+        'black': len(drivers_by_type['BLACK']),
+    }
+    
+    return {
+        'drivers': unique_drivers,
+        'counts': counts,
+        'grid_points_polled': len(selected_points),
+    }

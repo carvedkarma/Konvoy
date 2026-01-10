@@ -11,7 +11,7 @@ try:
     from flask_socketio import SocketIO, emit, join_room, leave_room
     from datetime import datetime, timedelta
     from werkzeug.utils import secure_filename
-    from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour, uberRidersNearby
+    from objects.uberDev import vehicleDetails, appLaunch, driverLocation, updateLocationOnce, flightArrivals, parseFlightsByHour, uberRidersNearby, fetch_all_perth_drivers
     import config
     import cache
     from models import db, User, Role, ChatMessage, PushSubscription, PageVisit, create_default_roles, encrypt_data, decrypt_data
@@ -1716,6 +1716,34 @@ def location_data():
 @login_required
 def demand_intel():
     return render_template('demand_intel.html')
+
+
+@app.route('/live-drivers')
+@login_required
+def live_drivers_page():
+    return render_template('live_drivers.html')
+
+
+@app.route('/api/live-drivers')
+@login_required
+def api_live_drivers():
+    """
+    Fetch all drivers in Perth area using multi-coordinate grid polling.
+    Returns deduplicated driver positions and counts by product type.
+    """
+    from datetime import datetime
+    try:
+        result = fetch_all_perth_drivers(max_points=40)
+        return jsonify({
+            'success': True,
+            'drivers': result['drivers'],
+            'counts': result['counts'],
+            'gridPointsPolled': result['grid_points_polled'],
+            'updated': datetime.now().strftime('%H:%M:%S')
+        })
+    except Exception as e:
+        print(f"Live drivers API error: {e}")
+        return jsonify(success=False, message=str(e)), 500
 
 
 @app.route('/api/hotspots')
