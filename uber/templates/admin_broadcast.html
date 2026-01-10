@@ -20,6 +20,32 @@
         background: rgba(255, 255, 255, 0.9);
         border: 1px solid rgba(0, 0, 0, 0.1);
         backdrop-filter: blur(8px);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 8px;
+    }
+    .ql-toolbar.ql-snow .ql-formats {
+        margin-right: 8px !important;
+        display: flex;
+        align-items: center;
+    }
+    .ql-toolbar.ql-snow button, .ql-toolbar.ql-snow .ql-picker {
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    .ql-toolbar.ql-snow button:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: #000 !important;
+    }
+    /* Hide the default svgs and use better ones or just clean up the massive arrows */
+    .ql-snow .ql-picker.ql-header .ql-picker-label::before {
+        content: 'Size';
+        font-size: 12px;
+        vertical-align: middle;
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-label svg {
+        right: 4px !important;
     }
     .ql-container.ql-snow {
         border-bottom-left-radius: 12px;
