@@ -2079,13 +2079,7 @@ def admin_broadcast():
             all_users = User.query.all()
             total_sent = 0
             
-            # Import local replitmail module
-            from replitmail import send_email
-            
-            print(f"DEBUG: Starting broadcast to {len(all_users)} users", flush=True)
             for user in all_users:
-                # First try push notification with plain text
-                sent_push = False
                 try:
                     sent_push_count = send_push_notification(
                         user.id, 
@@ -2096,29 +2090,11 @@ def admin_broadcast():
                         require_interaction=True
                     )
                     if sent_push_count and sent_push_count > 0:
-                        sent_push = True
-                        print(f"DEBUG: Push sent to {user.email}", flush=True)
-                except Exception as e:
-                    print(f"DEBUG: Push failed for {user.email}: {e}", flush=True)
-                
-                # Also send email with plain text
-                sent_email = False
-                try:
-                    send_email(
-                        to=user.email,
-                        subject=title,
-                        body=clean_text
-                    )
-                    sent_email = True
-                    print(f"DEBUG: Email sent to {user.email}", flush=True)
-                except Exception as e:
-                    print(f"DEBUG: Email failed for {user.email}: {e}", flush=True)
-                
-                if sent_push or sent_email:
-                    total_sent += 1
+                        total_sent += 1
+                except Exception:
+                    pass
             
-            print(f"DEBUG: Broadcast finished. Total sent: {total_sent}", flush=True)
-            flash(f'Broadcast sent to {total_sent} users via push and/or email.', 'success')
+            flash(f'Push notification sent to {total_sent} users.', 'success')
             return redirect(url_for('admin_broadcast'))
             
     return render_template('admin_broadcast.html')
