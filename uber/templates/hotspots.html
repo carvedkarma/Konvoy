@@ -240,6 +240,18 @@
                         <span class="text-sm text-zinc-500">Overall Demand</span>
                         <span id="overall-demand" class="px-2 py-0.5 text-xs font-bold rounded-full skeleton h-5 w-16"></span>
                     </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-zinc-500">Flights (1hr)</span>
+                        <span id="flights-info" class="text-sm font-semibold text-zinc-900">
+                            <span class="skeleton h-4 w-20 inline-block rounded"></span>
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-zinc-500">Events</span>
+                        <span id="events-info" class="text-sm font-semibold text-zinc-900">
+                            <span class="skeleton h-4 w-20 inline-block rounded"></span>
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -282,9 +294,22 @@ function getDemandClass(level) {
 
 function createHotspotMarker(hotspot) {
     const size = 22 + (hotspot.demand * 6);
+    const hasFlights = hotspot.flightsNearby && hotspot.flightsNearby > 0;
+    const hasEvent = hotspot.eventBoost && hotspot.eventBoost > 1.0;
+    const shouldPulse = hotspot.isPeak || hasFlights || hasEvent;
+    
+    let badgeHtml = '';
+    if (hasFlights) {
+        badgeHtml = '<span style="position:absolute;top:-8px;right:-8px;background:#3b82f6;color:white;font-size:9px;font-weight:bold;padding:2px 4px;border-radius:8px;">✈ ' + hotspot.flightsNearby + '</span>';
+    } else if (hasEvent) {
+        badgeHtml = '<span style="position:absolute;top:-8px;right:-8px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;font-size:9px;font-weight:bold;padding:2px 4px;border-radius:8px;">🎫</span>';
+    }
+    
     const icon = L.divIcon({
         className: '',
-        html: `<div class="hotspot-marker ${getDemandClass(hotspot.level)} ${hotspot.isPeak ? 'pulse-animation' : ''}" style="width:${size}px;height:${size}px;"></div>`,
+        html: `<div class="hotspot-marker ${getDemandClass(hotspot.level)} ${shouldPulse ? 'pulse-animation' : ''}" style="width:${size}px;height:${size}px;">
+            ${badgeHtml}
+        </div>`,
         iconSize: [size, size],
         iconAnchor: [size/2, size/2]
     });
@@ -293,16 +318,24 @@ function createHotspotMarker(hotspot) {
     
     const distanceText = hotspot.distance !== undefined ? `<p style="color:#3b82f6;font-size:11px;margin-top:4px;">${hotspot.distance.toFixed(1)} km away</p>` : '';
     const peakBadge = hotspot.isPeak ? '<span class="peak-badge">Peak Time</span>' : '';
+    const flightBadge = hasFlights ? `<span style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600;margin-left:4px;">✈ ${hotspot.flightsNearby} FLIGHTS</span>` : '';
+    const eventBadge = hasEvent ? `<span style="background:linear-gradient(135deg,#8b5cf6,#ec4899);color:white;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600;margin-left:4px;">🎫 EVENT</span>` : '';
+    const flightBoostText = hotspot.flightBoost ? `<p style="color:#3b82f6;font-size:11px;margin-top:4px;font-weight:600;">Flight boost: +${Math.round((hotspot.flightBoost - 1) * 100)}% demand</p>` : '';
+    const eventBoostText = hasEvent ? `<p style="color:#8b5cf6;font-size:11px;margin-top:4px;font-weight:600;">Event boost: +${Math.round((hotspot.eventBoost - 1) * 100)}% demand</p>` : '';
     
     marker.bindPopup(`
-        <div style="padding:12px;min-width:200px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="padding:12px;min-width:220px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
                 <h3 style="font-weight:bold;font-size:14px;margin:0;">${hotspot.name}</h3>
                 ${peakBadge}
+                ${flightBadge}
+                ${eventBadge}
             </div>
             <p style="color:#666;font-size:12px;margin:0 0 8px 0;text-transform:capitalize;">${hotspot.type}</p>
             <p style="color:#888;font-size:11px;margin:0;">${hotspot.description}</p>
             ${distanceText}
+            ${flightBoostText}
+            ${eventBoostText}
             <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;">
                 <span style="font-weight:600;color:${hotspot.color};">${hotspot.level.charAt(0).toUpperCase() + hotspot.level.slice(1)} Demand</span>
                 <span style="font-weight:bold;font-size:16px;">${hotspot.demand.toFixed(1)}x</span>
@@ -409,16 +442,42 @@ function updateUI(data) {
     overallEl.textContent = levelLabels[analysis.overallLevel] || 'Unknown';
     overallEl.className = `px-2 py-0.5 text-xs font-bold rounded-full ${levelClasses[analysis.overallLevel] || 'bg-zinc-100 text-zinc-700'}`;
     
+    // Flight info display
+    const flightsEl = document.getElementById('flights-info');
+    if (analysis.flightsNextHour && analysis.flightsNextHour > 0) {
+        const boost = analysis.flightBoost ? ` (+${Math.round((analysis.flightBoost - 1) * 100)}%)` : '';
+        const nextFlight = analysis.nextFlight;
+        const nextText = nextFlight ? ` - next in ${nextFlight.mins}m` : '';
+        flightsEl.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">✈ ${analysis.flightsNextHour}${nextText}${boost}</span>`;
+    } else {
+        flightsEl.innerHTML = '<span class="text-zinc-400 text-xs">No flights soon</span>';
+    }
+    
+    // Events info display
+    const eventsEl = document.getElementById('events-info');
+    if (eventsEl) {
+        if (analysis.todayEventsCount && analysis.todayEventsCount > 0) {
+            const venues = analysis.eventVenuesBoost ? analysis.eventVenuesBoost.join(', ') : '';
+            eventsEl.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">🎫 ${analysis.todayEventsCount} event${analysis.todayEventsCount > 1 ? 's' : ''} today</span>`;
+        } else {
+            eventsEl.innerHTML = '<span class="text-zinc-400 text-xs">No events today</span>';
+        }
+    }
+    
     const topHotspotsEl = document.getElementById('top-hotspots');
     topHotspotsEl.innerHTML = data.hotspots.slice(0, 5).map(h => {
         const distanceText = h.distance !== undefined ? `<p class="text-[10px] text-blue-500 font-medium">${h.distance.toFixed(1)} km away</p>` : '';
         const peakBadge = h.isPeak ? '<span class="peak-badge ml-2">Peak</span>' : '';
+        const flightBadge = h.flightsNearby && h.flightsNearby > 0 ? `<span class="ml-1 px-1.5 py-0.5 bg-blue-500 text-white text-[9px] font-bold rounded">✈ ${h.flightsNearby}</span>` : '';
+        const eventBadge = h.eventBoost && h.eventBoost > 1.0 ? `<span class="ml-1 px-1.5 py-0.5 text-white text-[9px] font-bold rounded" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);">🎫</span>` : '';
         return `
             <div class="hotspot-card flex items-center justify-between p-3 bg-zinc-50 rounded-lg cursor-pointer hover:bg-zinc-100" onclick="map.setView([${h.lat}, ${h.lng}], 15)">
                 <div>
-                    <div class="flex items-center">
+                    <div class="flex items-center flex-wrap gap-1">
                         <p class="text-sm font-semibold text-zinc-900">${h.name}</p>
                         ${peakBadge}
+                        ${flightBadge}
+                        ${eventBadge}
                     </div>
                     <p class="text-xs text-zinc-500 capitalize">${h.type}</p>
                     ${distanceText}
