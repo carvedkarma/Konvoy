@@ -529,9 +529,11 @@ def push_status():
 def send_push_notification(user_id, title, body, url='/', tag='default', require_interaction=False):
     """Send push notification to a specific user"""
     if not VAPID_PRIVATE_KEY:
+        print("No VAPID private key configured")
         return 0
         
     subscriptions = PushSubscription.query.filter_by(user_id=user_id, is_active=True).all()
+    print(f"Found {len(subscriptions)} active subscriptions for user {user_id}")
     
     payload = json.dumps({
         'title': title,
@@ -543,23 +545,27 @@ def send_push_notification(user_id, title, body, url='/', tag='default', require
     
     sent = 0
     for sub in subscriptions:
+        subscription_info = sub.to_subscription_info()
+        print(f"Sending to endpoint: {subscription_info['endpoint'][:80]}...")
         try:
             webpush(
-                subscription_info=sub.to_subscription_info(),
+                subscription_info=subscription_info,
                 data=payload,
                 vapid_private_key=VAPID_PRIVATE_KEY,
-                vapid_claims=VAPID_CLAIMS
+                vapid_claims=VAPID_CLAIMS,
+                content_encoding="aes128gcm"
             )
+            print("Push notification sent successfully!")
             sent += 1
         except WebPushException as e:
             if e.response and e.response.status_code in [404, 410]:
                 sub.is_active = False
                 db.session.commit()
             print(f"Push notification failed: {e}")
+            print(f"Subscription info: endpoint={subscription_info['endpoint'][:50]}, keys present: {bool(subscription_info.get('keys'))}")
             if e.response:
+                print(f"Response status: {e.response.status_code}")
                 print(f"Response body: {e.response.text}")
-            else:
-                print("No response body available")
     
     return sent
 
