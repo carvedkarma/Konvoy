@@ -191,7 +191,8 @@ def root():
                 'black': calc_change(current.get('black', 0), previous.get('black', 0)),
             },
             'updated': current.get('updated').strftime('%H:%M') if current.get('updated') else None,
-            'scanning': homepage_driver_cache.get('scanning', False)
+            'scanning': homepage_driver_cache.get('scanning', False),
+            'nearby_summary': nearby_data
         }
         
         return render_template('home.html',

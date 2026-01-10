@@ -104,49 +104,146 @@
                 </div>
             </div>
         </div>
-        <div id="home-content" class="hidden"></div>
-        {% else %}
-        
-        {% if driver_info %}
-        <div class="glass-panel rounded-xl premium-shadow p-6 mb-6">
-            <div class="flex items-center">
-                <div class="relative">
-                    {% if driver_info.photo %}
-                    <img src="{{ driver_info.photo }}" alt="Driver Photo" class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg">
-                    {% else %}
-                    <div class="w-20 h-20 rounded-full bg-zinc-200 flex items-center justify-center border-4 border-white shadow-lg">
-                        <svg class="w-10 h-10 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+        <div id="drivers-info-container">
+            {% if driver_info %}
+            <div class="glass-panel rounded-xl premium-shadow p-6 mb-4">
+                <div class="flex items-center">
+                    <div class="relative">
+                        {% if driver_info.photo %}
+                        <img src="{{ driver_info.photo }}" alt="Driver Photo" class="w-16 h-16 rounded-full object-cover border-4 border-white shadow-lg">
+                        {% else %}
+                        <div class="w-16 h-16 rounded-full bg-zinc-200 flex items-center justify-center border-4 border-white shadow-lg">
+                            <svg class="w-8 h-8 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                        <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-black rounded-full flex items-center justify-center">
+                            <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h1 class="text-lg font-bold text-zinc-900 leading-tight">{{ driver_info.name }}</h1>
+                        <div class="flex items-center mt-1 space-x-2">
+                            <span class="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
+                            <span class="inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md bg-emerald-500 text-white shadow-sm">Connected</span>
+                        </div>
+                    </div>
+                    <button id="disconnectBtn" class="ml-auto p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all" title="Disconnect Account">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
-                    </div>
-                    {% endif %}
-                    <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-black rounded-full flex items-center justify-center">
-                        <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
+                    </button>
                 </div>
-                <div class="ml-5 flex-1">
-                    <h1 class="text-xl font-bold text-zinc-900">{{ driver_info.name }}</h1>
-                    {% if driver_info.email %}
-                    <p class="text-sm text-zinc-500">{{ driver_info.email }}</p>
-                    {% endif %}
-                    {% if driver_info.phone %}
-                    <p class="text-xs text-zinc-400">{{ driver_info.phone }}</p>
-                    {% endif %}
-                    <div class="flex items-center mt-2 space-x-2">
-                        <span class="inline-block px-2.5 py-0.5 text-xs font-medium rounded-full border {{ current_user.get_role_badge_classes() }}">{{ current_user.get_role_display() }}</span>
-                        <span class="inline-block px-2.5 py-0.5 text-xs font-medium rounded-full bg-emerald-500 text-white">Connected</span>
+                
+                <div class="mt-4 pt-4 border-t border-zinc-100 grid grid-cols-3 gap-2">
+                    <div class="flex items-center gap-1.5 text-zinc-400">
+                        <div class="w-1.5 h-1.5 rounded-full bg-zinc-300"></div>
+                        <span class="text-[10px] font-medium">Offline</span>
                     </div>
+                    <div class="flex items-center gap-1.5 text-zinc-400">
+                        <div class="w-1.5 h-1.5 rounded-full bg-zinc-300"></div>
+                        <span class="text-[10px] font-medium">Busy</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-zinc-400">
+                        <div class="w-1.5 h-1.5 rounded-full bg-zinc-300"></div>
+                        <span class="text-[10px] font-medium">No</span>
+                    </div>
+                    <button class="ml-auto flex items-center justify-center w-6 h-6 rounded-full bg-zinc-50 border border-zinc-100 text-zinc-400 hover:text-zinc-600">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </button>
                 </div>
-                <button id="disconnectBtn" class="ml-auto p-2.5 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors" title="Disconnect Uber Account">
-                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                    </svg>
-                </button>
             </div>
+
+            {% if driver_info %}
+            <div class="glass-panel p-4 rounded-xl premium-shadow mb-4 flex items-center justify-between border-2 border-emerald-100 bg-emerald-50/30">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1-1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Drivers Nearby</p>
+                        <p class="text-xl font-bold text-emerald-900 leading-tight">
+                            {{ drivers_nearby.nearby_summary }} <span class="text-xs font-medium text-emerald-700/70">vehicles</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/20">
+                    <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    <span class="text-[10px] font-bold text-white uppercase tracking-widest">Live</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-1 mb-6 px-1">
+                <p class="text-[10px] text-zinc-400 font-medium flex items-center gap-1.5">
+                    <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    YOUR LOCATION: <span class="text-blue-600 font-bold uppercase" id="current-location-text">Detecting...</span>
+                </p>
+            </div>
+
+            <div class="pt-2 mb-6">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-zinc-400 font-bold uppercase tracking-wider">Product Analysis</p>
+                        {% if drivers_nearby.scanning %}
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-600 text-[10px] font-bold rounded-full animate-pulse">Scanning</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-[10px] text-zinc-400 font-medium">{% if drivers_nearby.updated %}Updated {{ drivers_nearby.updated }}{% else %}Scanning...{% endif %}</p>
+                </div>
+                <div class="grid grid-cols-3 gap-2.5">
+                    <div class="p-3 bg-emerald-50 border-2 border-emerald-100 rounded-xl text-center group">
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-sm"></div>
+                            <p class="text-[10px] text-emerald-700 font-bold">UBERX</p>
+                        </div>
+                        <p class="text-xl font-black text-emerald-900 tracking-tight">{{ drivers_nearby.uberx if drivers_nearby.uberx else '0' }}</p>
+                        <div class="flex items-center justify-center mt-1">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if drivers_nearby.changes.uberx.startswith('+') %}bg-emerald-100 text-emerald-600{% elif drivers_nearby.changes.uberx.startswith('-') %}bg-red-100 text-red-500{% else %}bg-zinc-100 text-zinc-500{% endif %}">
+                                {{ drivers_nearby.changes.uberx }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-amber-50 border-2 border-amber-100 rounded-xl text-center group">
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <div class="w-2 h-2 bg-amber-500 rounded-full shadow-sm"></div>
+                            <p class="text-[10px] text-amber-700 font-bold">XL</p>
+                        </div>
+                        <p class="text-xl font-black text-amber-900 tracking-tight">{{ drivers_nearby.xl if drivers_nearby.xl else '0' }}</p>
+                        <div class="flex items-center justify-center mt-1">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if drivers_nearby.changes.xl.startswith('+') %}bg-emerald-100 text-emerald-600{% elif drivers_nearby.changes.xl.startswith('-') %}bg-red-100 text-red-500{% else %}bg-zinc-100 text-zinc-500{% endif %}">
+                                {{ drivers_nearby.changes.xl }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-zinc-900 border-2 border-zinc-800 rounded-xl text-center group">
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <div class="w-2 h-2 bg-white rounded-full shadow-sm"></div>
+                            <p class="text-[10px] text-zinc-400 font-bold">BLACK</p>
+                        </div>
+                        <p class="text-xl font-black text-white tracking-tight">{{ drivers_nearby.black if drivers_nearby.black else '0' }}</p>
+                        <div class="flex items-center justify-center mt-1">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md {% if drivers_nearby.changes.black.startswith('+') %}bg-emerald-500/20 text-emerald-400{% elif drivers_nearby.changes.black.startswith('-') %}bg-red-500/20 text-red-400{% else %}bg-white/10 text-zinc-400{% endif %}">
+                                {{ drivers_nearby.changes.black }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ url_for('live_drivers_page') }}" class="mt-4 flex items-center justify-center gap-2 text-[10px] font-bold text-zinc-400 hover:text-zinc-600 uppercase tracking-widest transition-all">
+                    <span>Launch Density Map</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
+        
         <div class="text-center mb-6">
             <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-zinc-100 flex items-center justify-center">
                 <svg class="w-8 h-8 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
@@ -256,73 +353,37 @@
             </a>
             {% endif %}
 
-            {% if vehicles %}
-            <div class="pt-3 border-t border-zinc-100">
-                <p class="text-xs text-zinc-400 mb-3">Your Vehicles</p>
-                <div class="grid grid-cols-2 gap-3">
-                    {% for vehicle in vehicles %}
-                    <div class="relative p-3 rounded-lg border-2 {% if vehicle.isDefault %}border-green-400 bg-green-50{% else %}border-zinc-200 bg-zinc-50{% endif %}">
-                        {% if vehicle.isDefault %}
-                        <span class="absolute top-2 right-2 px-1.5 py-0.5 bg-green-500 text-white text-[9px] font-bold rounded">DEFAULT</span>
-                        {% endif %}
-                        {% if vehicle.imageUrl %}
-                        <img src="{{ vehicle.imageUrl }}" alt="{{ vehicle.make }} {{ vehicle.model }}" class="w-full h-20 object-contain mb-2">
-                        {% else %}
-                        <div class="w-full h-20 bg-zinc-200 rounded flex items-center justify-center mb-2">
-                            <svg class="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                            </svg>
-                        </div>
-                        {% endif %}
-                        <p class="text-sm font-semibold text-zinc-900">{{ vehicle.make }} {{ vehicle.model }}</p>
-                        <p class="text-xs text-zinc-500">{{ vehicle.year }} · {{ vehicle.licensePlate }}</p>
+            {% if driver_info %}
+            <div class="glass-panel p-4 rounded-xl premium-shadow mb-6 flex items-center justify-between border-2 border-emerald-100 bg-emerald-50/30">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                        </svg>
                     </div>
-                    {% endfor %}
+                    <div>
+                        <p class="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Drivers Nearby</p>
+                        <p class="text-xl font-bold text-emerald-900 leading-tight">
+                            {{ drivers_nearby.nearby_summary }} <span class="text-xs font-medium text-emerald-700/70">vehicles</span>
+                        </p>
+                    </div>
                 </div>
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/20">
+                    <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    <span class="text-[10px] font-bold text-white uppercase tracking-widest">Live</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-1 mb-6">
+                <p class="text-[10px] text-zinc-400 font-medium px-1 flex items-center gap-1.5">
+                    <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    YOUR LOCATION: <span class="text-blue-600 font-bold uppercase" id="current-location-text">Detecting...</span>
+                </p>
             </div>
             {% endif %}
-
-            <div id="drivers-nearby-section" class="pt-3 border-t border-zinc-100">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-2">
-                        <p class="text-xs text-zinc-400">Drivers Nearby</p>
-                        {% if drivers_nearby.scanning %}
-                        <span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-600 text-[10px] font-semibold rounded-full animate-pulse">Scanning</span>
-                        {% endif %}
-                    </div>
-                    <p class="text-[10px] text-zinc-400">{% if drivers_nearby.updated %}Updated {{ drivers_nearby.updated }}{% else %}Scanning...{% endif %}</p>
-                </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-lg text-center">
-                        <div class="flex items-center justify-center gap-1.5 mb-1">
-                            <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
-                            <p class="text-xs text-emerald-700 font-medium">UberX</p>
-                        </div>
-                        <p class="text-xl font-bold text-emerald-900">{{ drivers_nearby.uberx if drivers_nearby.uberx else '--' }}</p>
-                        <p class="text-[10px] mt-0.5 {% if drivers_nearby.changes.uberx.startswith('+') %}text-emerald-600{% elif drivers_nearby.changes.uberx.startswith('-') %}text-red-500{% else %}text-zinc-500{% endif %}">{{ drivers_nearby.changes.uberx }}</p>
-                    </div>
-                    <div class="p-3 bg-amber-50 border border-amber-100 rounded-lg text-center">
-                        <div class="flex items-center justify-center gap-1.5 mb-1">
-                            <div class="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
-                            <p class="text-xs text-amber-700 font-medium">XL</p>
-                        </div>
-                        <p class="text-xl font-bold text-amber-900">{{ drivers_nearby.xl if drivers_nearby.xl else '--' }}</p>
-                        <p class="text-[10px] mt-0.5 {% if drivers_nearby.changes.xl.startswith('+') %}text-emerald-600{% elif drivers_nearby.changes.xl.startswith('-') %}text-red-500{% else %}text-zinc-500{% endif %}">{{ drivers_nearby.changes.xl }}</p>
-                    </div>
-                    <div class="p-3 bg-zinc-100 border border-zinc-200 rounded-lg text-center">
-                        <div class="flex items-center justify-center gap-1.5 mb-1">
-                            <div class="w-2.5 h-2.5 bg-zinc-900 rounded-full"></div>
-                            <p class="text-xs text-zinc-700 font-medium">Black</p>
-                        </div>
-                        <p class="text-xl font-bold text-zinc-900">{{ drivers_nearby.black if drivers_nearby.black else '--' }}</p>
-                        <p class="text-[10px] mt-0.5 {% if drivers_nearby.changes.black.startswith('+') %}text-emerald-600{% elif drivers_nearby.changes.black.startswith('-') %}text-red-500{% else %}text-zinc-500{% endif %}">{{ drivers_nearby.changes.black }}</p>
-                    </div>
-                </div>
-                <a href="{{ url_for('live_drivers_page') }}" class="mt-2 flex items-center justify-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 transition-colors">
-                    <span>View Live Map</span>
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </a>
-            </div>
 
             {% if current_user.is_owner() %}
             <div class="pt-3 border-t border-zinc-100">
