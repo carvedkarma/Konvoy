@@ -1711,6 +1711,12 @@ def location_data():
                    driver_status=driver_status)
 
 
+@app.route('/hotspots')
+@login_required
+def hotspots():
+    return render_template('hotspots.html')
+
+
 @app.route('/fetch-ride')
 @login_required
 def fetch_ride():
