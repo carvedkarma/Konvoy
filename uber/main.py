@@ -1728,97 +1728,6 @@ def live_drivers_page():
 driver_cache = {}
 driver_cache_lock = {}
 
-homepage_driver_cache = {
-    'current': {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0, 'updated': None},
-    'previous': {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0, 'updated': None},
-    'scanning': False,
-    'last_scan': None
-}
-
-def run_homepage_background_scan():
-    """Background task that scans for drivers every 5 minutes for the home page."""
-    from datetime import datetime, timedelta
-    from objects.uberDev import fetch_drivers_at_location
-    import random
-    
-    PERTH_CBD = (-31.9505, 115.8605)
-    SCAN_INTERVAL = 300
-    SAMPLES_PER_SCAN = 40
-    RADIUS_KM = 2
-    
-    def generate_sample_points(center_lat, center_lng, radius_km=2):
-        offset = radius_km / 111
-        return [
-            (center_lat, center_lng),
-            (center_lat + offset, center_lng),
-            (center_lat - offset, center_lng),
-            (center_lat, center_lng + offset),
-            (center_lat, center_lng - offset)
-        ]
-    
-    while True:
-        try:
-            homepage_driver_cache['scanning'] = True
-            sample_points = generate_sample_points(PERTH_CBD[0], PERTH_CBD[1], RADIUS_KM)
-            
-            drivers = []
-            now = datetime.now()
-            cutoff = now - timedelta(minutes=3)
-            
-            for i in range(SAMPLES_PER_SCAN):
-                point = sample_points[i % len(sample_points)]
-                try:
-                    new_drivers = fetch_drivers_at_location(point[0], point[1])
-                    for driver in new_drivers:
-                        driver['timestamp'] = now
-                        match_idx = find_matching_driver_index(driver, drivers)
-                        if match_idx >= 0:
-                            drivers[match_idx]['lat'] = driver['lat']
-                            drivers[match_idx]['lng'] = driver['lng']
-                            drivers[match_idx]['bearing'] = driver.get('bearing')
-                            drivers[match_idx]['timestamp'] = now
-                        else:
-                            drivers.append(driver)
-                except Exception as e:
-                    print(f"Background scan sample error: {e}")
-                
-                eventlet.sleep(3 + random.uniform(0, 0.5))
-            
-            type_mapping = {
-                'UBERX': 'UberX', 'COMFORT': 'Comfort', 'XL': 'XL', 'BLACK': 'Black',
-                'UberX': 'UberX', 'Comfort': 'Comfort', 'Black': 'Black'
-            }
-            counts = {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0}
-            for driver in drivers:
-                raw_type = driver.get('product_type', 'UberX')
-                ptype = type_mapping.get(raw_type, 'UberX')
-                if ptype == 'UberX':
-                    counts['uberx'] += 1
-                elif ptype == 'XL':
-                    counts['xl'] += 1
-                elif ptype == 'Black':
-                    counts['black'] += 1
-                counts['total'] += 1
-            
-            homepage_driver_cache['previous'] = homepage_driver_cache['current'].copy()
-            homepage_driver_cache['current'] = {
-                'uberx': counts['uberx'],
-                'xl': counts['xl'],
-                'black': counts['black'],
-                'total': counts['total'],
-                'updated': datetime.now()
-            }
-            homepage_driver_cache['last_scan'] = datetime.now()
-            homepage_driver_cache['scanning'] = False
-            
-            print(f"Background scan complete: {counts['total']} drivers (UberX: {counts['uberx']}, XL: {counts['xl']}, Black: {counts['black']})")
-            
-            eventlet.sleep(SCAN_INTERVAL)
-        except Exception as e:
-            print(f"Background scan error: {e}")
-            homepage_driver_cache['scanning'] = False
-            eventlet.sleep(60)
-
 def calculate_distance_meters(lat1, lng1, lat2, lng2):
     """Calculate distance between two coordinates in meters using Haversine formula."""
     import math
@@ -2006,48 +1915,6 @@ def clear_driver_cache_for_user(user_id):
     """Clear driver cache when user logs out."""
     if user_id in driver_cache:
         del driver_cache[user_id]
-
-
-@app.route('/api/homepage-drivers')
-@login_required
-def api_homepage_drivers():
-    """Return cached driver counts for home page (updated every 5 minutes)."""
-    from datetime import datetime
-    
-    current = homepage_driver_cache['current']
-    previous = homepage_driver_cache['previous']
-    scanning = homepage_driver_cache['scanning']
-    last_scan = homepage_driver_cache['last_scan']
-    
-    def calc_change(curr, prev):
-        diff = curr - prev
-        if diff > 0:
-            return f'+{diff}'
-        elif diff < 0:
-            return str(diff)
-        return '0'
-    
-    updated_str = None
-    if current['updated']:
-        updated_str = current['updated'].strftime('%H:%M')
-    
-    return jsonify({
-        'success': True,
-        'current': {
-            'uberx': current['uberx'],
-            'xl': current['xl'],
-            'black': current['black'],
-            'total': current['total']
-        },
-        'changes': {
-            'uberx': calc_change(current['uberx'], previous['uberx']),
-            'xl': calc_change(current['xl'], previous['xl']),
-            'black': calc_change(current['black'], previous['black']),
-            'total': calc_change(current['total'], previous['total'])
-        },
-        'scanning': scanning,
-        'updated': updated_str
-    })
 
 
 @app.route('/api/hotspots')
@@ -3650,18 +3517,6 @@ def handle_send_message(data):
 @socketio.on('get_online_users')
 def handle_get_online_users():
     emit('online_users', list(online_users.values()))
-
-
-background_scan_started = False
-
-@app.before_request
-def start_background_scan_once():
-    """Start background scan once on first request."""
-    global background_scan_started
-    if not background_scan_started:
-        background_scan_started = True
-        eventlet.spawn(run_homepage_background_scan)
-        print("Background driver scan started", flush=True)
 
 
 if __name__ == '__main__':

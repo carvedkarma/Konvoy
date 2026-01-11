@@ -241,50 +241,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
             </a>
-            <a href="{{ url_for('live_drivers_page') }}" class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors">
-                <div class="w-10 h-10 bg-zinc-200 rounded-full flex items-center justify-center mr-3">
-                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="font-semibold text-sm text-zinc-900">Driver Finder</p>
-                    <p class="text-xs text-zinc-500">Locate nearby drivers</p>
-                </div>
-                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-
-            <a href="{{ url_for('smart_route_page') }}" class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors">
-                <div class="w-10 h-10 bg-zinc-200 rounded-full flex items-center justify-center mr-3">
-                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="font-semibold text-sm text-zinc-900">Route Planner</p>
-                    <p class="text-xs text-zinc-500">Plan efficient trips</p>
-                </div>
-                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
-
-            <a href="{{ url_for('demand_intel') }}" class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors">
-                <div class="w-10 h-10 bg-zinc-200 rounded-full flex items-center justify-center mr-3">
-                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                    </svg>
-                </div>
-                <div class="flex-1">
-                    <p class="font-semibold text-sm text-zinc-900">Demand Intelligence</p>
-                    <p class="text-xs text-zinc-500">Market trends & hotspots</p>
-                </div>
-                <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </a>
             {% if not current_user.uber_connected %}
             <a href="{{ url_for('uber_connect') }}" class="flex items-center p-4 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors">
                 <svg class="w-5 h-5 mr-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -933,6 +889,50 @@ fetch('/api/home-data')
                         <p class="text-xs text-purple-100">Real-time team chat</p>
                     </div>
                     <svg class="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                <a href="{{ url_for('live_drivers_page') }}" class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors">
+                    <div class="w-10 h-10 bg-zinc-200 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm text-zinc-900">Driver Finder</p>
+                        <p class="text-xs text-zinc-500">Locate nearby drivers</p>
+                    </div>
+                    <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+
+                <a href="{{ url_for('smart_route_page') }}" class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors">
+                    <div class="w-10 h-10 bg-zinc-200 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm text-zinc-900">Route Planner</p>
+                        <p class="text-xs text-zinc-500">Plan efficient trips</p>
+                    </div>
+                    <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+
+                <a href="{{ url_for('demand_intel') }}" class="flex items-center p-4 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors">
+                    <div class="w-10 h-10 bg-zinc-200 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm text-zinc-900">Demand Intelligence</p>
+                        <p class="text-xs text-zinc-500">Market trends & hotspots</p>
+                    </div>
+                    <svg class="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 </a>
@@ -1951,7 +1951,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let samplesCollected = 0;
     let isScanning = false;
     let pollTimer = null;
-    let previousCounts = { uberx: 0, xl: 0, black: 0 };
+    let lastCounts = { uberx: 0, xl: 0, black: 0, total: 0 };
     
     function generateSamplePoints(lat, lng, radiusKm) {
         const offset = radiusKm / 111;
@@ -1971,9 +1971,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const nearbyStatusEl = document.getElementById('nearby-status');
         const scanningBadge = document.getElementById('drivers-scanning-badge');
         
-        if (uberxEl) uberxEl.textContent = counts.uberx.toLocaleString();
-        if (xlEl) xlEl.textContent = counts.xl.toLocaleString();
-        if (blackEl) blackEl.textContent = counts.black.toLocaleString();
+        if (uberxEl) uberxEl.textContent = counts.uberx;
+        if (xlEl) xlEl.textContent = counts.xl;
+        if (blackEl) blackEl.textContent = counts.black;
         
         if (nearbyCountEl) {
             nearbyCountEl.textContent = `${counts.total} drivers found`;
@@ -1998,24 +1998,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const xlChange = document.getElementById('hp-xl-change');
         const blackChange = document.getElementById('hp-black-change');
         
-        if (uberxChange) uberxChange.innerHTML = formatChange(counts.uberx, previousCounts.uberx);
-        if (xlChange) xlChange.innerHTML = formatChange(counts.xl, previousCounts.xl);
-        if (blackChange) blackChange.innerHTML = formatChange(counts.black, previousCounts.black);
+        if (uberxChange) uberxChange.innerHTML = formatChange(counts.uberx, lastCounts.uberx);
+        if (xlChange) xlChange.innerHTML = formatChange(counts.xl, lastCounts.xl);
+        if (blackChange) blackChange.innerHTML = formatChange(counts.black, lastCounts.black);
+        
+        lastCounts = { ...counts };
     }
     
-    function scanComplete() {
+    function scanComplete(finalCounts) {
         const nearbyStatusEl = document.getElementById('nearby-status');
         const scanningBadge = document.getElementById('drivers-scanning-badge');
         const nearbyCountEl = document.getElementById('nearby-count');
         
-        if (nearbyStatusEl) nearbyStatusEl.textContent = 'Complete';
+        if (nearbyStatusEl) nearbyStatusEl.textContent = 'Done';
         if (scanningBadge) scanningBadge.classList.add('hidden');
-        if (nearbyCountEl) {
-            const total = document.getElementById('hp-uberx-count')?.textContent || '0';
-            const xlTotal = document.getElementById('hp-xl-count')?.textContent || '0';
-            const blackTotal = document.getElementById('hp-black-count')?.textContent || '0';
-            const sum = parseInt(total) + parseInt(xlTotal) + parseInt(blackTotal);
-            nearbyCountEl.textContent = `${sum} drivers (scan done)`;
+        if (nearbyCountEl && finalCounts) {
+            nearbyCountEl.textContent = `${finalCounts.total} drivers nearby`;
         }
         
         isScanning = false;
@@ -2023,7 +2021,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function fetchSample() {
         if (!isScanning || samplesCollected >= MAX_SAMPLES) {
-            scanComplete();
+            scanComplete(lastCounts);
             return;
         }
         
@@ -2037,34 +2035,27 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (!response.ok) {
-                console.error('Driver API error:', response.status);
-                schedulNextPoll();
+                scheduleNextPoll();
                 return;
             }
             
             const data = await response.json();
             
-            if (data.success) {
+            if (data.success && data.counts) {
                 updateUI(data.counts, samplesCollected);
             }
             
             if (samplesCollected >= MAX_SAMPLES) {
-                previousCounts = { 
-                    uberx: data.counts?.uberx || 0, 
-                    xl: data.counts?.xl || 0, 
-                    black: data.counts?.black || 0 
-                };
-                scanComplete();
+                scanComplete(data.counts);
             } else {
-                schedulNextPoll();
+                scheduleNextPoll();
             }
         } catch (error) {
-            console.error('Error fetching drivers:', error);
-            schedulNextPoll();
+            scheduleNextPoll();
         }
     }
     
-    function schedulNextPoll() {
+    function scheduleNextPoll() {
         if (isScanning && samplesCollected < MAX_SAMPLES) {
             pollTimer = setTimeout(fetchSample, POLL_INTERVAL);
         }
@@ -2078,6 +2069,7 @@ document.addEventListener('DOMContentLoaded', function() {
         currentPointIndex = 0;
         samplesCollected = 0;
         isScanning = true;
+        lastCounts = { uberx: 0, xl: 0, black: 0, total: 0 };
         
         fetch('/api/live-drivers/reset', { credentials: 'same-origin' })
             .then(() => fetchSample())
@@ -2109,7 +2101,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     startScanning(lat, lng);
                 },
                 (error) => {
-                    console.log('Geolocation error:', error);
                     if (userCoordsEl) {
                         userCoordsEl.textContent = 'Perth CBD (default)';
                     }
