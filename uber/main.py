@@ -3874,8 +3874,24 @@ def api_intelligence_hotspots():
         return jsonify(success=False, message='Access denied'), 403
     
     try:
-        learning = LearningEngine(db.session)
-        hotspots = learning.get_hotspots(10)
+        global _intelligence_daemon
+        if _intelligence_daemon is None:
+            return jsonify(success=True, hotspots=[])
+        
+        counts = _intelligence_daemon.deduplicator.get_counts_by_zone()
+        hotspots = []
+        for zone_id, type_counts in sorted(counts.items(), key=lambda x: sum(x[1].values()), reverse=True)[:10]:
+            total = sum(type_counts.values())
+            if total > 0:
+                hotspots.append({
+                    'zone_id': zone_id,
+                    'drivers': total,
+                    'direction': None,
+                    'uberx': type_counts.get('UberX', 0),
+                    'comfort': type_counts.get('Comfort', 0),
+                    'xl': type_counts.get('XL', 0),
+                    'black': type_counts.get('Black', 0)
+                })
         return jsonify(success=True, hotspots=hotspots)
     except Exception as e:
         return jsonify(success=False, message=str(e))
@@ -3888,36 +3904,29 @@ def api_intelligence_drivers():
         return jsonify(success=False, message='Access denied'), 403
     
     try:
+        global _intelligence_daemon
         minutes_ago = request.args.get('minutes', 10, type=int)
-        since_id = request.args.get('since_id', 0, type=int)
+        
+        if _intelligence_daemon is None:
+            return jsonify(success=True, drivers=[], max_id=0, count=0)
         
         cutoff = datetime.now() - timedelta(minutes=minutes_ago)
-        
-        query = DriverFingerprint.query.filter(
-            DriverFingerprint.last_seen_at >= cutoff
-        )
-        
-        if since_id > 0:
-            query = query.filter(DriverFingerprint.id > since_id)
-        
-        drivers = query.order_by(DriverFingerprint.last_seen_at.desc()).limit(500).all()
+        drivers_data = _intelligence_daemon.deduplicator.get_recent_drivers(minutes=minutes_ago)
         
         result = [{
-            'id': d.id,
-            'fingerprint_id': d.fingerprint_id,
-            'lat': d.last_seen_lat,
-            'lng': d.last_seen_lng,
-            'bearing': d.last_bearing,
-            'vehicle_type': d.vehicle_type,
-            'zone': d.primary_zone,
-            'confidence': d.confidence_score,
-            'observations': d.observation_count,
-            'last_seen': d.last_seen_at.isoformat() if d.last_seen_at else None
-        } for d in drivers]
+            'id': idx,
+            'fingerprint_id': d['fingerprint_id'],
+            'lat': d['lat'],
+            'lng': d['lng'],
+            'bearing': d.get('bearing'),
+            'vehicle_type': d['vehicle_type'],
+            'zone': d.get('zone_id'),
+            'confidence': d.get('confidence', 0.5),
+            'observations': d.get('observations', 1),
+            'last_seen': d['last_seen'].isoformat() if d.get('last_seen') else None
+        } for idx, d in enumerate(drivers_data)]
         
-        max_id = max([d.id for d in drivers]) if drivers else since_id
-        
-        return jsonify(success=True, drivers=result, max_id=max_id, count=len(result))
+        return jsonify(success=True, drivers=result, max_id=len(result), count=len(result))
     except Exception as e:
         return jsonify(success=False, message=str(e))
 

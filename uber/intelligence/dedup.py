@@ -269,3 +269,40 @@ class DriverDeduplicator:
             'high_confidence': len([d for d in drivers if d.confidence > 0.8]),
             'low_confidence': len([d for d in drivers if d.confidence < 0.5])
         }
+    
+    def get_counts_by_zone(self) -> Dict[str, Dict[str, int]]:
+        zone_counts = {}
+        type_mapping = {
+            'UBERX': 'UberX', 'COMFORT': 'Comfort', 'XL': 'XL', 'BLACK': 'Black',
+            'UberX': 'UberX', 'Comfort': 'Comfort', 'Black': 'Black'
+        }
+        
+        for driver in self.tracked_drivers.values():
+            zone = driver.zone_id or 'unknown'
+            if zone not in zone_counts:
+                zone_counts[zone] = {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0}
+            ptype = type_mapping.get(driver.vehicle_type, 'UberX')
+            zone_counts[zone][ptype] += 1
+        
+        return zone_counts
+    
+    def get_recent_drivers(self, minutes: int = 10) -> List[Dict]:
+        cutoff = datetime.now() - timedelta(minutes=minutes)
+        result = []
+        
+        for driver in self.tracked_drivers.values():
+            if driver.last_seen >= cutoff and driver.positions:
+                lat, lng, _ = driver.positions[-1]
+                result.append({
+                    'fingerprint_id': driver.fingerprint_id,
+                    'lat': lat,
+                    'lng': lng,
+                    'bearing': driver.bearings[-1] if driver.bearings else None,
+                    'vehicle_type': driver.vehicle_type,
+                    'zone_id': driver.zone_id,
+                    'confidence': driver.confidence,
+                    'observations': driver.observation_count,
+                    'last_seen': driver.last_seen
+                })
+        
+        return result
