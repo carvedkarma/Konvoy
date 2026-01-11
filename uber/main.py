@@ -96,6 +96,14 @@ login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
 
 
+@login_manager.unauthorized_handler
+def unauthorized():
+    if request.path.startswith('/api/'):
+        return jsonify(success=False, message='Authentication required'), 401
+    flash('Please log in to access this page.', 'info')
+    return redirect(url_for('login'))
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -3654,10 +3662,11 @@ def api_intelligence_start():
             _intelligence_daemon = IntelligenceDaemon(fetch_drivers_at_location)
             
             _active_batches = {}
+            _flask_app = app
             
             def on_observation(data):
                 try:
-                    with app.app_context():
+                    with _flask_app.app_context():
                         batch_id = data.get('batch_id', 'unknown')
                         
                         if batch_id not in _active_batches:
@@ -3718,7 +3727,7 @@ def api_intelligence_start():
             
             def on_cycle_complete(data):
                 try:
-                    with app.app_context():
+                    with _flask_app.app_context():
                         for batch_id, batch in list(_active_batches.items()):
                             scan_batch = ScanBatch.query.filter_by(batch_id=batch_id).first()
                             if scan_batch:
