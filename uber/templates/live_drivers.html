@@ -108,6 +108,50 @@
         </div>
     </div>
 
+    <div class="glass-panel rounded-2xl p-6 premium-shadow mb-6">
+        <h2 class="text-lg font-bold text-zinc-900 mb-4">Search Location</h2>
+        <p class="text-sm text-zinc-500 mb-4">Search any location to see how many drivers are nearby</p>
+        <div class="flex flex-col md:flex-row gap-3">
+            <div class="flex-1 relative">
+                <input type="text" id="location-search" placeholder="e.g. Perth Airport, Fremantle, Joondalup..." 
+                    class="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-zinc-900">
+                <div id="search-loading" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
+                    <svg class="w-5 h-5 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+            <button id="search-btn" onclick="searchLocation()" class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-semibold flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                Search
+            </button>
+        </div>
+        <div id="search-result" class="mt-4 hidden">
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p id="search-location-name" class="font-semibold text-zinc-900"></p>
+                        <p id="search-coords" class="text-xs text-zinc-500 mt-1"></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-zinc-500">Drivers Found</p>
+                        <p id="search-driver-count" class="text-3xl font-black text-blue-600">--</p>
+                    </div>
+                </div>
+                <div id="search-breakdown" class="mt-3 pt-3 border-t border-blue-200 grid grid-cols-4 gap-2 text-center">
+                    <div><p class="text-lg font-bold text-emerald-600" id="search-uberx">--</p><p class="text-xs text-zinc-500">UberX</p></div>
+                    <div><p class="text-lg font-bold text-blue-600" id="search-comfort">--</p><p class="text-xs text-zinc-500">Comfort</p></div>
+                    <div><p class="text-lg font-bold text-amber-600" id="search-xl">--</p><p class="text-xs text-zinc-500">XL</p></div>
+                    <div><p class="text-lg font-bold text-zinc-900" id="search-black">--</p><p class="text-xs text-zinc-500">Black</p></div>
+                </div>
+                <p id="search-status" class="text-xs text-zinc-400 mt-3 text-center"></p>
+            </div>
+        </div>
+    </div>
+
     <div id="total-count" class="glass-panel rounded-2xl p-6 premium-shadow mb-6">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
@@ -415,6 +459,72 @@
             document.getElementById('map-status').textContent = 'Connection error. Retrying...';
         }
     }
+
+    async function searchLocation() {
+        const searchInput = document.getElementById('location-search');
+        const searchBtn = document.getElementById('search-btn');
+        const searchLoading = document.getElementById('search-loading');
+        const searchResult = document.getElementById('search-result');
+        const searchStatus = document.getElementById('search-status');
+        
+        const location = searchInput.value.trim();
+        if (!location) {
+            alert('Please enter a location to search');
+            return;
+        }
+        
+        searchBtn.disabled = true;
+        searchLoading.classList.remove('hidden');
+        searchResult.classList.remove('hidden');
+        searchStatus.textContent = 'Geocoding location...';
+        document.getElementById('search-driver-count').textContent = '--';
+        document.getElementById('search-uberx').textContent = '--';
+        document.getElementById('search-comfort').textContent = '--';
+        document.getElementById('search-xl').textContent = '--';
+        document.getElementById('search-black').textContent = '--';
+        
+        try {
+            const response = await fetch(`/api/location-drivers?location=${encodeURIComponent(location)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('search-location-name').textContent = data.location_name;
+                document.getElementById('search-coords').textContent = `${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}`;
+                document.getElementById('search-driver-count').textContent = data.counts.total;
+                document.getElementById('search-uberx').textContent = data.counts.uberx;
+                document.getElementById('search-comfort').textContent = data.counts.comfort;
+                document.getElementById('search-xl').textContent = data.counts.xl;
+                document.getElementById('search-black').textContent = data.counts.black;
+                searchStatus.textContent = `${data.samples} samples collected across 5 points in 1km radius`;
+                
+                if (data.lat && data.lng) {
+                    map.setView([data.lat, data.lng], 14);
+                    L.marker([data.lat, data.lng]).addTo(map)
+                        .bindPopup(`<div class="p-2"><p class="font-semibold">${escapeHtml(data.location_name)}</p><p class="text-xs text-zinc-500">${data.counts.total} drivers nearby</p></div>`)
+                        .openPopup();
+                }
+            } else {
+                searchStatus.textContent = data.message || 'Search failed';
+                document.getElementById('search-driver-count').textContent = '0';
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            searchStatus.textContent = 'Error searching location';
+        } finally {
+            searchBtn.disabled = false;
+            searchLoading.classList.add('hidden');
+        }
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    document.getElementById('location-search').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchLocation();
+    });
 
     document.addEventListener('DOMContentLoaded', initMap);
     

@@ -1920,6 +1920,109 @@ def api_live_drivers_reset():
     return jsonify(success=True)
 
 
+@app.route('/api/location-drivers')
+@login_required
+def api_location_drivers():
+    """
+    Search for drivers at a named location.
+    Geocodes the location, then samples 5 points (center + 4 offsets in 1km radius).
+    Collects 25 samples total (5 points x 5 rounds).
+    """
+    import time
+    from objects.uberDev import fetch_drivers_at_location
+    
+    location = request.args.get('location', '').strip()
+    if not location:
+        return jsonify(success=False, message='Location parameter required')
+    
+    try:
+        geo_response = requests.get(
+            'https://nominatim.openstreetmap.org/search',
+            params={
+                'q': f"{location}, Perth, Western Australia",
+                'format': 'json',
+                'limit': 1
+            },
+            headers={'User-Agent': 'RizTar/1.0'}
+        )
+        geo_data = geo_response.json()
+        
+        if not geo_data:
+            return jsonify(success=False, message=f'Location "{location}" not found')
+        
+        lat = float(geo_data[0]['lat'])
+        lng = float(geo_data[0]['lon'])
+        location_name = geo_data[0].get('display_name', location)
+        
+    except Exception as e:
+        return jsonify(success=False, message=f'Geocoding failed: {str(e)}')
+    
+    offset_km = 1.0
+    offset_deg = offset_km / 111.0
+    sample_points = [
+        (lat, lng),
+        (lat + offset_deg, lng),
+        (lat - offset_deg, lng),
+        (lat, lng + offset_deg),
+        (lat, lng - offset_deg)
+    ]
+    
+    unique_drivers = []
+    samples_collected = 0
+    
+    try:
+        for round_num in range(5):
+            for point_lat, point_lng in sample_points:
+                try:
+                    new_drivers = fetch_drivers_at_location(point_lat, point_lng)
+                    samples_collected += 1
+                    
+                    for driver in new_drivers:
+                        driver['timestamp'] = datetime.now()
+                        match_idx = find_matching_driver_index(driver, unique_drivers)
+                        if match_idx >= 0:
+                            unique_drivers[match_idx]['lat'] = driver['lat']
+                            unique_drivers[match_idx]['lng'] = driver['lng']
+                            unique_drivers[match_idx]['bearing'] = driver.get('bearing')
+                            unique_drivers[match_idx]['timestamp'] = datetime.now()
+                        else:
+                            unique_drivers.append(driver)
+                    
+                    time.sleep(0.5)
+                except Exception as e:
+                    print(f"Location driver fetch error: {e}")
+                    time.sleep(3)
+        
+        counts_by_type = {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0}
+        type_mapping = {
+            'UBERX': 'UberX', 'COMFORT': 'Comfort', 'XL': 'XL', 'BLACK': 'Black',
+            'UberX': 'UberX', 'Comfort': 'Comfort', 'Black': 'Black'
+        }
+        for driver in unique_drivers:
+            raw_type = driver.get('product_type', 'UberX')
+            ptype = type_mapping.get(raw_type, 'UberX')
+            counts_by_type[ptype] += 1
+        
+        counts = {
+            'total': len(unique_drivers),
+            'uberx': counts_by_type['UberX'],
+            'comfort': counts_by_type['Comfort'],
+            'xl': counts_by_type['XL'],
+            'black': counts_by_type['Black'],
+        }
+        
+        return jsonify({
+            'success': True,
+            'location_name': location_name,
+            'lat': lat,
+            'lng': lng,
+            'counts': counts,
+            'samples': samples_collected
+        })
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
 @app.route('/api/drivers-nearby')
 @login_required
 def api_drivers_nearby():
