@@ -485,6 +485,13 @@
             const data = await response.json();
             
             if (data.success) {
+                stopPolling();
+                isScanning = false;
+                document.getElementById('toggle-icon').textContent = '▶';
+                document.getElementById('toggle-text').textContent = 'Resume';
+                document.getElementById('toggle-btn').classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                document.getElementById('toggle-btn').classList.add('bg-blue-600', 'hover:bg-blue-700');
+                
                 document.getElementById('search-location-name').textContent = data.location_name;
                 document.getElementById('search-coords').textContent = `${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}`;
                 document.getElementById('search-driver-count').textContent = data.counts.total;
@@ -493,6 +500,15 @@
                 document.getElementById('search-xl').textContent = data.counts.xl;
                 document.getElementById('search-black').textContent = data.counts.black;
                 searchStatus.textContent = `${data.samples} samples collected across 5 points in 1km radius`;
+                
+                document.getElementById('total-drivers').textContent = data.counts.total;
+                document.getElementById('count-uberx').textContent = data.counts.uberx;
+                document.getElementById('count-comfort').textContent = data.counts.comfort;
+                document.getElementById('count-xl').textContent = data.counts.xl;
+                document.getElementById('count-black').textContent = data.counts.black;
+                document.getElementById('sample-count').textContent = `${data.samples} samples collected`;
+                document.getElementById('last-updated').textContent = `Search: ${data.location_name.split(',')[0]}`;
+                document.getElementById('scanning-status').innerHTML = '<span class="text-sm text-blue-600 font-medium">Search Results</span>';
                 
                 if (data.lat && data.lng) {
                     driverMarkers.forEach(m => map.removeLayer(m));
