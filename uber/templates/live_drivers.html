@@ -495,10 +495,35 @@
                 searchStatus.textContent = `${data.samples} samples collected across 5 points in 1km radius`;
                 
                 if (data.lat && data.lng) {
+                    driverMarkers.forEach(m => map.removeLayer(m));
+                    driverMarkers = [];
+                    
                     map.setView([data.lat, data.lng], 14);
-                    L.marker([data.lat, data.lng]).addTo(map)
+                    
+                    const locationMarker = L.marker([data.lat, data.lng]).addTo(map)
                         .bindPopup(`<div class="p-2"><p class="font-semibold">${escapeHtml(data.location_name)}</p><p class="text-xs text-zinc-500">${data.counts.total} drivers nearby</p></div>`)
                         .openPopup();
+                    driverMarkers.push(locationMarker);
+                    
+                    if (data.drivers && data.drivers.length > 0) {
+                        const colors = {'UberX': '#10b981', 'UBERX': '#10b981', 'Comfort': '#3b82f6', 'COMFORT': '#3b82f6', 'XL': '#f59e0b', 'Black': '#18181b', 'BLACK': '#18181b'};
+                        data.drivers.forEach(driver => {
+                            if (driver.lat && driver.lng) {
+                                const color = colors[driver.product_type] || '#10b981';
+                                const marker = L.circleMarker([driver.lat, driver.lng], {
+                                    radius: 6,
+                                    fillColor: color,
+                                    color: '#fff',
+                                    weight: 2,
+                                    opacity: 0.9,
+                                    fillOpacity: 0.9
+                                }).addTo(map);
+                                marker.bindPopup(`<div class="p-2"><p class="text-sm font-semibold">${driver.product_type || 'Driver'}</p><p class="text-xs text-zinc-500">ETA: ${driver.eta || '--'} min</p></div>`);
+                                driverMarkers.push(marker);
+                            }
+                        });
+                        document.getElementById('driver-count-badge').textContent = `${data.drivers.length} visible`;
+                    }
                 }
             } else {
                 searchStatus.textContent = data.message || 'Search failed';

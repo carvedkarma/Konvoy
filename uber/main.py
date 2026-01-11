@@ -2012,13 +2012,22 @@ def api_location_drivers():
             'black': counts_by_type['Black'],
         }
         
+        drivers_list = [{
+            'lat': d.get('lat'),
+            'lng': d.get('lng'),
+            'bearing': d.get('bearing'),
+            'product_type': d.get('product_type', 'UberX'),
+            'eta': d.get('eta')
+        } for d in unique_drivers if d.get('lat') and d.get('lng')]
+        
         return jsonify({
             'success': True,
             'location_name': location_name,
             'lat': lat,
             'lng': lng,
             'counts': counts,
-            'samples': samples_collected
+            'samples': samples_collected,
+            'drivers': drivers_list
         })
     except Exception as e:
         return jsonify(success=False, message=str(e))
