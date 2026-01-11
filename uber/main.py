@@ -30,7 +30,6 @@ UPLOAD_FOLDER = os.path.join('static', 'uploads', 'profile_images')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB max-limit
 
-
 flask_secret = os.environ.get("FLASK_SECRET_KEY") or os.environ.get(
     "SESSION_SECRET")
 if not flask_secret:
@@ -101,9 +100,11 @@ def load_user(user_id):
 
 @app.after_request
 def add_no_cache_headers(response):
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
+    if request.endpoint in ['login', 'register', 'logout', 'root']:
+        response.headers[
+            'Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
     return response
 
 
@@ -172,24 +173,25 @@ def root():
                                disconnect_form=disconnect_form)
     return redirect(url_for('landing'))
 
+
 @app.route('/welcome')
 def landing():
     if current_user.is_authenticated:
         return redirect(url_for('root'))
-    
+
     # Track page visit
     try:
         visit = PageVisit(
             page='welcome',
             ip_address=request.remote_addr,
-            user_agent=request.user_agent.string[:500] if request.user_agent.string else None,
-            referrer=request.referrer[:500] if request.referrer else None
-        )
+            user_agent=request.user_agent.string[:500]
+            if request.user_agent.string else None,
+            referrer=request.referrer[:500] if request.referrer else None)
         db.session.add(visit)
         db.session.commit()
     except Exception as e:
         pass
-    
+
     return render_template('landing.html')
 
 
@@ -279,7 +281,7 @@ def home_data():
 
         driver_status = None
         active_ride = None
-        
+
         if full_ride_data and isinstance(full_ride_data, dict):
             # Check if this is already processed ride data (has full_name key)
             if 'full_name' in full_ride_data:
@@ -290,14 +292,18 @@ def home_data():
                 driver_tasks = full_ride_data.get('driverTasks', {})
                 driver_state = driver_tasks.get('driverState', {})
                 task_scopes = driver_tasks.get('taskScopes', [])
-                
+
                 driver_status = {
-                    'online': bool(driver_state.get('online', False)),
-                    'available': bool(driver_state.get('available', False)),
-                    'dispatchable': bool(driver_state.get('dispatchable', False)),
-                    'onboarding_status': full_ride_data.get('driverOnboardingStatus', 'UNKNOWN')
+                    'online':
+                    bool(driver_state.get('online', False)),
+                    'available':
+                    bool(driver_state.get('available', False)),
+                    'dispatchable':
+                    bool(driver_state.get('dispatchable', False)),
+                    'onboarding_status':
+                    full_ride_data.get('driverOnboardingStatus', 'UNKNOWN')
                 }
-                
+
                 # No active ride in raw response (taskScopes would be empty if no ride)
                 active_ride = None
 
@@ -315,17 +321,22 @@ def home_data():
                 # Extract user's current location from their Uber headers
                 user_lat = headers.get('x-uber-device-location-latitude')
                 user_lng = headers.get('x-uber-device-location-longitude')
-                
+
                 if user_lat and user_lng:
-                    nearby_result = uberRidersNearby(cookies, headers, refresh_token, 
-                                                     lat=float(user_lat), lng=float(user_lng))
+                    nearby_result = uberRidersNearby(cookies,
+                                                     headers,
+                                                     refresh_token,
+                                                     lat=float(user_lat),
+                                                     lng=float(user_lng))
                 else:
-                    nearby_result = uberRidersNearby(cookies, headers, refresh_token)
-                    
+                    nearby_result = uberRidersNearby(cookies, headers,
+                                                     refresh_token)
+
                 if nearby_result:
                     nearby_data = nearby_result.get('nearby_vehicles', 0)
                     if isinstance(nearby_data, int):
-                        cache.set_cached(current_user.id, 'nearby_vehicles', nearby_data)
+                        cache.set_cached(current_user.id, 'nearby_vehicles',
+                                         nearby_data)
                     else:
                         nearby_data = 0
             except Exception as e:
@@ -335,13 +346,11 @@ def home_data():
     if current_user.last_chat_read_at:
         unread_chat_count = ChatMessage.query.filter(
             ChatMessage.created_at > current_user.last_chat_read_at,
-            ChatMessage.user_id != current_user.id
-        ).count()
+            ChatMessage.user_id != current_user.id).count()
     else:
         # If never read, count all messages from others
         unread_chat_count = ChatMessage.query.filter(
-            ChatMessage.user_id != current_user.id
-        ).count()
+            ChatMessage.user_id != current_user.id).count()
 
     return jsonify(success=True,
                    vehicles=vehicles,
@@ -359,17 +368,17 @@ def get_driver_status():
     """Get fresh driver status - bypasses cache for real-time updates"""
     if not current_user.uber_connected:
         return jsonify(success=False, error='Not connected')
-    
+
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
     except Exception as e:
         return jsonify(success=False, error='Credentials error')
-    
+
     try:
         ride_data = appLaunch(cookies, headers, refresh_token)
         driver_status = None
         active_ride = None
-        
+
         if ride_data:
             if isinstance(ride_data, list) and len(ride_data) >= 2:
                 full_data = ride_data[1]
@@ -377,30 +386,37 @@ def get_driver_status():
                 full_data = ride_data
             else:
                 full_data = None
-            
+
             if full_data and isinstance(full_data, dict):
                 driver_tasks = full_data.get('driverTasks', {})
                 driver_state = driver_tasks.get('driverState', {})
                 task_scopes = driver_tasks.get('taskScopes', [])
-                
+
                 driver_status = {
                     'online': bool(driver_state.get('online', False)),
                     'available': bool(driver_state.get('available', False)),
-                    'dispatchable': bool(driver_state.get('dispatchable', False))
+                    'dispatchable':
+                    bool(driver_state.get('dispatchable', False))
                 }
-                
+
                 if task_scopes and len(task_scopes) > 0:
                     first_task = task_scopes[0]
                     active_ride = {
-                        'full_name': first_task.get('rider', {}).get('firstName', 'Rider'),
-                        'rating': first_task.get('rider', {}).get('rating', '--'),
-                        'trip_distance': first_task.get('tripDistance'),
-                        'ride_type': first_task.get('vehicleViewName', 'UberX')
+                        'full_name':
+                        first_task.get('rider', {}).get('firstName', 'Rider'),
+                        'rating':
+                        first_task.get('rider', {}).get('rating', '--'),
+                        'trip_distance':
+                        first_task.get('tripDistance'),
+                        'ride_type':
+                        first_task.get('vehicleViewName', 'UberX')
                     }
-                
+
                 cache.set_cached(current_user.id, 'active_ride', full_data)
-        
-        return jsonify(success=True, driver_status=driver_status, active_ride=active_ride)
+
+        return jsonify(success=True,
+                       driver_status=driver_status,
+                       active_ride=active_ride)
     except Exception as e:
         print(f"Error fetching driver status: {e}", flush=True)
         return jsonify(success=False, error=str(e))
@@ -412,24 +428,33 @@ def get_nearby_drivers():
     """Get nearby drivers count using browser geolocation coordinates"""
     if not current_user.uber_connected:
         return jsonify(success=True, nearby_drivers=0)
-    
+
     lat = request.args.get('lat', type=float)
     lng = request.args.get('lng', type=float)
-    
+
     if not lat or not lng:
-        return jsonify(success=False, error='Location required', nearby_drivers=0)
-    
+        return jsonify(success=False,
+                       error='Location required',
+                       nearby_drivers=0)
+
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
     except Exception as e:
-        return jsonify(success=False, error='Credentials error', nearby_drivers=0)
-    
+        return jsonify(success=False,
+                       error='Credentials error',
+                       nearby_drivers=0)
+
     try:
-        nearby_result = uberRidersNearby(cookies, headers, refresh_token, lat=lat, lng=lng)
+        nearby_result = uberRidersNearby(cookies,
+                                         headers,
+                                         refresh_token,
+                                         lat=lat,
+                                         lng=lng)
         if nearby_result:
             nearby_count = nearby_result.get('nearby_vehicles', 0)
             if isinstance(nearby_count, int):
-                cache.set_cached(current_user.id, 'nearby_vehicles', nearby_count)
+                cache.set_cached(current_user.id, 'nearby_vehicles',
+                                 nearby_count)
                 return jsonify(success=True, nearby_drivers=nearby_count)
         return jsonify(success=True, nearby_drivers=0)
     except Exception as e:
@@ -448,7 +473,8 @@ VAPID_CLAIMS = {"sub": "mailto:admin@riztar.com"}
 def get_vapid_public_key():
     """Return the VAPID public key for client-side push subscription"""
     if not VAPID_PUBLIC_KEY:
-        return jsonify(success=False, error='Push notifications not configured')
+        return jsonify(success=False,
+                       error='Push notifications not configured')
     return jsonify(success=True, publicKey=VAPID_PUBLIC_KEY)
 
 
@@ -457,38 +483,35 @@ def get_vapid_public_key():
 def push_subscribe():
     """Subscribe user to push notifications"""
     if not VAPID_PUBLIC_KEY or not VAPID_PRIVATE_KEY:
-        return jsonify(success=False, error='Push notifications not configured')
-    
+        return jsonify(success=False,
+                       error='Push notifications not configured')
+
     data = request.json
     if not data:
         return jsonify(success=False, error='No data provided')
-    
+
     endpoint = data.get('endpoint')
     keys = data.get('keys', {})
     p256dh = keys.get('p256dh')
     auth = keys.get('auth')
-    
+
     if not all([endpoint, p256dh, auth]):
         return jsonify(success=False, error='Invalid subscription data')
-    
-    existing = PushSubscription.query.filter_by(
-        user_id=current_user.id,
-        endpoint=endpoint
-    ).first()
-    
+
+    existing = PushSubscription.query.filter_by(user_id=current_user.id,
+                                                endpoint=endpoint).first()
+
     if existing:
         existing.p256dh_key = p256dh
         existing.auth_key = auth
         existing.is_active = True
     else:
-        subscription = PushSubscription(
-            user_id=current_user.id,
-            endpoint=endpoint,
-            p256dh_key=p256dh,
-            auth_key=auth
-        )
+        subscription = PushSubscription(user_id=current_user.id,
+                                        endpoint=endpoint,
+                                        p256dh_key=p256dh,
+                                        auth_key=auth)
         db.session.add(subscription)
-    
+
     db.session.commit()
     return jsonify(success=True, message='Subscribed to push notifications')
 
@@ -499,17 +522,16 @@ def push_unsubscribe():
     """Unsubscribe user from push notifications"""
     data = request.json
     endpoint = data.get('endpoint') if data else None
-    
+
     if endpoint:
-        PushSubscription.query.filter_by(
-            user_id=current_user.id,
-            endpoint=endpoint
-        ).delete()
+        PushSubscription.query.filter_by(user_id=current_user.id,
+                                         endpoint=endpoint).delete()
     else:
         PushSubscription.query.filter_by(user_id=current_user.id).delete()
-    
+
     db.session.commit()
-    return jsonify(success=True, message='Unsubscribed from push notifications')
+    return jsonify(success=True,
+                   message='Unsubscribed from push notifications')
 
 
 @app.route('/api/push/status')
@@ -517,22 +539,29 @@ def push_unsubscribe():
 def push_status():
     """Check if user has active push subscriptions"""
     has_subscription = PushSubscription.query.filter_by(
-        user_id=current_user.id,
-        is_active=True
-    ).first() is not None
+        user_id=current_user.id, is_active=True).first() is not None
     configured = bool(VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)
-    return jsonify(success=True, subscribed=has_subscription, configured=configured)
+    return jsonify(success=True,
+                   subscribed=has_subscription,
+                   configured=configured)
 
 
-def send_push_notification(user_id, title, body, url='/', tag='default', require_interaction=False):
+def send_push_notification(user_id,
+                           title,
+                           body,
+                           url='/',
+                           tag='default',
+                           require_interaction=False):
     """Send push notification to a specific user"""
     if not VAPID_PRIVATE_KEY:
         print("No VAPID private key configured")
         return 0
-        
-    subscriptions = PushSubscription.query.filter_by(user_id=user_id, is_active=True).all()
-    print(f"Found {len(subscriptions)} active subscriptions for user {user_id}")
-    
+
+    subscriptions = PushSubscription.query.filter_by(user_id=user_id,
+                                                     is_active=True).all()
+    print(
+        f"Found {len(subscriptions)} active subscriptions for user {user_id}")
+
     payload = json.dumps({
         'title': title,
         'body': body,
@@ -540,19 +569,17 @@ def send_push_notification(user_id, title, body, url='/', tag='default', require
         'tag': tag,
         'requireInteraction': require_interaction
     })
-    
+
     sent = 0
     for sub in subscriptions:
         subscription_info = sub.to_subscription_info()
         print(f"Sending to endpoint: {subscription_info['endpoint'][:80]}...")
         try:
-            webpush(
-                subscription_info=subscription_info,
-                data=payload,
-                vapid_private_key=VAPID_PRIVATE_KEY,
-                vapid_claims=VAPID_CLAIMS,
-                content_encoding="aes128gcm"
-            )
+            webpush(subscription_info=subscription_info,
+                    data=payload,
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims=VAPID_CLAIMS,
+                    content_encoding="aes128gcm")
             print("Push notification sent successfully!")
             sent += 1
         except WebPushException as e:
@@ -560,11 +587,13 @@ def send_push_notification(user_id, title, body, url='/', tag='default', require
                 sub.is_active = False
                 db.session.commit()
             print(f"Push notification failed: {e}")
-            print(f"Subscription info: endpoint={subscription_info['endpoint'][:50]}, keys present: {bool(subscription_info.get('keys'))}")
+            print(
+                f"Subscription info: endpoint={subscription_info['endpoint'][:50]}, keys present: {bool(subscription_info.get('keys'))}"
+            )
             if e.response:
                 print(f"Response status: {e.response.status_code}")
                 print(f"Response body: {e.response.text}")
-    
+
     return sent
 
 
@@ -572,13 +601,11 @@ def send_push_notification(user_id, title, body, url='/', tag='default', require
 @login_required
 def test_push_notification():
     """Send a test push notification to the current user"""
-    sent = send_push_notification(
-        current_user.id,
-        'Test Notification',
-        'Push notifications are working!',
-        url='/',
-        tag='test'
-    )
+    sent = send_push_notification(current_user.id,
+                                  'Test Notification',
+                                  'Push notifications are working!',
+                                  url='/',
+                                  tag='test')
     return jsonify(success=True, sent=sent)
 
 
@@ -656,7 +683,8 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower().strip()).first()
+        user = User.query.filter_by(
+            email=form.email.data.lower().strip()).first()
         if user and user.check_password(form.password.data):
             user.last_login = datetime.utcnow()
             db.session.commit()
@@ -682,14 +710,16 @@ def register():
             from werkzeug.utils import secure_filename
             file = form.profile_image.data
             filename = secure_filename(file.filename)
-            ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else 'jpg'
+            ext = filename.rsplit('.',
+                                  1)[1].lower() if '.' in filename else 'jpg'
             unique_filename = f"{uuid.uuid4().hex}.{ext}"
-            upload_folder = os.path.join(app.root_path, 'static', 'uploads', 'profiles')
+            upload_folder = os.path.join(app.root_path, 'static', 'uploads',
+                                         'profiles')
             os.makedirs(upload_folder, exist_ok=True)
             file_path = os.path.join(upload_folder, unique_filename)
             file.save(file_path)
             profile_image_path = f"/static/uploads/profiles/{unique_filename}"
-        
+
         user = User(email=form.email.data.lower().strip(),
                     username=form.username.data.lower().strip(),
                     first_name=form.first_name.data.strip(),
@@ -699,20 +729,21 @@ def register():
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        
+
         # Assign default "user" role to new user
         user_role = Role.query.filter_by(name='user').first()
         if user_role:
             user.roles.append(user_role)
             db.session.commit()
-        
+
         # Send welcome email using Replit Mail service
         try:
             from replitmail import send_email as replit_send_email
             replit_send_email(
                 to=user.email,
                 subject=f"Welcome to RizTar, {user.first_name}!",
-                body=f"Hi {user.first_name},\n\nWelcome to RizTar, the premium driver management system.\n\nWe're excited to have you on board! With RizTar, you'll have access to powerful tools designed to help you maximize your earnings and streamline your driving experience.\n\nIf you have any questions, feel free to reach out to our support team.\n\nBest regards,\nThe RizTar Team\ninfo@riztar.com"
+                body=
+                f"Hi {user.first_name},\n\nWelcome to RizTar, the premium driver management system.\n\nWe're excited to have you on board! With RizTar, you'll have access to powerful tools designed to help you maximize your earnings and streamline your driving experience.\n\nIf you have any questions, feel free to reach out to our support team.\n\nBest regards,\nThe RizTar Team\ninfo@riztar.com"
             )
             print(f"Welcome email sent to {user.email}", flush=True)
         except Exception as e:
@@ -759,42 +790,41 @@ def admin_statistics():
 def api_statistics():
     if not current_user.can_manage_users():
         return jsonify(error='Access denied'), 403
-    
+
     from sqlalchemy import func
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=today_start.weekday())
     month_start = today_start.replace(day=1)
-    
+
     # Page visits
-    visits_today = PageVisit.query.filter(PageVisit.visited_at >= today_start).count()
-    visits_week = PageVisit.query.filter(PageVisit.visited_at >= week_start).count()
-    visits_month = PageVisit.query.filter(PageVisit.visited_at >= month_start).count()
+    visits_today = PageVisit.query.filter(
+        PageVisit.visited_at >= today_start).count()
+    visits_week = PageVisit.query.filter(
+        PageVisit.visited_at >= week_start).count()
+    visits_month = PageVisit.query.filter(
+        PageVisit.visited_at >= month_start).count()
     visits_total = PageVisit.query.count()
-    
+
     # User stats
     total_users = User.query.count()
     users_today = User.query.filter(User.created_at >= today_start).count()
     users_week = User.query.filter(User.created_at >= week_start).count()
     users_month = User.query.filter(User.created_at >= month_start).count()
-    
+
     # Uber connected
     uber_connected = User.query.filter(User.uber_connected == True).count()
-    
+
     # Daily visits for last 30 days (for chart)
     daily_visits = []
     daily_signups = []
     for i in range(29, -1, -1):
         day_start = (today_start - timedelta(days=i))
         day_end = day_start + timedelta(days=1)
-        count = PageVisit.query.filter(
-            PageVisit.visited_at >= day_start,
-            PageVisit.visited_at < day_end
-        ).count()
-        signup_count = User.query.filter(
-            User.created_at >= day_start,
-            User.created_at < day_end
-        ).count()
+        count = PageVisit.query.filter(PageVisit.visited_at >= day_start,
+                                       PageVisit.visited_at < day_end).count()
+        signup_count = User.query.filter(User.created_at >= day_start,
+                                         User.created_at < day_end).count()
         daily_visits.append({
             'date': day_start.strftime('%b %d'),
             'count': count
@@ -803,24 +833,22 @@ def api_statistics():
             'date': day_start.strftime('%b %d'),
             'count': signup_count
         })
-    
-    return jsonify(
-        visits={
-            'today': visits_today,
-            'week': visits_week,
-            'month': visits_month,
-            'total': visits_total
-        },
-        users={
-            'total': total_users,
-            'today': users_today,
-            'week': users_week,
-            'month': users_month
-        },
-        uber_connected=uber_connected,
-        daily_visits=daily_visits,
-        daily_signups=daily_signups
-    )
+
+    return jsonify(visits={
+        'today': visits_today,
+        'week': visits_week,
+        'month': visits_month,
+        'total': visits_total
+    },
+                   users={
+                       'total': total_users,
+                       'today': users_today,
+                       'week': users_week,
+                       'month': users_month
+                   },
+                   uber_connected=uber_connected,
+                   daily_visits=daily_visits,
+                   daily_signups=daily_signups)
 
 
 @app.route('/admin/update-roles/<int:user_id>', methods=['POST'])
@@ -1165,23 +1193,28 @@ def profile():
 
         if form.profile_image.data:
             file = form.profile_image.data
-            filename = secure_filename(f"user_{current_user.id}_{secrets.token_hex(4)}_{file.filename}")
-            file_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], filename)
-            
+            filename = secure_filename(
+                f"user_{current_user.id}_{secrets.token_hex(4)}_{file.filename}"
+            )
+            file_path = os.path.join(app.root_path,
+                                     app.config['UPLOAD_FOLDER'], filename)
+
             # Ensure directory exists
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
+
             file.save(file_path)
-            
+
             # Delete old image if it exists and is local
-            if current_user.profile_image and current_user.profile_image.startswith('/static/uploads/'):
-                old_path = os.path.join(app.root_path, current_user.profile_image.lstrip('/'))
+            if current_user.profile_image and current_user.profile_image.startswith(
+                    '/static/uploads/'):
+                old_path = os.path.join(app.root_path,
+                                        current_user.profile_image.lstrip('/'))
                 if os.path.exists(old_path):
                     try:
                         os.remove(old_path)
                     except:
                         pass
-            
+
             current_user.profile_image = f"/static/uploads/profile_images/{filename}"
 
         current_user.first_name = form.first_name.data
@@ -1290,32 +1323,36 @@ def test_driver_navigation():
     """Test the cookie grabber and driver navigation functions"""
     if not current_user.uber_connected:
         return jsonify({'success': False, 'error': 'Uber not connected'})
-    
+
     try:
         cookies, headers, refresh_token = current_user.get_uber_credentials()
-        
+
         from objects.uberDev import uberCookieGrabber, driverNavigation
-        
+
         cookie_result = uberCookieGrabber(headers, refresh_token)
-        
+
         if not cookie_result:
             return jsonify({
-                'success': False, 
+                'success': False,
                 'error': 'Failed to grab cookies',
                 'step': 'uberCookieGrabber'
             })
-        
+
         web_cookies = cookie_result.get('cookies', {})
         access_token = cookie_result.get('access_token')
-        
+
         nav_result = driverNavigation(web_cookies, access_token)
-        
+
         return jsonify({
             'success': True,
             'cookie_grabber': {
-                'cookies': web_cookies,
-                'has_access_token': bool(access_token),
-                'response_keys': list(cookie_result.get('response_data', {}).keys()) if cookie_result.get('response_data') else []
+                'cookies':
+                web_cookies,
+                'has_access_token':
+                bool(access_token),
+                'response_keys':
+                list(cookie_result.get('response_data', {}).keys())
+                if cookie_result.get('response_data') else []
             },
             'navigation': nav_result
         })
@@ -1692,15 +1729,19 @@ def location_data():
             if cached_ride is None:
                 cached_ride = fetch_ride()
                 cache.set_cached(current_user.id, 'active_ride', cached_ride)
-            
+
             if cached_ride and isinstance(cached_ride, dict):
                 driver_tasks = cached_ride.get('driverTasks', {})
                 driver_state = driver_tasks.get('driverState', {})
                 driver_status = {
-                    'online': bool(driver_state.get('online', False)),
-                    'available': bool(driver_state.get('available', False)),
-                    'dispatchable': bool(driver_state.get('dispatchable', False)),
-                    'onboarding_status': cached_ride.get('driverOnboardingStatus', 'UNKNOWN')
+                    'online':
+                    bool(driver_state.get('online', False)),
+                    'available':
+                    bool(driver_state.get('available', False)),
+                    'dispatchable':
+                    bool(driver_state.get('dispatchable', False)),
+                    'onboarding_status':
+                    cached_ride.get('driverOnboardingStatus', 'UNKNOWN')
                 }
         except Exception as e:
             print(f"Error fetching location data: {e}")
@@ -1727,42 +1768,53 @@ driver_cache = {}
 driver_cache_lock = {}
 
 homepage_driver_cache = {
-    'current': {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0, 'updated': None},
-    'previous': {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0, 'updated': None},
+    'current': {
+        'uberx': 0,
+        'xl': 0,
+        'black': 0,
+        'total': 0,
+        'updated': None
+    },
+    'previous': {
+        'uberx': 0,
+        'xl': 0,
+        'black': 0,
+        'total': 0,
+        'updated': None
+    },
     'scanning': False,
     'last_scan': None
 }
+
 
 def run_homepage_background_scan():
     """Background task that scans for drivers every 5 minutes for the home page."""
     from datetime import datetime, timedelta
     from objects.uberDev import fetch_drivers_at_location
     import random
-    
+
     PERTH_CBD = (-31.9505, 115.8605)
     SCAN_INTERVAL = 300
     SAMPLES_PER_SCAN = 40
     RADIUS_KM = 2
-    
+
     def generate_sample_points(center_lat, center_lng, radius_km=2):
         offset = radius_km / 111
-        return [
-            (center_lat, center_lng),
-            (center_lat + offset, center_lng),
-            (center_lat - offset, center_lng),
-            (center_lat, center_lng + offset),
-            (center_lat, center_lng - offset)
-        ]
-    
+        return [(center_lat, center_lng), (center_lat + offset, center_lng),
+                (center_lat - offset, center_lng),
+                (center_lat, center_lng + offset),
+                (center_lat, center_lng - offset)]
+
     while True:
         try:
             homepage_driver_cache['scanning'] = True
-            sample_points = generate_sample_points(PERTH_CBD[0], PERTH_CBD[1], RADIUS_KM)
-            
+            sample_points = generate_sample_points(PERTH_CBD[0], PERTH_CBD[1],
+                                                   RADIUS_KM)
+
             drivers = []
             now = datetime.now()
             cutoff = now - timedelta(minutes=3)
-            
+
             for i in range(SAMPLES_PER_SCAN):
                 point = sample_points[i % len(sample_points)]
                 try:
@@ -1773,18 +1825,24 @@ def run_homepage_background_scan():
                         if match_idx >= 0:
                             drivers[match_idx]['lat'] = driver['lat']
                             drivers[match_idx]['lng'] = driver['lng']
-                            drivers[match_idx]['bearing'] = driver.get('bearing')
+                            drivers[match_idx]['bearing'] = driver.get(
+                                'bearing')
                             drivers[match_idx]['timestamp'] = now
                         else:
                             drivers.append(driver)
                 except Exception as e:
                     print(f"Background scan sample error: {e}")
-                
+
                 eventlet.sleep(3 + random.uniform(0, 0.5))
-            
+
             type_mapping = {
-                'UBERX': 'UberX', 'COMFORT': 'Comfort', 'XL': 'XL', 'BLACK': 'Black',
-                'UberX': 'UberX', 'Comfort': 'Comfort', 'Black': 'Black'
+                'UBERX': 'UberX',
+                'COMFORT': 'Comfort',
+                'XL': 'XL',
+                'BLACK': 'Black',
+                'UberX': 'UberX',
+                'Comfort': 'Comfort',
+                'Black': 'Black'
             }
             counts = {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0}
             for driver in drivers:
@@ -1797,8 +1855,9 @@ def run_homepage_background_scan():
                 elif ptype == 'Black':
                     counts['black'] += 1
                 counts['total'] += 1
-            
-            homepage_driver_cache['previous'] = homepage_driver_cache['current'].copy()
+
+            homepage_driver_cache['previous'] = homepage_driver_cache[
+                'current'].copy()
             homepage_driver_cache['current'] = {
                 'uberx': counts['uberx'],
                 'xl': counts['xl'],
@@ -1808,14 +1867,17 @@ def run_homepage_background_scan():
             }
             homepage_driver_cache['last_scan'] = datetime.now()
             homepage_driver_cache['scanning'] = False
-            
-            print(f"Background scan complete: {counts['total']} drivers (UberX: {counts['uberx']}, XL: {counts['xl']}, Black: {counts['black']})")
-            
+
+            print(
+                f"Background scan complete: {counts['total']} drivers (UberX: {counts['uberx']}, XL: {counts['xl']}, Black: {counts['black']})"
+            )
+
             eventlet.sleep(SCAN_INTERVAL)
         except Exception as e:
             print(f"Background scan error: {e}")
             homepage_driver_cache['scanning'] = False
             eventlet.sleep(60)
+
 
 def calculate_distance_meters(lat1, lng1, lat2, lng2):
     """Calculate distance between two coordinates in meters using Haversine formula."""
@@ -1825,9 +1887,12 @@ def calculate_distance_meters(lat1, lng1, lat2, lng2):
     phi2 = math.radians(lat2)
     delta_phi = math.radians(lat2 - lat1)
     delta_lambda = math.radians(lng2 - lng1)
-    a = math.sin(delta_phi/2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda/2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    a = math.sin(
+        delta_phi /
+        2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
+
 
 def bearing_difference(b1, b2):
     """Calculate the absolute difference between two bearings (0-180)."""
@@ -1836,6 +1901,7 @@ def bearing_difference(b1, b2):
     diff = abs(b1 - b2) % 360
     return min(diff, 360 - diff)
 
+
 def calculate_bearing_to_point(lat1, lng1, lat2, lng2):
     """Calculate bearing from point 1 to point 2 in degrees (0-360)."""
     import math
@@ -1843,11 +1909,16 @@ def calculate_bearing_to_point(lat1, lng1, lat2, lng2):
     lat1_rad = math.radians(lat1)
     lat2_rad = math.radians(lat2)
     x = math.sin(delta_lng) * math.cos(lat2_rad)
-    y = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(delta_lng)
+    y = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(
+        lat1_rad) * math.cos(lat2_rad) * math.cos(delta_lng)
     bearing = math.degrees(math.atan2(x, y))
     return (bearing + 360) % 360
 
-def is_moving_same_driver(new_driver, existing_driver, max_cross_track=100, max_elapsed_seconds=60):
+
+def is_moving_same_driver(new_driver,
+                          existing_driver,
+                          max_cross_track=100,
+                          max_elapsed_seconds=60):
     """
     Check if new_driver is the same as existing_driver based on motion trajectory.
     Uses velocity-based projection: if driver is moving forward at consistent bearing,
@@ -1858,53 +1929,55 @@ def is_moving_same_driver(new_driver, existing_driver, max_cross_track=100, max_
     """
     import math
     from datetime import datetime
-    
+
     new_lat = new_driver.get('lat')
     new_lng = new_driver.get('lng')
     new_bearing = new_driver.get('bearing')
-    
+
     ex_lat = existing_driver.get('lat')
     ex_lng = existing_driver.get('lng')
     ex_bearing = existing_driver.get('bearing')
     ex_timestamp = existing_driver.get('timestamp')
-    
+
     if None in (new_lat, new_lng, ex_lat, ex_lng):
         return False
-    
+
     dist = calculate_distance_meters(new_lat, new_lng, ex_lat, ex_lng)
-    
+
     if dist <= 100:
         b_diff = bearing_difference(new_bearing, ex_bearing)
         return b_diff < 90
-    
+
     if new_bearing is None or ex_bearing is None:
         return False
-    
+
     b_diff = bearing_difference(new_bearing, ex_bearing)
     if b_diff >= 30:
         return False
-    
+
     if ex_timestamp:
         now = datetime.now()
         elapsed = (now - ex_timestamp).total_seconds()
         if elapsed > max_elapsed_seconds:
             return False
-        
+
         max_speed_mps = 30
         max_travel = max_speed_mps * elapsed
-        
+
         if dist > max_travel + 100:
             return False
-    
-    bearing_to_new = calculate_bearing_to_point(ex_lat, ex_lng, new_lat, new_lng)
+
+    bearing_to_new = calculate_bearing_to_point(ex_lat, ex_lng, new_lat,
+                                                new_lng)
     movement_alignment = bearing_difference(ex_bearing, bearing_to_new)
-    
+
     if movement_alignment <= 45:
         cross_track = dist * math.sin(math.radians(movement_alignment))
         if cross_track <= max_cross_track:
             return True
-    
+
     return False
+
 
 def find_matching_driver_index(new_driver, existing_drivers):
     """Find index of existing driver that matches new_driver, or -1 if none."""
@@ -1912,6 +1985,7 @@ def find_matching_driver_index(new_driver, existing_drivers):
         if is_moving_same_driver(new_driver, existing):
             return i
     return -1
+
 
 @app.route('/api/live-drivers')
 @login_required
@@ -1922,27 +1996,33 @@ def api_live_drivers():
     """
     from datetime import datetime, timedelta
     from objects.uberDev import fetch_drivers_at_location
-    
+
     user_id = current_user.id
     lat = request.args.get('lat', type=float)
     lng = request.args.get('lng', type=float)
-    
+
     if lat is None or lng is None:
         lat, lng = -31.9505, 115.8605
-    
+
     if user_id not in driver_cache:
-        driver_cache[user_id] = {'drivers': [], 'last_cleanup': datetime.now(), 'sample_count': 0}
-    
+        driver_cache[user_id] = {
+            'drivers': [],
+            'last_cleanup': datetime.now(),
+            'sample_count': 0
+        }
+
     cache = driver_cache[user_id]
     now = datetime.now()
-    
+
     cutoff = now - timedelta(minutes=3)
-    cache['drivers'] = [d for d in cache['drivers'] if d.get('timestamp', now) > cutoff]
-    
+    cache['drivers'] = [
+        d for d in cache['drivers'] if d.get('timestamp', now) > cutoff
+    ]
+
     try:
         new_drivers = fetch_drivers_at_location(lat, lng)
         cache['sample_count'] += 1
-        
+
         for driver in new_drivers:
             driver['timestamp'] = now
             match_idx = find_matching_driver_index(driver, cache['drivers'])
@@ -1953,17 +2033,22 @@ def api_live_drivers():
                 cache['drivers'][match_idx]['timestamp'] = now
             else:
                 cache['drivers'].append(driver)
-        
+
         counts_by_type = {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0}
         type_mapping = {
-            'UBERX': 'UberX', 'COMFORT': 'Comfort', 'XL': 'XL', 'BLACK': 'Black',
-            'UberX': 'UberX', 'Comfort': 'Comfort', 'Black': 'Black'
+            'UBERX': 'UberX',
+            'COMFORT': 'Comfort',
+            'XL': 'XL',
+            'BLACK': 'Black',
+            'UberX': 'UberX',
+            'Comfort': 'Comfort',
+            'Black': 'Black'
         }
         for driver in cache['drivers']:
             raw_type = driver.get('product_type', 'UberX')
             ptype = type_mapping.get(raw_type, 'UberX')
             counts_by_type[ptype] += 1
-        
+
         counts = {
             'total': len(cache['drivers']),
             'uberx': counts_by_type['UberX'],
@@ -1971,25 +2056,29 @@ def api_live_drivers():
             'xl': counts_by_type['XL'],
             'black': counts_by_type['Black'],
         }
-        
+
         drivers_for_response = []
         for d in cache['drivers']:
             driver_copy = {k: v for k, v in d.items() if k != 'timestamp'}
             age_seconds = (now - d.get('timestamp', now)).total_seconds()
             driver_copy['opacity'] = max(0.4, 1 - (age_seconds / 180))
             drivers_for_response.append(driver_copy)
-        
+
         return jsonify({
             'success': True,
             'drivers': drivers_for_response,
             'counts': counts,
             'sampleCount': cache['sample_count'],
             'updated': now.strftime('%H:%M:%S'),
-            'userLocation': {'lat': lat, 'lng': lng}
+            'userLocation': {
+                'lat': lat,
+                'lng': lng
+            }
         })
     except Exception as e:
         print(f"Live drivers API error: {e}")
         return jsonify(success=False, message=str(e)), 500
+
 
 @app.route('/api/live-drivers/reset')
 @login_required
@@ -1999,6 +2088,7 @@ def api_live_drivers_reset():
     if user_id in driver_cache:
         del driver_cache[user_id]
     return jsonify(success=True)
+
 
 def clear_driver_cache_for_user(user_id):
     """Clear driver cache when user logs out."""
@@ -2011,12 +2101,12 @@ def clear_driver_cache_for_user(user_id):
 def api_homepage_drivers():
     """Return cached driver counts for home page (updated every 5 minutes)."""
     from datetime import datetime
-    
+
     current = homepage_driver_cache['current']
     previous = homepage_driver_cache['previous']
     scanning = homepage_driver_cache['scanning']
     last_scan = homepage_driver_cache['last_scan']
-    
+
     def calc_change(curr, prev):
         diff = curr - prev
         if diff > 0:
@@ -2024,11 +2114,11 @@ def api_homepage_drivers():
         elif diff < 0:
             return str(diff)
         return '0'
-    
+
     updated_str = None
     if current['updated']:
         updated_str = current['updated'].strftime('%H:%M')
-    
+
     return jsonify({
         'success': True,
         'current': {
@@ -2060,43 +2150,59 @@ def api_hotspots():
     """
     import requests
     from datetime import datetime
-    
+
     # Get user location if provided
     user_lat = request.args.get('lat', type=float)
     user_lng = request.args.get('lng', type=float)
     max_distance = request.args.get('max_distance', 200, type=float)
-    
+
     now = datetime.now()
     hour = now.hour
     minute = now.minute
     day = now.weekday()  # 0=Monday, 6=Sunday
-    
+
     # 30-minute time slot (0-47)
     time_slot = hour * 2 + (1 if minute >= 30 else 0)
-    
+
     # Enhanced hotspot data with more precise patterns
     # Perth, Australia Hotspots
     HOTSPOTS = [
         {
-            "id": 1,
-            "name": "Perth Airport (T1/T2)",
-            "lat": -31.9430,
-            "lng": 115.9669,
-            "type": "airport",
-            "baseMultiplier": 1.5,
+            "id":
+            1,
+            "name":
+            "Perth Airport (T1/T2)",
+            "lat":
+            -31.9430,
+            "lng":
+            115.9669,
+            "type":
+            "airport",
+            "baseMultiplier":
+            1.5,
             # Peak: early morning (5-7), afternoon (1-3pm), evening (6-8pm), night (10-12pm)
-            "peakSlots": [10, 11, 12, 13, 26, 27, 28, 29, 36, 37, 38, 39, 44, 45, 46, 47],
-            "description": "International and regional arrivals"
+            "peakSlots":
+            [10, 11, 12, 13, 26, 27, 28, 29, 36, 37, 38, 39, 44, 45, 46, 47],
+            "description":
+            "International and regional arrivals"
         },
         {
-            "id": 2,
-            "name": "Perth Airport (T3/T4)",
-            "lat": -31.9288,
-            "lng": 115.9525,
-            "type": "airport",
-            "baseMultiplier": 1.4,
-            "peakSlots": [10, 11, 12, 13, 28, 29, 30, 31, 34, 35, 36, 37, 42, 43, 44, 45],
-            "description": "Qantas and domestic arrivals"
+            "id":
+            2,
+            "name":
+            "Perth Airport (T3/T4)",
+            "lat":
+            -31.9288,
+            "lng":
+            115.9525,
+            "type":
+            "airport",
+            "baseMultiplier":
+            1.4,
+            "peakSlots":
+            [10, 11, 12, 13, 28, 29, 30, 31, 34, 35, 36, 37, 42, 43, 44, 45],
+            "description":
+            "Qantas and domestic arrivals"
         },
         {
             "id": 3,
@@ -2110,14 +2216,22 @@ def api_hotspots():
             "description": "Corporate offices and banking district"
         },
         {
-            "id": 4,
-            "name": "Northbridge Entertainment Zone",
-            "lat": -31.9472,
-            "lng": 115.8576,
-            "type": "entertainment",
-            "baseMultiplier": 1.6,
-            "peakSlots": [0, 1, 2, 3, 4, 5, 6, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
-            "description": "Bars, clubs, and late-night dining"
+            "id":
+            4,
+            "name":
+            "Northbridge Entertainment Zone",
+            "lat":
+            -31.9472,
+            "lng":
+            115.8576,
+            "type":
+            "entertainment",
+            "baseMultiplier":
+            1.6,
+            "peakSlots":
+            [0, 1, 2, 3, 4, 5, 6, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
+            "description":
+            "Bars, clubs, and late-night dining"
         },
         {
             "id": 5,
@@ -2130,14 +2244,24 @@ def api_hotspots():
             "description": "Tourist hub and riverside dining"
         },
         {
-            "id": 6,
-            "name": "Crown Perth (Burswood)",
-            "lat": -31.9598,
-            "lng": 115.8943,
-            "type": "entertainment",
-            "baseMultiplier": 1.5,
-            "peakSlots": [0, 1, 2, 3, 4, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47],
-            "description": "Casino, hotels, and theaters"
+            "id":
+            6,
+            "name":
+            "Crown Perth (Burswood)",
+            "lat":
+            -31.9598,
+            "lng":
+            115.8943,
+            "type":
+            "entertainment",
+            "baseMultiplier":
+            1.5,
+            "peakSlots": [
+                0, 1, 2, 3, 4, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+                46, 47
+            ],
+            "description":
+            "Casino, hotels, and theaters"
         },
         {
             "id": 7,
@@ -2150,24 +2274,44 @@ def api_hotspots():
             "description": "Events and stadium traffic"
         },
         {
-            "id": 8,
-            "name": "Karrinyup Shopping Centre",
-            "lat": -31.8767,
-            "lng": 115.7839,
-            "type": "shopping",
-            "baseMultiplier": 1.3,
-            "peakSlots": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37],
-            "description": "Major shopping hub"
+            "id":
+            8,
+            "name":
+            "Karrinyup Shopping Centre",
+            "lat":
+            -31.8767,
+            "lng":
+            115.7839,
+            "type":
+            "shopping",
+            "baseMultiplier":
+            1.3,
+            "peakSlots": [
+                20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+                36, 37
+            ],
+            "description":
+            "Major shopping hub"
         },
         {
-            "id": 9,
-            "name": "Westfield Carousel",
-            "lat": -32.0201,
-            "lng": 115.9397,
-            "type": "shopping",
-            "baseMultiplier": 1.2,
-            "peakSlots": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37],
-            "description": "South-east shopping and cinema"
+            "id":
+            9,
+            "name":
+            "Westfield Carousel",
+            "lat":
+            -32.0201,
+            "lng":
+            115.9397,
+            "type":
+            "shopping",
+            "baseMultiplier":
+            1.2,
+            "peakSlots": [
+                20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+                36, 37
+            ],
+            "description":
+            "South-east shopping and cinema"
         },
         {
             "id": 10,
@@ -2176,7 +2320,8 @@ def api_hotspots():
             "lng": 115.7483,
             "type": "shopping",
             "baseMultiplier": 1.4,
-            "peakSlots": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
+            "peakSlots":
+            [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
             "description": "Weekend tourist and market traffic"
         },
         {
@@ -2226,11 +2371,12 @@ def api_hotspots():
             "lng": 115.8167,
             "type": "business",
             "baseMultiplier": 1.1,
-            "peakSlots": [14, 15, 16, 17, 24, 25, 30, 31, 32, 33, 34, 35, 36, 37],
+            "peakSlots":
+            [14, 15, 16, 17, 24, 25, 30, 31, 32, 33, 34, 35, 36, 37],
             "description": "Hospitals and medical offices"
         }
     ]
-    
+
     # Time period analysis (more granular 30-min slots)
     def get_time_period_info(slot):
         if slot < 10:  # 0:00-5:00
@@ -2251,29 +2397,61 @@ def api_hotspots():
             return {"name": "Night Life", "multiplier": 1.3, "emoji": ""}
         else:  # 23:00-24:00
             return {"name": "Late Night", "multiplier": 0.7, "emoji": ""}
-    
+
     def get_day_info(d):
         days = {
-            0: {"name": "Monday", "multiplier": 1.0, "type": "weekday"},
-            1: {"name": "Tuesday", "multiplier": 1.0, "type": "weekday"},
-            2: {"name": "Wednesday", "multiplier": 1.0, "type": "weekday"},
-            3: {"name": "Thursday", "multiplier": 1.05, "type": "weekday"},
-            4: {"name": "Friday", "multiplier": 1.3, "type": "weekend"},
-            5: {"name": "Saturday", "multiplier": 1.2, "type": "weekend"},
-            6: {"name": "Sunday", "multiplier": 0.9, "type": "weekend"}
+            0: {
+                "name": "Monday",
+                "multiplier": 1.0,
+                "type": "weekday"
+            },
+            1: {
+                "name": "Tuesday",
+                "multiplier": 1.0,
+                "type": "weekday"
+            },
+            2: {
+                "name": "Wednesday",
+                "multiplier": 1.0,
+                "type": "weekday"
+            },
+            3: {
+                "name": "Thursday",
+                "multiplier": 1.05,
+                "type": "weekday"
+            },
+            4: {
+                "name": "Friday",
+                "multiplier": 1.3,
+                "type": "weekend"
+            },
+            5: {
+                "name": "Saturday",
+                "multiplier": 1.2,
+                "type": "weekend"
+            },
+            6: {
+                "name": "Sunday",
+                "multiplier": 0.9,
+                "type": "weekend"
+            }
         }
-        return days.get(d, {"name": "Unknown", "multiplier": 1.0, "type": "weekday"})
-    
+        return days.get(d, {
+            "name": "Unknown",
+            "multiplier": 1.0,
+            "type": "weekday"
+        })
+
     # Weather integration (cached for 30 minutes)
     weather_data = None
     weather_multiplier = 1.0
     weather_description = None
-    
+
     try:
         # Check cache first
         weather_cache_key = f"weather_{now.strftime('%Y%m%d%H')}"
         cached_weather = cache.get_cached(0, weather_cache_key)
-        
+
         if cached_weather:
             weather_data = cached_weather
         else:
@@ -2282,22 +2460,21 @@ def api_hotspots():
             if api_key:
                 resp = requests.get(
                     f"https://api.openweathermap.org/data/2.5/weather?lat=-31.9505&lon=115.8605&appid={api_key}&units=metric",
-                    timeout=5
-                )
+                    timeout=5)
                 if resp.status_code == 200:
                     weather_data = resp.json()
                     cache.set_cached(0, weather_cache_key, weather_data)
     except Exception as e:
         print(f"Weather API error: {e}")
-    
+
     if weather_data:
         main = weather_data.get('main', {})
         weather = weather_data.get('weather', [{}])[0]
         weather_id = weather.get('id', 800)
         temp = main.get('temp', 25)
-        
+
         weather_description = weather.get('description', '').title()
-        
+
         # Rain increases demand significantly
         if 200 <= weather_id < 600:  # Thunderstorm or Rain
             weather_multiplier = 1.5
@@ -2316,16 +2493,16 @@ def api_hotspots():
             weather_description = f"Cold ({temp:.0f}°C) - Moderate Boost"
         else:
             weather_description = f"Clear ({temp:.0f}°C)"
-    
+
     time_info = get_time_period_info(time_slot)
     day_info = get_day_info(day)
     is_weekend = day_info['type'] == 'weekend'
-    
+
     # Live flight integration - boost airport demand based on actual arrivals
     flight_boost = 1.0
     flights_next_hour = 0
     next_flight_info = None
-    
+
     try:
         from datetime import timezone, timedelta
         perth_tz = timezone(timedelta(hours=8))
@@ -2333,11 +2510,11 @@ def api_hotspots():
         current_time = perth_now.strftime('%H:%M')
         current_hour = perth_now.hour
         current_minute = perth_now.minute
-        
+
         # Get flight data from cache or API
         flight_cache_key = f"flights_all"
         flight_data = cache.get_cached('global', flight_cache_key)
-        
+
         if flight_data is None:
             try:
                 response = flightArrivals(None)
@@ -2346,36 +2523,37 @@ def api_hotspots():
                     cache.set_cached('global', flight_cache_key, flight_data)
             except Exception as fe:
                 print(f"Flight API error: {fe}")
-        
+
         if flight_data:
             flights = flight_data.get('flights', [])
-            
+
             # Count flights arriving in next 60 minutes
             for flight in flights:
                 if flight.get('landed', False):
                     continue
-                    
+
                 flight_time = flight.get('time', '')
                 if not flight_time:
                     continue
-                
+
                 try:
                     fh, fm = map(int, flight_time.split(':'))
                     # Calculate minutes until arrival
                     flight_mins = fh * 60 + fm
                     now_mins = current_hour * 60 + current_minute
                     mins_until = flight_mins - now_mins
-                    
+
                     # Handle midnight wrap
                     if mins_until < -60:
                         mins_until += 1440
-                    
+
                     # Count flights arriving in 0-60 minutes
                     if 0 <= mins_until <= 60:
                         flights_next_hour += 1
-                        
+
                         # Track the next flight
-                        if next_flight_info is None or mins_until < next_flight_info['mins']:
+                        if next_flight_info is None or mins_until < next_flight_info[
+                                'mins']:
                             next_flight_info = {
                                 'time': flight_time,
                                 'mins': mins_until,
@@ -2385,7 +2563,7 @@ def api_hotspots():
                             }
                 except Exception:
                     continue
-            
+
             # Calculate flight-based boost (more flights = higher demand)
             if flights_next_hour >= 10:
                 flight_boost = 1.8  # Very busy
@@ -2395,27 +2573,29 @@ def api_hotspots():
                 flight_boost = 1.3  # Moderate
             elif flights_next_hour >= 1:
                 flight_boost = 1.15  # Light activity
-            
-            print(f"Flight boost: {flight_boost}x ({flights_next_hour} flights in next hour)")
+
+            print(
+                f"Flight boost: {flight_boost}x ({flights_next_hour} flights in next hour)"
+            )
     except Exception as e:
         print(f"Flight integration error: {e}")
-    
+
     # Event integration - boost entertainment venues when events are happening today
     event_boost = 1.0
     today_events = []
     event_venues_boost = {}  # venue name -> boost multiplier
-    
+
     try:
         event_cache_key = f"events_{now.strftime('%Y%m%d%H')}"
         cached_events = cache.get_cached('global', event_cache_key)
-        
+
         if cached_events:
             today_str = now.strftime('%Y-%m-%d')
             for event in cached_events:
                 event_date = event.get('date', '')
                 if event_date == today_str:
                     today_events.append(event)
-                    
+
                     # Calculate time-based boost for this event
                     event_time = event.get('time', '')
                     if event_time:
@@ -2424,10 +2604,10 @@ def api_hotspots():
                             event_mins = eh * 60 + em
                             now_mins = hour * 60 + minute
                             mins_until = event_mins - now_mins
-                            
+
                             venue_name = event.get('venue', '').lower()
                             expected_crowd = event.get('expectedCrowd', 5000)
-                            
+
                             # Boost calculation based on proximity to event time
                             boost = 1.0
                             if -90 <= mins_until <= 60:  # Event ending or about to start
@@ -2446,22 +2626,30 @@ def api_hotspots():
                                     boost = 1.9
                                 else:
                                     boost = 1.5
-                            
+
                             # Map venue names to hotspot names
                             if 'optus' in venue_name or 'stadium' in venue_name:
-                                event_venues_boost['optus stadium'] = max(event_venues_boost.get('optus stadium', 1.0), boost)
+                                event_venues_boost['optus stadium'] = max(
+                                    event_venues_boost.get(
+                                        'optus stadium', 1.0), boost)
                             if 'rac arena' in venue_name or 'perth arena' in venue_name:
-                                event_venues_boost['rac arena'] = max(event_venues_boost.get('rac arena', 1.0), boost)
+                                event_venues_boost['rac arena'] = max(
+                                    event_venues_boost.get('rac arena', 1.0),
+                                    boost)
                             if 'crown' in venue_name:
-                                event_venues_boost['crown perth'] = max(event_venues_boost.get('crown perth', 1.0), boost)
+                                event_venues_boost['crown perth'] = max(
+                                    event_venues_boost.get('crown perth', 1.0),
+                                    boost)
                         except:
                             pass
-            
+
             if today_events:
-                print(f"Event boost: {len(today_events)} events today, venue boosts: {event_venues_boost}")
+                print(
+                    f"Event boost: {len(today_events)} events today, venue boosts: {event_venues_boost}"
+                )
     except Exception as e:
         print(f"Event integration error: {e}")
-    
+
     # Calculate distance helper
     def calc_distance(lat1, lon1, lat2, lon2):
         from math import radians, sin, cos, sqrt, atan2
@@ -2469,31 +2657,32 @@ def api_hotspots():
         lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
         dlat = lat2 - lat1
         dlon = lon2 - lon1
-        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-        return R * 2 * atan2(sqrt(a), sqrt(1-a))
-    
+        a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+        return R * 2 * atan2(sqrt(a), sqrt(1 - a))
+
     # Process each hotspot
     hotspots_result = []
     for h in HOTSPOTS:
         # Base calculation
-        demand = h['baseMultiplier'] * time_info['multiplier'] * day_info['multiplier']
-        
+        demand = h['baseMultiplier'] * time_info['multiplier'] * day_info[
+            'multiplier']
+
         # Peak slot bonus
         if time_slot in h.get('peakSlots', []):
             demand *= 1.5
-        
+
         # Weekend adjustment
         if is_weekend:
             demand *= h.get('weekendBoost', 1.0)
-        
+
         # Weather boost
         demand *= weather_multiplier
-        
+
         # Apply live flight boost to airport hotspots
         is_airport = h['type'] == 'airport'
         if is_airport and flight_boost > 1.0:
             demand *= flight_boost
-        
+
         # Apply event boost to entertainment venues
         event_boost_applied = None
         if h['type'] == 'entertainment' and event_venues_boost:
@@ -2503,10 +2692,10 @@ def api_hotspots():
                     demand *= boost
                     event_boost_applied = boost
                     break
-        
+
         # Cap at 3.5x
         demand = min(demand, 3.5)
-        
+
         # Determine demand level
         if demand >= 2.0:
             level = "high"
@@ -2517,37 +2706,51 @@ def api_hotspots():
         else:
             level = "low"
             color = "#22c55e"
-        
+
         hotspot_data = {
-            "id": h['id'],
-            "name": h['name'],
-            "lat": h['lat'],
-            "lng": h['lng'],
-            "type": h['type'],
-            "demand": round(demand, 2),
-            "level": level,
-            "color": color,
-            "description": h['description'],
-            "isPeak": time_slot in h.get('peakSlots', []),
-            "flightBoost": flight_boost if is_airport and flight_boost > 1.0 else None,
-            "flightsNearby": flights_next_hour if is_airport else None,
-            "eventBoost": event_boost_applied if event_boost_applied and event_boost_applied > 1.0 else None
+            "id":
+            h['id'],
+            "name":
+            h['name'],
+            "lat":
+            h['lat'],
+            "lng":
+            h['lng'],
+            "type":
+            h['type'],
+            "demand":
+            round(demand, 2),
+            "level":
+            level,
+            "color":
+            color,
+            "description":
+            h['description'],
+            "isPeak":
+            time_slot in h.get('peakSlots', []),
+            "flightBoost":
+            flight_boost if is_airport and flight_boost > 1.0 else None,
+            "flightsNearby":
+            flights_next_hour if is_airport else None,
+            "eventBoost":
+            event_boost_applied
+            if event_boost_applied and event_boost_applied > 1.0 else None
         }
-        
+
         # Add distance if user location provided
         if user_lat and user_lng:
             distance = calc_distance(user_lat, user_lng, h['lat'], h['lng'])
             hotspot_data['distance'] = round(distance, 1)
-            
+
             # Only include if within max distance
             if distance <= max_distance:
                 hotspots_result.append(hotspot_data)
         else:
             hotspots_result.append(hotspot_data)
-    
+
     # Sort by demand (highest first)
     hotspots_result.sort(key=lambda x: x['demand'], reverse=True)
-    
+
     # If user location, sort nearby ones by distance first
     if user_lat and user_lng:
         nearby = [h for h in hotspots_result if h.get('distance', 999) <= 15]
@@ -2555,49 +2758,60 @@ def api_hotspots():
         nearby.sort(key=lambda x: x['demand'], reverse=True)
         far.sort(key=lambda x: x.get('distance', 999))
         hotspots_result = nearby + far
-    
+
     # Calculate overall demand
     if hotspots_result:
-        avg_demand = sum(h['demand'] for h in hotspots_result) / len(hotspots_result)
+        avg_demand = sum(h['demand']
+                         for h in hotspots_result) / len(hotspots_result)
     else:
         avg_demand = 1.0
-    
+
     if avg_demand >= 2.0:
         overall_level = "high"
     elif avg_demand >= 1.2:
         overall_level = "medium"
     else:
         overall_level = "low"
-    
+
     # Generate smart tips based on current conditions
     tips = []
     if time_info['name'] == "Morning Rush":
-        tips.append("Morning commuters heading to work - focus on residential areas")
+        tips.append(
+            "Morning commuters heading to work - focus on residential areas")
     elif time_info['name'] == "Evening Rush":
         tips.append("Evening rush hour - position near business districts")
     elif time_info['name'] == "Night Life":
-        tips.append("Nightlife peak - entertainment areas and restaurants are hot")
-    
+        tips.append(
+            "Nightlife peak - entertainment areas and restaurants are hot")
+
     if weather_multiplier > 1.2:
         tips.append("Bad weather = surge pricing - stay active!")
-    
+
     if is_weekend:
         tips.append("Weekend mode - malls and entertainment spots are busiest")
     else:
         tips.append("Weekday - business areas peak during office hours")
-    
+
     # Airport tip based on LIVE flight data
     if flights_next_hour > 0:
         if next_flight_info:
             mins = next_flight_info['mins']
             origin = next_flight_info['origin']
             if mins <= 20:
-                tips.insert(0, f"Flight from {origin} landing in {mins} mins - head to airport NOW!")
+                tips.insert(
+                    0,
+                    f"Flight from {origin} landing in {mins} mins - head to airport NOW!"
+                )
             elif mins <= 40:
-                tips.insert(0, f"{flights_next_hour} flights landing soon - airport demand is HIGH")
+                tips.insert(
+                    0,
+                    f"{flights_next_hour} flights landing soon - airport demand is HIGH"
+                )
             else:
-                tips.append(f"{flights_next_hour} flights in next hour - airport will get busy")
-    
+                tips.append(
+                    f"{flights_next_hour} flights in next hour - airport will get busy"
+                )
+
     # Event tips
     if today_events:
         for event in today_events[:2]:
@@ -2609,32 +2823,51 @@ def api_hotspots():
                     event_mins = eh * 60 + em
                     now_mins = hour * 60 + minute
                     mins_until = event_mins - now_mins
-                    
+
                     if 0 <= mins_until <= 90:
-                        tips.insert(0, f"Event at {venue} starting in {mins_until} mins - expect surge!")
+                        tips.insert(
+                            0,
+                            f"Event at {venue} starting in {mins_until} mins - expect surge!"
+                        )
                     elif -180 <= mins_until < -30:
-                        tips.insert(0, f"Post-event surge at {venue} - high demand NOW")
+                        tips.insert(
+                            0,
+                            f"Post-event surge at {venue} - high demand NOW")
                 except:
                     pass
-    
+
     return jsonify({
         "success": True,
         "hotspots": hotspots_result[:20],  # Top 20
         "analysis": {
-            "timePeriod": time_info['name'],
-            "timeEmoji": time_info.get('emoji', ''),
-            "dayName": day_info['name'],
-            "dayType": day_info['type'],
-            "timeSlot": time_slot,
-            "overallDemand": round(avg_demand, 2),
-            "overallLevel": overall_level,
-            "weather": weather_description,
-            "weatherMultiplier": weather_multiplier,
-            "flightsNextHour": flights_next_hour,
-            "nextFlight": next_flight_info,
-            "flightBoost": flight_boost if flight_boost > 1.0 else None,
-            "todayEventsCount": len(today_events),
-            "eventVenuesBoost": list(event_venues_boost.keys()) if event_venues_boost else None
+            "timePeriod":
+            time_info['name'],
+            "timeEmoji":
+            time_info.get('emoji', ''),
+            "dayName":
+            day_info['name'],
+            "dayType":
+            day_info['type'],
+            "timeSlot":
+            time_slot,
+            "overallDemand":
+            round(avg_demand, 2),
+            "overallLevel":
+            overall_level,
+            "weather":
+            weather_description,
+            "weatherMultiplier":
+            weather_multiplier,
+            "flightsNextHour":
+            flights_next_hour,
+            "nextFlight":
+            next_flight_info,
+            "flightBoost":
+            flight_boost if flight_boost > 1.0 else None,
+            "todayEventsCount":
+            len(today_events),
+            "eventVenuesBoost":
+            list(event_venues_boost.keys()) if event_venues_boost else None
         },
         "tips": tips[:4],
         "updated": now.strftime("%H:%M")
@@ -2649,63 +2882,77 @@ def api_events():
     Requires TICKETMASTER_API_KEY secret.
     """
     import requests
-    
+
     api_key = os.environ.get('TICKETMASTER_API_KEY')
-    
+
     # Perth venue IDs for major venues
     PERTH_VENUES = {
-        'optus_stadium': {'id': 'ZFr9jZea7A', 'name': 'Optus Stadium', 'lat': -31.9511, 'lng': 115.8891},
-        'rac_arena': {'id': 'ZFr9jZe7aA', 'name': 'RAC Arena', 'lat': -31.9448, 'lng': 115.8534},
-        'crown_perth': {'id': 'ZFr9jZeaea', 'name': 'Crown Perth', 'lat': -31.9598, 'lng': 115.8943},
+        'optus_stadium': {
+            'id': 'ZFr9jZea7A',
+            'name': 'Optus Stadium',
+            'lat': -31.9511,
+            'lng': 115.8891
+        },
+        'rac_arena': {
+            'id': 'ZFr9jZe7aA',
+            'name': 'RAC Arena',
+            'lat': -31.9448,
+            'lng': 115.8534
+        },
+        'crown_perth': {
+            'id': 'ZFr9jZeaea',
+            'name': 'Crown Perth',
+            'lat': -31.9598,
+            'lng': 115.8943
+        },
     }
-    
+
     try:
         # Check cache first (cache for 1 hour)
         from datetime import datetime, timedelta
         now = datetime.now()
         cache_key = f"events_{now.strftime('%Y%m%d%H')}"
         cached_events = cache.get_cached('global', cache_key)
-        
+
         if cached_events:
             return jsonify(success=True, events=cached_events, source='cache')
-        
+
         if not api_key:
             # Return sample events without API key
-            sample_events = [
-                {
-                    "name": "AFL Match - Fremantle vs West Coast",
-                    "venue": "Optus Stadium",
-                    "venueLat": -31.9511,
-                    "venueLng": 115.8891,
-                    "date": now.strftime("%Y-%m-%d"),
-                    "time": "19:00",
-                    "type": "sports",
-                    "expectedCrowd": 55000
-                },
-                {
-                    "name": "Perth Scorchers vs Melbourne Stars",
-                    "venue": "Optus Stadium",
-                    "venueLat": -31.9511,
-                    "venueLng": 115.8891,
-                    "date": now.strftime("%Y-%m-%d"),
-                    "time": "18:30",
-                    "type": "sports",
-                    "expectedCrowd": 30000
-                },
-                {
-                    "name": "Concert at RAC Arena",
-                    "venue": "RAC Arena",
-                    "venueLat": -31.9448,
-                    "venueLng": 115.8534,
-                    "date": now.strftime("%Y-%m-%d"),
-                    "time": "20:00",
-                    "type": "music",
-                    "expectedCrowd": 15000
-                }
-            ]
+            sample_events = [{
+                "name": "AFL Match - Fremantle vs West Coast",
+                "venue": "Optus Stadium",
+                "venueLat": -31.9511,
+                "venueLng": 115.8891,
+                "date": now.strftime("%Y-%m-%d"),
+                "time": "19:00",
+                "type": "sports",
+                "expectedCrowd": 55000
+            }, {
+                "name": "Perth Scorchers vs Melbourne Stars",
+                "venue": "Optus Stadium",
+                "venueLat": -31.9511,
+                "venueLng": 115.8891,
+                "date": now.strftime("%Y-%m-%d"),
+                "time": "18:30",
+                "type": "sports",
+                "expectedCrowd": 30000
+            }, {
+                "name": "Concert at RAC Arena",
+                "venue": "RAC Arena",
+                "venueLat": -31.9448,
+                "venueLng": 115.8534,
+                "date": now.strftime("%Y-%m-%d"),
+                "time": "20:00",
+                "type": "music",
+                "expectedCrowd": 15000
+            }]
             cache.set_cached('global', cache_key, sample_events)
-            return jsonify(success=True, events=sample_events, source='sample', message='Add TICKETMASTER_API_KEY for live data')
-        
+            return jsonify(success=True,
+                           events=sample_events,
+                           source='sample',
+                           message='Add TICKETMASTER_API_KEY for live data')
+
         # Fetch from Ticketmaster Discovery API
         events_list = []
         response = requests.get(
@@ -2718,34 +2965,47 @@ def api_events():
                 'size': 50,
                 'sort': 'date,asc'
             },
-            timeout=10
-        )
-        
+            timeout=10)
+
         if response.status_code == 200:
             data = response.json()
             events = data.get('_embedded', {}).get('events', [])
-            
+
             for event in events[:20]:
                 venue_info = event.get('_embedded', {}).get('venues', [{}])[0]
                 date_info = event.get('dates', {}).get('start', {})
-                
+
                 events_list.append({
-                    "name": event.get('name', 'Unknown Event'),
-                    "venue": venue_info.get('name', 'Unknown Venue'),
-                    "venueLat": float(venue_info.get('location', {}).get('latitude', 0)),
-                    "venueLng": float(venue_info.get('location', {}).get('longitude', 0)),
-                    "date": date_info.get('localDate', ''),
-                    "time": date_info.get('localTime', ''),
-                    "type": event.get('classifications', [{}])[0].get('segment', {}).get('name', 'other').lower(),
-                    "url": event.get('url', ''),
-                    "image": event.get('images', [{}])[0].get('url', '')
+                    "name":
+                    event.get('name', 'Unknown Event'),
+                    "venue":
+                    venue_info.get('name', 'Unknown Venue'),
+                    "venueLat":
+                    float(venue_info.get('location', {}).get('latitude', 0)),
+                    "venueLng":
+                    float(venue_info.get('location', {}).get('longitude', 0)),
+                    "date":
+                    date_info.get('localDate', ''),
+                    "time":
+                    date_info.get('localTime', ''),
+                    "type":
+                    event.get('classifications',
+                              [{}])[0].get('segment', {}).get('name',
+                                                              'other').lower(),
+                    "url":
+                    event.get('url', ''),
+                    "image":
+                    event.get('images', [{}])[0].get('url', '')
                 })
-            
+
             cache.set_cached('global', cache_key, events_list)
-            return jsonify(success=True, events=events_list, source='ticketmaster')
+            return jsonify(success=True,
+                           events=events_list,
+                           source='ticketmaster')
         else:
-            return jsonify(success=False, message=f'API error: {response.status_code}')
-            
+            return jsonify(success=False,
+                           message=f'API error: {response.status_code}')
+
     except Exception as e:
         print(f"Events API error: {e}")
         return jsonify(success=False, message=str(e))
@@ -2777,35 +3037,55 @@ def api_airport_queue():
     Returns estimated wait times for pickup queue at Perth Airport.
     """
     from datetime import datetime, timezone, timedelta
-    
+
     perth_tz = timezone(timedelta(hours=8))
     now = datetime.now(perth_tz)
     hour = now.hour
     day = now.weekday()
-    
+
     # Base queue times by time of day (minutes) - Perth historical patterns
     base_queue = {
-        0: 5, 1: 5, 2: 5, 3: 5, 4: 10, 5: 15,   # Early morning
-        6: 20, 7: 25, 8: 25, 9: 20, 10: 15, 11: 15,  # Morning
-        12: 15, 13: 18, 14: 20, 15: 22, 16: 25, 17: 28,  # Afternoon
-        18: 25, 19: 22, 20: 18, 21: 20, 22: 25, 23: 15   # Evening/Night
+        0: 5,
+        1: 5,
+        2: 5,
+        3: 5,
+        4: 10,
+        5: 15,  # Early morning
+        6: 20,
+        7: 25,
+        8: 25,
+        9: 20,
+        10: 15,
+        11: 15,  # Morning
+        12: 15,
+        13: 18,
+        14: 20,
+        15: 22,
+        16: 25,
+        17: 28,  # Afternoon
+        18: 25,
+        19: 22,
+        20: 18,
+        21: 20,
+        22: 25,
+        23: 15  # Evening/Night
     }
-    
+
     # Weekend adjustment (busier on weekends)
     weekend_mult = 1.3 if day >= 5 else 1.0
-    
+
     # Get live flight data
     flights_next_hour = 0
     upcoming_flights = []
-    
+
     try:
         flight_cache_key = "flights_all"
         flight_data = cache.get_cached('global', flight_cache_key)
-        
+
         if flight_data:
             flights = flight_data.get('flights', [])
             current_mins = hour * 60 + now.minute
-            
+
             for flight in flights:
                 if flight.get('landed', False):
                     continue
@@ -2818,26 +3098,31 @@ def api_airport_queue():
                     mins_until = flight_mins - current_mins
                     if mins_until < -60:
                         mins_until += 1440
-                    
+
                     if 0 <= mins_until <= 90:
                         flights_next_hour += 1
                         upcoming_flights.append({
-                            'time': flight_time,
-                            'mins': mins_until,
-                            'origin': flight.get('origin', 'Unknown'),
-                            'airline': flight.get('airline', ''),
-                            'terminal': flight.get('terminal', 'T1')
+                            'time':
+                            flight_time,
+                            'mins':
+                            mins_until,
+                            'origin':
+                            flight.get('origin', 'Unknown'),
+                            'airline':
+                            flight.get('airline', ''),
+                            'terminal':
+                            flight.get('terminal', 'T1')
                         })
                 except:
                     continue
-            
+
             upcoming_flights.sort(key=lambda x: x['mins'])
     except Exception as e:
         print(f"Queue prediction error: {e}")
-    
+
     # Calculate queue estimate
     base_wait = base_queue.get(hour, 15)
-    
+
     # Flight-based adjustment
     if flights_next_hour >= 10:
         flight_mult = 2.5
@@ -2854,12 +3139,12 @@ def api_airport_queue():
     else:
         flight_mult = 0.8
         queue_status = "Very Short"
-    
+
     estimated_wait = round(base_wait * weekend_mult * flight_mult)
-    
+
     # Queue position estimate (based on typical drivers waiting)
     queue_position = round(estimated_wait / 3)
-    
+
     # Best strategy recommendation
     if estimated_wait > 30:
         strategy = "Consider waiting in remote lot and timing arrival with flight landing"
@@ -2867,7 +3152,7 @@ def api_airport_queue():
         strategy = "Join queue 10-15 mins before next flight lands for optimal positioning"
     else:
         strategy = "Queue is short - head to airport now for quick pickup"
-    
+
     return jsonify({
         "success": True,
         "queue": {
@@ -2905,46 +3190,94 @@ def api_smart_route():
     """
     from datetime import datetime
     from math import radians, sin, cos, sqrt, atan2
-    
+
     # Get current position from query params
     lat = request.args.get('lat', type=float)
     lng = request.args.get('lng', type=float)
-    
+
     if not lat or not lng:
         return jsonify(success=False, message="Current location required"), 400
-    
+
     def calc_distance(lat1, lon1, lat2, lon2):
         R = 6371
         lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
         dlat = lat2 - lat1
         dlon = lon2 - lon1
-        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-        return R * 2 * atan2(sqrt(a), sqrt(1-a))
-    
+        a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+        return R * 2 * atan2(sqrt(a), sqrt(1 - a))
+
     # Get current hotspots data
     try:
         # Fetch hotspots (reuse internal logic)
         import requests as req_lib
         # Make internal request to hotspots API
         # For efficiency, we'll calculate inline
-        
+
         now = datetime.now()
         hour = now.hour
         time_slot = hour * 2 + (1 if now.minute >= 30 else 0)
         is_weekend = now.weekday() >= 5
-        
+
         # Perth hotspots with current multipliers
         HOTSPOTS = [
-            {"name": "Perth Airport (T1/T2)", "lat": -31.9430, "lng": 115.9669, "type": "airport", "base": 1.5},
-            {"name": "Perth CBD", "lat": -31.9544, "lng": 115.8567, "type": "business", "base": 1.3},
-            {"name": "Northbridge", "lat": -31.9472, "lng": 115.8576, "type": "entertainment", "base": 1.6},
-            {"name": "Crown Perth", "lat": -31.9598, "lng": 115.8943, "type": "entertainment", "base": 1.5},
-            {"name": "Optus Stadium", "lat": -31.9511, "lng": 115.8891, "type": "entertainment", "base": 1.4},
-            {"name": "Fremantle", "lat": -32.0569, "lng": 115.7439, "type": "entertainment", "base": 1.3},
-            {"name": "Scarborough Beach", "lat": -31.8931, "lng": 115.7577, "type": "leisure", "base": 1.2},
-            {"name": "Karrinyup Mall", "lat": -31.8767, "lng": 115.7839, "type": "shopping", "base": 1.2},
+            {
+                "name": "Perth Airport (T1/T2)",
+                "lat": -31.9430,
+                "lng": 115.9669,
+                "type": "airport",
+                "base": 1.5
+            },
+            {
+                "name": "Perth CBD",
+                "lat": -31.9544,
+                "lng": 115.8567,
+                "type": "business",
+                "base": 1.3
+            },
+            {
+                "name": "Northbridge",
+                "lat": -31.9472,
+                "lng": 115.8576,
+                "type": "entertainment",
+                "base": 1.6
+            },
+            {
+                "name": "Crown Perth",
+                "lat": -31.9598,
+                "lng": 115.8943,
+                "type": "entertainment",
+                "base": 1.5
+            },
+            {
+                "name": "Optus Stadium",
+                "lat": -31.9511,
+                "lng": 115.8891,
+                "type": "entertainment",
+                "base": 1.4
+            },
+            {
+                "name": "Fremantle",
+                "lat": -32.0569,
+                "lng": 115.7439,
+                "type": "entertainment",
+                "base": 1.3
+            },
+            {
+                "name": "Scarborough Beach",
+                "lat": -31.8931,
+                "lng": 115.7577,
+                "type": "leisure",
+                "base": 1.2
+            },
+            {
+                "name": "Karrinyup Mall",
+                "lat": -31.8767,
+                "lng": 115.7839,
+                "type": "shopping",
+                "base": 1.2
+            },
         ]
-        
+
         # Time-based multipliers
         if hour >= 17 and hour <= 20:
             time_mult = 1.6  # Evening rush
@@ -2954,22 +3287,24 @@ def api_smart_route():
             time_mult = 1.4  # Nightlife
         else:
             time_mult = 1.0
-        
+
         recommendations = []
         for h in HOTSPOTS:
             distance = calc_distance(lat, lng, h['lat'], h['lng'])
-            
+
             # Calculate demand score
             demand = h['base'] * time_mult
-            if is_weekend and h['type'] in ['entertainment', 'leisure', 'shopping']:
+            if is_weekend and h['type'] in [
+                    'entertainment', 'leisure', 'shopping'
+            ]:
                 demand *= 1.2
-            
+
             # Score = demand / sqrt(distance) - prioritize high demand nearby
             score = demand / max(sqrt(distance), 0.5)
-            
+
             # Estimate drive time (rough: 30km/h average in city)
             drive_mins = round((distance / 30) * 60)
-            
+
             recommendations.append({
                 "name": h['name'],
                 "lat": h['lat'],
@@ -2980,25 +3315,34 @@ def api_smart_route():
                 "demand": round(demand, 2),
                 "score": round(score, 2)
             })
-        
+
         # Sort by score (highest first)
         recommendations.sort(key=lambda x: x['score'], reverse=True)
-        
+
         top_rec = recommendations[0] if recommendations else None
-        
+
         return jsonify({
-            "success": True,
-            "currentLocation": {"lat": lat, "lng": lng},
-            "topRecommendation": top_rec,
-            "alternatives": recommendations[1:4],
+            "success":
+            True,
+            "currentLocation": {
+                "lat": lat,
+                "lng": lng
+            },
+            "topRecommendation":
+            top_rec,
+            "alternatives":
+            recommendations[1:4],
             "tips": [
-                f"Head to {top_rec['name']} ({top_rec['driveMins']} min drive)" if top_rec else "Stay in current area",
-                "Demand peaks in 30 mins - position early" if hour in [7, 17] else None,
-                "Weekend entertainment areas are busy tonight" if is_weekend and hour >= 18 else None
+                f"Head to {top_rec['name']} ({top_rec['driveMins']} min drive)"
+                if top_rec else "Stay in current area",
+                "Demand peaks in 30 mins - position early" if hour in [7, 17]
+                else None, "Weekend entertainment areas are busy tonight"
+                if is_weekend and hour >= 18 else None
             ],
-            "updated": now.strftime("%H:%M")
+            "updated":
+            now.strftime("%H:%M")
         })
-        
+
     except Exception as e:
         print(f"Smart route error: {e}")
         return jsonify(success=False, message=str(e)), 500
@@ -3013,19 +3357,19 @@ def api_surge_map():
     Note: Requires Uber API credentials or uses prediction-based estimates.
     """
     from datetime import datetime
-    
+
     now = datetime.now()
     hour = now.hour
     day = now.weekday()
     is_weekend = day >= 5
-    
+
     # Predicted surge multipliers based on time/day patterns
     # These would be replaced with live Uber API data if credentials available
-    
+
     def predict_surge(location_type, hour, is_weekend):
         """Predict surge multiplier based on patterns."""
         base = 1.0
-        
+
         # Time-based patterns
         if hour >= 17 and hour <= 19:  # Evening rush
             base = 1.8
@@ -3035,7 +3379,7 @@ def api_surge_map():
             base = 2.0
         elif hour >= 12 and hour <= 14:  # Lunch
             base = 1.3
-        
+
         # Location type adjustments
         if location_type == 'airport':
             base *= 1.2
@@ -3043,47 +3387,113 @@ def api_surge_map():
             base *= 1.4
         elif location_type == 'business' and not is_weekend:
             base *= 1.1
-        
+
         # Weekend adjustment
         if is_weekend and location_type in ['entertainment', 'leisure']:
             base *= 1.3
-        
+
         return round(min(base, 3.5), 1)  # Cap at 3.5x
-    
+
     # Generate surge data for Perth areas
     surge_zones = [
-        {"id": 1, "name": "Perth Airport", "lat": -31.9430, "lng": 115.9669, "type": "airport"},
-        {"id": 2, "name": "Perth CBD", "lat": -31.9544, "lng": 115.8567, "type": "business"},
-        {"id": 3, "name": "Northbridge", "lat": -31.9472, "lng": 115.8576, "type": "entertainment"},
-        {"id": 4, "name": "Crown Perth", "lat": -31.9598, "lng": 115.8943, "type": "entertainment"},
-        {"id": 5, "name": "Optus Stadium", "lat": -31.9511, "lng": 115.8891, "type": "entertainment"},
-        {"id": 6, "name": "Elizabeth Quay", "lat": -31.9575, "lng": 115.8570, "type": "entertainment"},
-        {"id": 7, "name": "Fremantle", "lat": -32.0569, "lng": 115.7439, "type": "entertainment"},
-        {"id": 8, "name": "Subiaco", "lat": -31.9458, "lng": 115.8264, "type": "residential"},
-        {"id": 9, "name": "Cottesloe Beach", "lat": -31.9928, "lng": 115.7526, "type": "leisure"},
-        {"id": 10, "name": "Scarborough", "lat": -31.8931, "lng": 115.7577, "type": "leisure"},
+        {
+            "id": 1,
+            "name": "Perth Airport",
+            "lat": -31.9430,
+            "lng": 115.9669,
+            "type": "airport"
+        },
+        {
+            "id": 2,
+            "name": "Perth CBD",
+            "lat": -31.9544,
+            "lng": 115.8567,
+            "type": "business"
+        },
+        {
+            "id": 3,
+            "name": "Northbridge",
+            "lat": -31.9472,
+            "lng": 115.8576,
+            "type": "entertainment"
+        },
+        {
+            "id": 4,
+            "name": "Crown Perth",
+            "lat": -31.9598,
+            "lng": 115.8943,
+            "type": "entertainment"
+        },
+        {
+            "id": 5,
+            "name": "Optus Stadium",
+            "lat": -31.9511,
+            "lng": 115.8891,
+            "type": "entertainment"
+        },
+        {
+            "id": 6,
+            "name": "Elizabeth Quay",
+            "lat": -31.9575,
+            "lng": 115.8570,
+            "type": "entertainment"
+        },
+        {
+            "id": 7,
+            "name": "Fremantle",
+            "lat": -32.0569,
+            "lng": 115.7439,
+            "type": "entertainment"
+        },
+        {
+            "id": 8,
+            "name": "Subiaco",
+            "lat": -31.9458,
+            "lng": 115.8264,
+            "type": "residential"
+        },
+        {
+            "id": 9,
+            "name": "Cottesloe Beach",
+            "lat": -31.9928,
+            "lng": 115.7526,
+            "type": "leisure"
+        },
+        {
+            "id": 10,
+            "name": "Scarborough",
+            "lat": -31.8931,
+            "lng": 115.7577,
+            "type": "leisure"
+        },
     ]
-    
+
     for zone in surge_zones:
         zone['surge'] = predict_surge(zone['type'], hour, is_weekend)
-        zone['level'] = 'high' if zone['surge'] >= 2.0 else ('medium' if zone['surge'] >= 1.5 else 'low')
-        zone['color'] = '#ef4444' if zone['surge'] >= 2.0 else ('#f59e0b' if zone['surge'] >= 1.5 else '#22c55e')
-    
+        zone['level'] = 'high' if zone['surge'] >= 2.0 else (
+            'medium' if zone['surge'] >= 1.5 else 'low')
+        zone['color'] = '#ef4444' if zone['surge'] >= 2.0 else (
+            '#f59e0b' if zone['surge'] >= 1.5 else '#22c55e')
+
     # Sort by surge (highest first)
     surge_zones.sort(key=lambda x: x['surge'], reverse=True)
-    
+
     # Calculate overall city surge level
     avg_surge = sum(z['surge'] for z in surge_zones) / len(surge_zones)
-    
+
     return jsonify({
         "success": True,
         "zones": surge_zones,
         "overall": {
-            "avgSurge": round(avg_surge, 1),
-            "level": 'high' if avg_surge >= 1.8 else ('medium' if avg_surge >= 1.3 else 'low'),
+            "avgSurge":
+            round(avg_surge, 1),
+            "level":
+            'high' if avg_surge >= 1.8 else
+            ('medium' if avg_surge >= 1.3 else 'low'),
             "peakAreas": [z['name'] for z in surge_zones[:3]]
         },
-        "note": "Predictions based on historical patterns. Connect Uber account for live surge data.",
+        "note":
+        "Predictions based on historical patterns. Connect Uber account for live surge data.",
         "updated": now.strftime("%H:%M")
     })
 
@@ -3427,21 +3837,30 @@ def get_active_users():
     ]
     for uid in expired_ids:
         active_users.pop(uid, None)
-    
+
     users = []
     for uid, data in active_users.items():
         user = db.session.get(User, int(uid))
         if user:
             users.append({
-                'id': user.id,
-                'username': user.username,
-                'display_name': user.get_display_name(),
-                'initials': user.get_initials(),
-                'profile_image': user.profile_image,
-                'roles': [{'name': r.display_name, 'color': r.color} for r in user.roles],
-                'current_page': data.get('page', '/')
+                'id':
+                user.id,
+                'username':
+                user.username,
+                'display_name':
+                user.get_display_name(),
+                'initials':
+                user.get_initials(),
+                'profile_image':
+                user.profile_image,
+                'roles': [{
+                    'name': r.display_name,
+                    'color': r.color
+                } for r in user.roles],
+                'current_page':
+                data.get('page', '/')
             })
-            
+
     return jsonify({'success': True, 'users': users})
 
 
@@ -3451,40 +3870,40 @@ def admin_broadcast():
     if not current_user.is_owner():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('root'))
-    
+
     if request.method == 'POST':
         title = request.form.get('title', 'RizTar Announcement')
         message = request.form.get('message')
         url = request.form.get('url', '/')
-        
+
         if not message:
             flash('Message content is required.', 'danger')
         else:
             import re
             clean_text = re.sub('<[^<]+?>', '', message).strip()
-            
+
             all_users = User.query.all()
             total_sent = 0
-            
+
             for user in all_users:
                 try:
                     sent_push_count = send_push_notification(
-                        user.id, 
-                        title, 
+                        user.id,
+                        title,
                         clean_text,
-                        url=url, 
+                        url=url,
                         tag='broadcast',
-                        require_interaction=True
-                    )
+                        require_interaction=True)
                     if sent_push_count and sent_push_count > 0:
                         total_sent += 1
                 except Exception:
                     pass
-            
+
             flash(f'Push notification sent to {total_sent} users.', 'success')
             return redirect(url_for('admin_broadcast'))
-            
+
     return render_template('admin_broadcast.html')
+
 
 @app.route('/api/chat-mark-read', methods=['POST'])
 @login_required
@@ -3539,17 +3958,18 @@ def delete_chat_message(message_id):
     """Delete a specific chat message (owner only)"""
     if not current_user.is_owner():
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-    
+
     message = ChatMessage.query.get(message_id)
     if not message:
         return jsonify({'success': False, 'error': 'Message not found'}), 404
-    
+
     db.session.delete(message)
     db.session.commit()
-    
+
     # Emit socket event to remove message for all clients
-    socketio.emit('message_deleted', {'message_id': message_id}, broadcast=True)
-    
+    socketio.emit('message_deleted', {'message_id': message_id},
+                  broadcast=True)
+
     return jsonify({'success': True})
 
 
@@ -3559,13 +3979,13 @@ def clear_chat_history():
     """Clear all chat messages (owner only)"""
     if not current_user.is_owner():
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-    
+
     ChatMessage.query.delete()
     db.session.commit()
-    
+
     # Emit socket event to clear messages for all clients
     socketio.emit('chat_cleared', broadcast=True)
-    
+
     return jsonify({'success': True})
 
 
@@ -3651,6 +4071,7 @@ def handle_get_online_users():
 
 
 background_scan_started = False
+
 
 @app.before_request
 def start_background_scan_once():
