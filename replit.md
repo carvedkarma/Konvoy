@@ -129,18 +129,61 @@ Preferred communication style: Simple, everyday language.
 - Environment variables for sensitive data (Flask secret key, database URL, owner credentials)
 - Global state stored in `config.py` for ride/stop signals and destination tracking
 
+### Intelligence Engine (Owner-Only)
+Self-learning 24/7 driver monitoring system covering all of Perth metro:
+
+**Architecture:**
+- **Database Models**: DriverObservation (raw sightings), DriverFingerprint (unique driver identities), ScanBatch (scan sessions), HourlySnapshot (aggregated hourly data), DailyPattern (day-of-week patterns), CorrelationModel (zone-to-zone relationships), PredictionModel (forecasts)
+- **Perth Grid** (`intelligence/grid.py`): 45+ zones covering 500+ coordinates, with dense zones (CBD, Airport) using 500m spacing and sparse zones using 1km spacing
+- **Deduplication Engine** (`intelligence/dedup.py`): Multi-factor fingerprinting using coordinates, vehicle type, bearing, trajectory tracking with confidence scoring
+  - Zone-adaptive thresholds: 50m for dense areas, 100m for sparse areas
+  - Trajectory prediction for moving drivers
+  - Bearing alignment checks (30° threshold)
+- **Background Daemon** (`intelligence/daemon.py`): Continuous 24/7 scanning with triple-confirmation per coordinate, callback-based data persistence
+- **Learning Engine** (`intelligence/learning.py`): 
+  - Hourly analysis: aggregates observations into zone snapshots
+  - Daily patterns: discovers day-of-week driver distribution patterns
+  - Correlation detection: identifies zone-to-zone relationships with time lag
+  - Prediction generation: forecasts driver counts based on learned patterns
+  - Prediction validation: compares predictions to actual data for self-improvement
+
+**Dashboard** (`/intelligence`):
+- Premium glassmorphism design with dark gradient theme
+- Real-time stats: total drivers, counts by type (UberX, XL, Black)
+- System health monitoring: uptime, coordinates scanned, observations, cycles
+- Live coverage map with zone visualization
+- Top hotspots display
+- Learned patterns chart (by day of week)
+- Upcoming predictions with confidence scores
+- Start/Stop engine controls
+
+**API Endpoints**:
+- `GET /api/intelligence/status`: Engine status and stats
+- `POST /api/intelligence/start`: Start background daemon
+- `POST /api/intelligence/stop`: Stop background daemon
+- `GET /api/intelligence/hotspots`: Top driver concentration zones
+- `GET /api/intelligence/patterns`: Learned daily patterns
+- `GET /api/intelligence/predictions`: Upcoming predictions
+- `POST /api/intelligence/run-learning`: Manual learning trigger
+
 ## Project Structure
 
 ```
 uber/
 ├── main.py              # Flask application with routes and auth
-├── models.py            # SQLAlchemy User and Role models
+├── models.py            # SQLAlchemy User, Role, and Intelligence models
 ├── forms.py             # WTForms for login/register
 ├── config.py            # Global state variables
 ├── objects/
 │   └── uberDev.py       # Uber API integration
 ├── source/
 │   └── cred.py          # API credentials
+├── intelligence/
+│   ├── __init__.py      # Intelligence module initialization
+│   ├── grid.py          # Perth coordinate grid (500+ points, 45+ zones)
+│   ├── dedup.py         # Driver deduplication engine
+│   ├── daemon.py        # 24/7 background scanning daemon
+│   └── learning.py      # Self-learning analytics engine
 ├── templates/
 │   ├── base.html        # Shared header/layout template
 │   ├── login.html       # Premium login page
@@ -156,7 +199,8 @@ uber/
 │   ├── demand_intel.html # Unified Demand Intelligence (Hotspots, Surge Map, Events tabs)
 │   ├── live_drivers.html # Live driver density map with product type breakdown
 │   ├── smart_route.html  # Smart Route Planner
-│   └── flight_center.html # Live flight arrivals
+│   ├── flight_center.html # Live flight arrivals
+│   └── intelligence.html # Intelligence Engine dashboard (owner-only)
 └── static/
     ├── images/          # Static assets
     └── service-worker.js # Push notification handler
