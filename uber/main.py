@@ -1937,16 +1937,30 @@ def api_location_drivers():
         return jsonify(success=False, message='Location parameter required')
     
     try:
+        geo_data = None
         geo_response = requests.get(
             'https://nominatim.openstreetmap.org/search',
             params={
-                'q': f"{location}, Perth, Western Australia",
+                'q': location,
                 'format': 'json',
-                'limit': 1
+                'limit': 1,
+                'countrycodes': 'au'
             },
             headers={'User-Agent': 'RizTar/1.0'}
         )
         geo_data = geo_response.json()
+        
+        if not geo_data:
+            geo_response = requests.get(
+                'https://nominatim.openstreetmap.org/search',
+                params={
+                    'q': f"{location}, Perth, Western Australia",
+                    'format': 'json',
+                    'limit': 1
+                },
+                headers={'User-Agent': 'RizTar/1.0'}
+            )
+            geo_data = geo_response.json()
         
         if not geo_data:
             return jsonify(success=False, message=f'Location "{location}" not found')
