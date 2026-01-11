@@ -680,6 +680,12 @@ fetch('/api/home-data')
                             </div>
                         </div>
                         <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button id="start-scan-btn" class="px-2.5 py-1 bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full hover:from-violet-600 hover:to-indigo-600 transition-all shadow-md shadow-violet-200 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                <span>Scan</span>
+                            </button>
                             <span id="drivers-scanning-badge" class="hidden px-2 py-0.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[8px] sm:text-[9px] font-bold rounded-full animate-pulse">LIVE</span>
                             <span id="nearby-status" class="text-[9px] sm:text-[10px] text-violet-400 font-medium hidden sm:inline">Waiting</span>
                         </div>
@@ -1826,6 +1832,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let pollTimer = null;
     let lastCounts = { uberx: 0, xl: 0, black: 0, total: 0 };
     let currentScanId = null;
+    let shouldReset = false;
     
     function generateSamplePoints(lat, lng, radiusKm) {
         const offset = radiusKm / 111;
@@ -1883,11 +1890,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const nearbyStatusEl = document.getElementById('nearby-status');
         const scanningBadge = document.getElementById('drivers-scanning-badge');
         const nearbyCountEl = document.getElementById('nearby-count');
+        const startBtn = document.getElementById('start-scan-btn');
         
         if (nearbyStatusEl) nearbyStatusEl.textContent = 'Done';
         if (scanningBadge) scanningBadge.classList.add('hidden');
         if (nearbyCountEl && finalCounts) {
             nearbyCountEl.textContent = `${finalCounts.total} drivers nearby`;
+        }
+        
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         }
         
         isScanning = false;
@@ -1905,10 +1918,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             let url = `/api/drivers-nearby?lat=${point.lat}&lng=${point.lng}`;
-            if (isFirst) {
+            if (isFirst && shouldReset) {
                 url += '&reset=true';
-            } else if (currentScanId) {
-                url += `&scan_id=${currentScanId}`;
             }
             
             const response = await fetch(url, { credentials: 'same-origin' });
@@ -1948,7 +1959,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function startScanning(lat, lng) {
+    function startScanning(lat, lng, isReset = false) {
         if (pollTimer) {
             clearTimeout(pollTimer);
             pollTimer = null;
@@ -1961,6 +1972,7 @@ document.addEventListener('DOMContentLoaded', function() {
         isScanning = true;
         lastCounts = { uberx: 0, xl: 0, black: 0, total: 0 };
         currentScanId = null;
+        shouldReset = isReset;
         
         fetchSample(true);
     }
@@ -1994,12 +2006,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    function initDriversNearby() {
-        const section = document.getElementById('drivers-nearby-section');
-        if (!section) return;
-        
+    function triggerScan(isReset = false) {
         const userCoordsEl = document.getElementById('user-coords');
         const nearbyCountEl = document.getElementById('nearby-count');
+        const startBtn = document.getElementById('start-scan-btn');
+        
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
         
         if (nearbyCountEl) nearbyCountEl.textContent = 'Getting location...';
         
@@ -2018,13 +2033,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         nearbyCountEl.textContent = 'Starting scan...';
                     }
                     
-                    startScanning(lat, lng);
+                    startScanning(lat, lng, isReset);
                 },
                 (error) => {
                     if (userCoordsEl) {
                         userCoordsEl.textContent = 'Perth CBD (default)';
                     }
-                    startScanning(-31.9505, 115.8605);
+                    startScanning(-31.9505, 115.8605, isReset);
                 },
                 { enableHighAccuracy: true, timeout: 10000 }
             );
@@ -2032,8 +2047,22 @@ document.addEventListener('DOMContentLoaded', function() {
             if (userCoordsEl) {
                 userCoordsEl.textContent = 'Perth CBD (default)';
             }
-            startScanning(-31.9505, 115.8605);
+            startScanning(-31.9505, 115.8605, isReset);
         }
+    }
+    
+    function initDriversNearby() {
+        const section = document.getElementById('drivers-nearby-section');
+        if (!section) return;
+        
+        const startBtn = document.getElementById('start-scan-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                triggerScan(true);
+            });
+        }
+        
+        triggerScan(false);
     }
     
     setTimeout(initDriversNearby, 1000);

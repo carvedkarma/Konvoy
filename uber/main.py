@@ -1912,49 +1912,36 @@ def api_live_drivers_reset():
     return jsonify(success=True)
 
 
-homepage_scan_cache = {}
-
 @app.route('/api/drivers-nearby')
 @login_required
 def api_drivers_nearby():
     """
-    Fresh driver scan for home page with scan_id to prevent race conditions.
-    Uses the same deduplication logic as live-drivers for accurate counts.
+    Driver scan for home page - uses the SAME cache and logic as live-drivers.
+    This ensures both endpoints always return identical counts.
     """
-    from datetime import datetime
+    from datetime import datetime, timedelta
     from objects.uberDev import fetch_drivers_at_location
-    import uuid
     
     user_id = current_user.id
     lat = request.args.get('lat', type=float)
     lng = request.args.get('lng', type=float)
     reset = request.args.get('reset', type=str) == 'true'
-    scan_id = request.args.get('scan_id', type=str)
     
     if lat is None or lng is None:
         lat, lng = -31.9505, 115.8605
     
-    if reset or user_id not in homepage_scan_cache:
-        new_scan_id = str(uuid.uuid4())[:8]
-        homepage_scan_cache[user_id] = {'drivers': [], 'sample_count': 0, 'scan_id': new_scan_id}
-        return jsonify({
-            'success': True,
-            'counts': {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0},
-            'sampleCount': 0,
-            'scan_id': new_scan_id,
-            'updated': datetime.now().strftime('%H:%M:%S')
-        })
+    if reset:
+        if user_id in driver_cache:
+            del driver_cache[user_id]
     
-    cache = homepage_scan_cache[user_id]
+    if user_id not in driver_cache:
+        driver_cache[user_id] = {'drivers': [], 'last_cleanup': datetime.now(), 'sample_count': 0}
     
-    if scan_id and cache.get('scan_id') != scan_id:
-        return jsonify({
-            'success': False,
-            'stale': True,
-            'message': 'Stale scan request ignored'
-        })
-    
+    cache = driver_cache[user_id]
     now = datetime.now()
+    
+    cutoff = now - timedelta(minutes=3)
+    cache['drivers'] = [d for d in cache['drivers'] if d.get('timestamp', now) > cutoff]
     
     try:
         new_drivers = fetch_drivers_at_location(lat, lng)
@@ -1971,12 +1958,11 @@ def api_drivers_nearby():
             else:
                 cache['drivers'].append(driver)
         
+        counts_by_type = {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0}
         type_mapping = {
             'UBERX': 'UberX', 'COMFORT': 'Comfort', 'XL': 'XL', 'BLACK': 'Black',
             'UberX': 'UberX', 'Comfort': 'Comfort', 'Black': 'Black'
         }
-        counts_by_type = {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0}
-        
         for driver in cache['drivers']:
             raw_type = driver.get('product_type', 'UberX')
             ptype = type_mapping.get(raw_type, 'UberX')
@@ -1994,7 +1980,6 @@ def api_drivers_nearby():
             'success': True,
             'counts': counts,
             'sampleCount': cache['sample_count'],
-            'scan_id': cache.get('scan_id'),
             'updated': now.strftime('%H:%M:%S')
         })
     except Exception as e:
