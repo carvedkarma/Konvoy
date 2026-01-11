@@ -1927,7 +1927,7 @@ def api_location_drivers():
     """
     Search for drivers at a named location.
     Geocodes the location, then samples 5 points (center + 4 offsets in 1km radius).
-    Collects 25 samples total (5 points x 5 rounds).
+    Collects 35 samples total (5 points x 7 rounds).
     """
     import time
     from objects.uberDev import fetch_drivers_at_location
@@ -1986,7 +1986,7 @@ def api_location_drivers():
     samples_collected = 0
     
     try:
-        for round_num in range(5):
+        for round_num in range(7):
             for point_lat, point_lng in sample_points:
                 try:
                     new_drivers = fetch_drivers_at_location(point_lat, point_lng)
