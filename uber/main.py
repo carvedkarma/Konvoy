@@ -1919,7 +1919,7 @@ homepage_scan_cache = {}
 def api_drivers_nearby():
     """
     Fresh driver scan for home page with scan_id to prevent race conditions.
-    Each scan has a unique ID - stale requests from old scans are rejected.
+    Uses the same deduplication logic as live-drivers for accurate counts.
     """
     from datetime import datetime
     from objects.uberDev import fetch_drivers_at_location
@@ -1936,7 +1936,7 @@ def api_drivers_nearby():
     
     if reset or user_id not in homepage_scan_cache:
         new_scan_id = str(uuid.uuid4())[:8]
-        homepage_scan_cache[user_id] = {'drivers': {}, 'sample_count': 0, 'scan_id': new_scan_id}
+        homepage_scan_cache[user_id] = {'drivers': [], 'sample_count': 0, 'scan_id': new_scan_id}
         return jsonify({
             'success': True,
             'counts': {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0},
@@ -1961,29 +1961,34 @@ def api_drivers_nearby():
         cache['sample_count'] += 1
         
         for driver in new_drivers:
-            driver_key = f"{driver.get('lat', 0):.5f},{driver.get('lng', 0):.5f}"
-            ptype = driver.get('product_type', 'UberX')
-            if ptype in ['UBERX', 'UberX']:
-                ptype = 'UberX'
-            elif ptype in ['XL']:
-                ptype = 'XL'
-            elif ptype in ['BLACK', 'Black']:
-                ptype = 'Black'
+            driver['timestamp'] = now
+            match_idx = find_matching_driver_index(driver, cache['drivers'])
+            if match_idx >= 0:
+                cache['drivers'][match_idx]['lat'] = driver['lat']
+                cache['drivers'][match_idx]['lng'] = driver['lng']
+                cache['drivers'][match_idx]['bearing'] = driver.get('bearing')
+                cache['drivers'][match_idx]['timestamp'] = now
             else:
-                ptype = 'UberX'
-            
-            if driver_key not in cache['drivers']:
-                cache['drivers'][driver_key] = ptype
+                cache['drivers'].append(driver)
         
-        counts = {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0}
-        for ptype in cache['drivers'].values():
-            if ptype == 'UberX':
-                counts['uberx'] += 1
-            elif ptype == 'XL':
-                counts['xl'] += 1
-            elif ptype == 'Black':
-                counts['black'] += 1
-            counts['total'] += 1
+        type_mapping = {
+            'UBERX': 'UberX', 'COMFORT': 'Comfort', 'XL': 'XL', 'BLACK': 'Black',
+            'UberX': 'UberX', 'Comfort': 'Comfort', 'Black': 'Black'
+        }
+        counts_by_type = {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0}
+        
+        for driver in cache['drivers']:
+            raw_type = driver.get('product_type', 'UberX')
+            ptype = type_mapping.get(raw_type, 'UberX')
+            counts_by_type[ptype] += 1
+        
+        counts = {
+            'total': len(cache['drivers']),
+            'uberx': counts_by_type['UberX'],
+            'comfort': counts_by_type['Comfort'],
+            'xl': counts_by_type['XL'],
+            'black': counts_by_type['Black'],
+        }
         
         return jsonify({
             'success': True,
