@@ -322,47 +322,6 @@
                 </div>
             </div>
             {% endif %}
-
-            <div id="drivers-nearby-section" class="pt-3 border-t border-zinc-100">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-2">
-                        <p class="text-xs text-zinc-400">Drivers Nearby</p>
-                        <span id="drivers-scanning-badge" class="hidden px-1.5 py-0.5 bg-emerald-100 text-emerald-600 text-[10px] font-semibold rounded-full animate-pulse">Scanning</span>
-                    </div>
-                    <p id="drivers-updated" class="text-[10px] text-zinc-400">--</p>
-                </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-lg text-center">
-                        <div class="flex items-center justify-center gap-1.5 mb-1">
-                            <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
-                            <p class="text-xs text-emerald-700 font-medium">UberX</p>
-                        </div>
-                        <p id="hp-uberx-count" class="text-xl font-bold text-emerald-900">--</p>
-                        <p id="hp-uberx-change" class="text-[10px] text-zinc-500 mt-0.5">--</p>
-                    </div>
-                    <div class="p-3 bg-amber-50 border border-amber-100 rounded-lg text-center">
-                        <div class="flex items-center justify-center gap-1.5 mb-1">
-                            <div class="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
-                            <p class="text-xs text-amber-700 font-medium">XL</p>
-                        </div>
-                        <p id="hp-xl-count" class="text-xl font-bold text-amber-900">--</p>
-                        <p id="hp-xl-change" class="text-[10px] text-zinc-500 mt-0.5">--</p>
-                    </div>
-                    <div class="p-3 bg-zinc-100 border border-zinc-200 rounded-lg text-center">
-                        <div class="flex items-center justify-center gap-1.5 mb-1">
-                            <div class="w-2.5 h-2.5 bg-zinc-900 rounded-full"></div>
-                            <p class="text-xs text-zinc-700 font-medium">Black</p>
-                        </div>
-                        <p id="hp-black-count" class="text-xl font-bold text-zinc-900">--</p>
-                        <p id="hp-black-change" class="text-[10px] text-zinc-500 mt-0.5">--</p>
-                    </div>
-                </div>
-                <a href="{{ url_for('live_drivers_page') }}" class="mt-2 flex items-center justify-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 transition-colors">
-                    <span>View Live Map</span>
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </a>
-            </div>
-
             {% if current_user.is_owner() %}
             <div class="pt-3 border-t border-zinc-100">
                 <p class="text-xs text-zinc-400 mb-2">Admin</p>
@@ -744,35 +703,75 @@ fetch('/api/home-data')
         let nearbySection = '';
         if (uberConnected) {
             nearbySection = `
-                <div id="nearby-drivers-section" class="glass-panel rounded-xl premium-shadow p-4 mb-6 bg-zinc-50 border border-zinc-200">
+                <div id="nearby-drivers-section" class="glass-panel rounded-xl premium-shadow p-3 mb-4 bg-gradient-to-br from-zinc-50 to-zinc-100/50 border border-zinc-200/80">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center">
-                            <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center mr-3">
-                                <svg class="w-5 h-5 text-zinc-400" fill="currentColor" viewBox="0 0 20 20">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm flex items-center justify-center mr-2.5">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
                                     <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-3a1 1 0 00-.293-.707l-3-3A1 1 0 0016 6h-1V5a1 1 0 00-1-1H3z"/>
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-xs text-zinc-500 font-medium">Drivers Nearby</p>
-                                <p id="nearby-count" class="text-lg font-bold text-zinc-400">Getting location...</p>
+                                <p class="text-[10px] text-zinc-400 font-medium uppercase tracking-wide">Live Scan</p>
+                                <p id="nearby-count" class="text-sm font-bold text-zinc-700">Getting location...</p>
                             </div>
                         </div>
-                        <div class="flex items-center">
-                            <span id="nearby-dot" class="relative flex h-3 w-3">
-                                <span class="relative inline-flex rounded-full h-3 w-3 bg-zinc-300"></span>
+                        <div class="flex items-center gap-2">
+                            <span id="nearby-dot" class="relative flex h-2.5 w-2.5">
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-zinc-300"></span>
                             </span>
-                            <span id="nearby-status" class="ml-2 text-xs text-zinc-400">Waiting</span>
+                            <span id="nearby-status" class="text-[10px] text-zinc-400 font-medium">Waiting</span>
                         </div>
                     </div>
-                    <div id="user-location-info" class="mt-3 pt-3 border-t border-zinc-200">
-                        <p class="text-[10px] font-bold text-zinc-400 flex items-center gap-1">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div id="user-location-info" class="mt-2 pt-2 border-t border-zinc-200/60">
+                        <p class="text-[9px] text-zinc-400 flex items-center gap-1">
+                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                             </svg>
                             <span id="user-coords">Fetching your location...</span>
                         </p>
                     </div>
+                </div>
+                
+                <div id="drivers-nearby-section" class="glass-panel rounded-xl premium-shadow p-3 mb-4 bg-white border border-zinc-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-1.5">
+                            <p class="text-[10px] text-zinc-400 font-medium uppercase tracking-wide">Drivers Nearby</p>
+                            <span id="drivers-scanning-badge" class="hidden px-1.5 py-0.5 bg-emerald-100 text-emerald-600 text-[9px] font-bold rounded-full animate-pulse">Scanning</span>
+                        </div>
+                        <p id="drivers-updated" class="text-[9px] text-zinc-400">--</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <div class="p-2 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200/60 rounded-lg text-center">
+                            <div class="flex items-center justify-center gap-1 mb-0.5">
+                                <div class="w-2 h-2 bg-emerald-500 rounded-full shadow-sm"></div>
+                                <p class="text-[10px] text-emerald-700 font-semibold">UberX</p>
+                            </div>
+                            <p id="hp-uberx-count" class="text-lg font-bold text-emerald-900">--</p>
+                            <p id="hp-uberx-change" class="text-[9px] text-zinc-400">--</p>
+                        </div>
+                        <div class="p-2 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/60 rounded-lg text-center">
+                            <div class="flex items-center justify-center gap-1 mb-0.5">
+                                <div class="w-2 h-2 bg-amber-500 rounded-full shadow-sm"></div>
+                                <p class="text-[10px] text-amber-700 font-semibold">XL</p>
+                            </div>
+                            <p id="hp-xl-count" class="text-lg font-bold text-amber-900">--</p>
+                            <p id="hp-xl-change" class="text-[9px] text-zinc-400">--</p>
+                        </div>
+                        <div class="p-2 bg-gradient-to-br from-zinc-100 to-zinc-200/50 border border-zinc-300/60 rounded-lg text-center">
+                            <div class="flex items-center justify-center gap-1 mb-0.5">
+                                <div class="w-2 h-2 bg-zinc-800 rounded-full shadow-sm"></div>
+                                <p class="text-[10px] text-zinc-700 font-semibold">Black</p>
+                            </div>
+                            <p id="hp-black-count" class="text-lg font-bold text-zinc-900">--</p>
+                            <p id="hp-black-change" class="text-[9px] text-zinc-400">--</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('live_drivers_page') }}" class="mt-2 flex items-center justify-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-700 transition-colors font-medium">
+                        <span>View Live Map</span>
+                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
                 </div>
             `;
         }
