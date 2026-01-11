@@ -38,9 +38,30 @@ class DriverDeduplicator:
     DEFAULT_COORD_THRESHOLD_M = 100
     DENSE_COORD_THRESHOLD_M = 50
     BEARING_THRESHOLD_DEG = 30
-    MAX_SPEED_MS = 30
+    MAX_SPEED_MS = 18
     TRAJECTORY_TOLERANCE_M = 100
     MAX_TRACKING_MINUTES = 30
+    
+    ZONE_SPEEDS_MS = {
+        'cbd': 12,
+        'perth_cbd': 12,
+        'northbridge': 12,
+        'east_perth': 14,
+        'west_perth': 14,
+        'subiaco': 15,
+        'leederville': 15,
+        'victoria_park': 15,
+        'south_perth': 15,
+        'fremantle': 14,
+        'airport': 17,
+        'perth_airport': 17,
+        'default_suburb': 17,
+        'kwinana_fwy': 28,
+        'mitchell_fwy': 28,
+        'roe_hwy': 28,
+        'tonkin_hwy': 28,
+        'freeway': 28,
+    }
     
     def __init__(self):
         self.tracked_drivers: Dict[str, TrackedDriver] = {}
@@ -53,6 +74,19 @@ class DriverDeduplicator:
         if zone_id in self.zone_thresholds:
             return self.zone_thresholds[zone_id]
         return self.DENSE_COORD_THRESHOLD_M if is_dense else self.DEFAULT_COORD_THRESHOLD_M
+    
+    def _get_zone_speed(self, zone_id: str) -> float:
+        zone_lower = zone_id.lower() if zone_id else ''
+        if zone_lower in self.ZONE_SPEEDS_MS:
+            return self.ZONE_SPEEDS_MS[zone_lower]
+        for key in self.ZONE_SPEEDS_MS:
+            if key in zone_lower or zone_lower in key:
+                return self.ZONE_SPEEDS_MS[key]
+        if 'fwy' in zone_lower or 'freeway' in zone_lower or 'hwy' in zone_lower:
+            return 28
+        if 'cbd' in zone_lower or 'perth_cbd' in zone_lower:
+            return 12
+        return self.MAX_SPEED_MS
     
     def process_observation(self, sighting: DriverSighting, is_dense: bool = False) -> Tuple[str, float, bool]:
         threshold_m = self.get_threshold_for_zone(sighting.zone_id, is_dense)
@@ -95,7 +129,8 @@ class DriverDeduplicator:
         distance_m = self._haversine_m(last_lat, last_lng, sighting.lat, sighting.lng)
         
         time_diff = (sighting.timestamp - last_time).total_seconds()
-        max_distance = self.MAX_SPEED_MS * time_diff + threshold_m
+        zone_speed = self._get_zone_speed(sighting.zone_id)
+        max_distance = zone_speed * time_diff + threshold_m
         
         if distance_m > max_distance:
             return 0

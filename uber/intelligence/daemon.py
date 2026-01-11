@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Callable
 
 from .grid import PERTH_GRID, GridPoint
 from .dedup import DriverDeduplicator, DriverSighting
+from .trajectory import get_trajectory_analyzer
 
 
 class IntelligenceDaemon:
@@ -18,12 +19,19 @@ class IntelligenceDaemon:
     POLL_INTERVAL_SEC = 2
     CYCLE_PAUSE_SEC = 5
     
+    MAX_FETCH_RETRIES = 3
+    FETCH_RETRY_DELAY = 2
+    WATCHDOG_INTERVAL = 60
+    
     def __init__(self, fetch_drivers_func: Callable):
         self.fetch_drivers = fetch_drivers_func
         self.deduplicator = DriverDeduplicator()
+        self.trajectory_analyzer = get_trajectory_analyzer()
         self.is_running = False
         self._thread: Optional[threading.Thread] = None
+        self._watchdog_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
+        self._last_heartbeat = datetime.now()
         
         self.current_batch_id: Optional[str] = None
         self.current_zone: Optional[str] = None
@@ -34,12 +42,14 @@ class IntelligenceDaemon:
         self.cycle_count = 0
         self.last_error: Optional[str] = None
         self.started_at: Optional[datetime] = None
+        self.consecutive_errors = 0
         
         self._callbacks: Dict[str, List[Callable]] = {
             'on_observation': [],
             'on_cycle_complete': [],
             'on_error': [],
-            'on_batch_complete': []
+            'on_batch_complete': [],
+            'on_flow_event': []
         }
     
     def register_callback(self, event: str, callback: Callable):
@@ -62,8 +72,11 @@ class IntelligenceDaemon:
         self.started_at = datetime.now()
         self.current_batch_id = str(uuid.uuid4())[:8]
         
-        self._thread = threading.Thread(target=self._run_loop, daemon=True)
+        self._thread = threading.Thread(target=self._run_with_recovery, daemon=False)
         self._thread.start()
+        
+        self._watchdog_thread = threading.Thread(target=self._run_watchdog, daemon=True)
+        self._watchdog_thread.start()
         
         return True
     
@@ -78,6 +91,65 @@ class IntelligenceDaemon:
             self._thread.join(timeout=10)
         
         return True
+    
+    def _run_with_recovery(self):
+        restart_delay = 5
+        max_restart_delay = 300
+        consecutive_failures = 0
+        
+        while not self._stop_event.is_set():
+            try:
+                self._run_loop()
+                consecutive_failures = 0
+                restart_delay = 5
+            except Exception as e:
+                consecutive_failures += 1
+                self.last_error = f"Recovery restart #{consecutive_failures}: {str(e)}"
+                self._emit('on_error', {'error': self.last_error, 'recovery': True})
+                
+                if self._stop_event.is_set():
+                    break
+                
+                self._stop_event.wait(restart_delay)
+                restart_delay = min(restart_delay * 2, max_restart_delay)
+        
+        self.is_running = False
+    
+    def _run_watchdog(self):
+        while not self._stop_event.is_set():
+            self._stop_event.wait(self.WATCHDOG_INTERVAL)
+            
+            if self._stop_event.is_set():
+                break
+            
+            if not self.is_running:
+                continue
+            
+            heartbeat_age = (datetime.now() - self._last_heartbeat).total_seconds()
+            
+            if heartbeat_age > self.WATCHDOG_INTERVAL * 3:
+                self.last_error = f"Watchdog: No heartbeat for {heartbeat_age:.0f}s, daemon may be stuck"
+                self._emit('on_error', {'error': self.last_error, 'watchdog': True})
+    
+    def _fetch_with_retry(self, lat: float, lng: float) -> list:
+        last_error = None
+        
+        for attempt in range(self.MAX_FETCH_RETRIES):
+            try:
+                drivers = self.fetch_drivers(lat, lng)
+                self.consecutive_errors = 0
+                return drivers if drivers else []
+            except Exception as e:
+                last_error = e
+                self.consecutive_errors += 1
+                
+                if attempt < self.MAX_FETCH_RETRIES - 1:
+                    delay = self.FETCH_RETRY_DELAY * (attempt + 1)
+                    self._stop_event.wait(delay)
+        
+        if last_error:
+            raise last_error
+        return []
     
     def _run_loop(self):
         grid_points = PERTH_GRID.get_all_points()
@@ -119,7 +191,8 @@ class IntelligenceDaemon:
                 self.current_poll_count = poll + 1
                 
                 try:
-                    drivers = self.fetch_drivers(point.lat, point.lng)
+                    self._last_heartbeat = datetime.now()
+                    drivers = self._fetch_with_retry(point.lat, point.lng)
                     
                     for driver in drivers:
                         sighting = DriverSighting(
@@ -147,6 +220,19 @@ class IntelligenceDaemon:
                             'batch_id': batch_id,
                             'timestamp': sighting.timestamp
                         })
+                        
+                        flow_event = self.trajectory_analyzer.update_driver(
+                            fingerprint_id=fingerprint_id,
+                            vehicle_type=sighting.vehicle_type,
+                            lat=sighting.lat,
+                            lng=sighting.lng,
+                            bearing=sighting.bearing,
+                            zone_id=point.zone_id,
+                            timestamp=sighting.timestamp
+                        )
+                        
+                        if flow_event:
+                            self._emit('on_flow_event', flow_event)
                         
                         self.total_observations += 1
                     
@@ -186,7 +272,9 @@ class IntelligenceDaemon:
             'unique_drivers': self.deduplicator.get_driver_count(),
             'counts_by_type': self.deduplicator.get_counts_by_type(),
             'dedup_stats': self.deduplicator.get_stats(),
+            'trajectory_stats': self.trajectory_analyzer.get_stats(),
             'last_error': self.last_error,
+            'consecutive_errors': self.consecutive_errors,
             'grid_stats': PERTH_GRID.get_stats()
         }
     

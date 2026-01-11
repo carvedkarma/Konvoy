@@ -533,6 +533,74 @@ class ScanBatch(db.Model):
         return f'<ScanBatch {self.batch_id}>'
 
 
+class DriverTrack(db.Model):
+    __tablename__ = 'driver_tracks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    fingerprint_id = db.Column(db.String(100), nullable=False, index=True)
+    lat = db.Column(db.Float, nullable=False)
+    lng = db.Column(db.Float, nullable=False)
+    bearing = db.Column(db.Float, nullable=True)
+    speed_ms = db.Column(db.Float, nullable=True)
+    zone_id = db.Column(db.String(50), nullable=True, index=True)
+    vehicle_type = db.Column(db.String(20), nullable=False)
+    recorded_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    __table_args__ = (
+        db.Index('idx_track_fingerprint_time', 'fingerprint_id', 'recorded_at'),
+        db.Index('idx_track_zone_time', 'zone_id', 'recorded_at'),
+    )
+    
+    def __repr__(self):
+        return f'<DriverTrack {self.fingerprint_id} at {self.recorded_at}>'
+
+
+class DriverFlowEvent(db.Model):
+    __tablename__ = 'driver_flow_events'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    fingerprint_id = db.Column(db.String(100), nullable=False, index=True)
+    source_zone_id = db.Column(db.String(50), nullable=False, index=True)
+    target_zone_id = db.Column(db.String(50), nullable=False, index=True)
+    vehicle_type = db.Column(db.String(20), nullable=False)
+    travel_time_sec = db.Column(db.Float, nullable=True)
+    distance_m = db.Column(db.Float, nullable=True)
+    avg_speed_ms = db.Column(db.Float, nullable=True)
+    heading_deg = db.Column(db.Float, nullable=True)
+    started_at = db.Column(db.DateTime, nullable=False)
+    completed_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    __table_args__ = (
+        db.Index('idx_flow_source_target', 'source_zone_id', 'target_zone_id'),
+        db.Index('idx_flow_completed', 'completed_at'),
+    )
+    
+    def __repr__(self):
+        return f'<DriverFlowEvent {self.source_zone_id} -> {self.target_zone_id}>'
+
+
+class ZoneFlowAggregate(db.Model):
+    __tablename__ = 'zone_flow_aggregates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    source_zone_id = db.Column(db.String(50), nullable=False, index=True)
+    target_zone_id = db.Column(db.String(50), nullable=False, index=True)
+    hour = db.Column(db.DateTime, nullable=False, index=True)
+    driver_count = db.Column(db.Integer, default=0)
+    avg_travel_time_sec = db.Column(db.Float, nullable=True)
+    uberx_count = db.Column(db.Integer, default=0)
+    xl_count = db.Column(db.Integer, default=0)
+    black_count = db.Column(db.Integer, default=0)
+    
+    __table_args__ = (
+        db.UniqueConstraint('source_zone_id', 'target_zone_id', 'hour', name='unique_flow_aggregate'),
+        db.Index('idx_flow_agg_hour', 'hour'),
+    )
+    
+    def __repr__(self):
+        return f'<ZoneFlowAggregate {self.source_zone_id} -> {self.target_zone_id} at {self.hour}>'
+
+
 def create_default_roles():
     default_roles = [
         {

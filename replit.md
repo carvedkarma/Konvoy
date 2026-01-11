@@ -2,7 +2,7 @@
 
 ## Overview
 
-RizTar is a premium Flask-based web application designed for managing Uber driver operations. The system provides user authentication with role-based access control (user, moderator, owner), integrates with Uber's internal APIs to fetch vehicle details and driver location data, and offers a luxury glassmorphism-styled dashboard interface for ride management.
+RizTar is a premium Flask-based web application designed for comprehensive management of Uber driver operations. It provides robust user authentication with role-based access, integrates with Uber's internal APIs for real-time vehicle and driver data, and features a luxury glassmorphism-styled dashboard for ride management. The system aims to enhance operational efficiency, provide insightful data for drivers, and offer advanced intelligence for market analysis, particularly within the Perth metro area.
 
 ## User Preferences
 
@@ -11,227 +11,68 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Backend Framework
-- **Flask** serves as the core web framework
-- The application uses Flask-Login for session management and user authentication
-- Flask-WTF handles form validation and CSRF protection
+- **Flask**: Core web framework with Flask-Login for authentication and Flask-WTF for form validation.
 
 ### Database Layer
-- **PostgreSQL** database accessed via SQLAlchemy ORM
-- Uses Flask-SQLAlchemy with a custom DeclarativeBase for model definitions
-- Tables: `users` (authentication), `roles` (custom permissions), `user_roles` (many-to-many association), `chat_messages` (real-time chat)
-- Connection pooling configured with `pool_recycle` and `pool_pre_ping` for reliability
+- **PostgreSQL**: Utilizes SQLAlchemy ORM with Flask-SQLAlchemy for data persistence. Key tables include `users`, `roles`, `user_roles`, and `chat_messages`.
 
-### Authentication System
-- Password hashing via Werkzeug's security utilities
-- System roles: user, moderator, owner + custom roles
-- Owner account auto-created on startup if environment variables are set
-- Session-based authentication with Flask-Login
-- Protected routes with permission-based access control
-
-### Role & Permission System
-- **System Roles**: User, Moderator, Owner (built-in)
-- **Custom Roles**: Created by owners with specific permissions
-- **Multi-Role Support**: Users can have multiple roles assigned via `user_roles` association table
-- **Permission Aggregation**: Permissions are combined from all assigned roles (if any role grants a permission, user has it)
-- **Permissions**:
-  - `can_change_location`: Access to location change feature
-  - `can_fetch_ride`: Access to fetch ride feature
-  - `can_access_admin`: Access to admin panel
-  - `can_manage_users`: Ability to manage user accounts
-  - `can_manage_roles`: Ability to create/delete custom roles
-- **Owner**: Full control including role management page
-- **Locked UI States**: Users see all features but without permission see lock icons and locked panels
+### Authentication & Authorization
+- Password hashing via Werkzeug.
+- Role-based access control with built-in `User`, `Moderator`, `Owner` roles and support for custom roles.
+- Permissions are aggregated from all assigned roles.
+- UI elements are locked for users without necessary permissions.
 
 ### Uber API Integration
-- Custom API client in `objects/uberDev.py` interacts with Uber's internal endpoints
-- **Per-user credentials**: Each user can connect their own Uber driver account
-- Credentials (cookies, headers, refresh tokens) are encrypted with Fernet using PBKDF2HMAC key derivation
-- Features include: vehicle details, driver location tracking, token refresh
-- Location geocoding via OpenStreetMap's Nominatim API
-- Ride signal system to detect active rides
-- **Fare Pricing API**: GraphQL integration with Uber's pricing endpoint (`m.uber.com/go/graphql`)
-  - Uses `fare_cookies` and `fare_headers` from `source/cred.py` for authentication
-  - Fetches fare estimates by ride type (UberX, Comfort, etc.)
-  - Displays estimated driver earnings (73% of fare after Uber's cut)
-  - Shows trip distance from API (`unmodifiedDistance`) and ETA calculation
-- **Live Driver Accumulation System**: Counts unique drivers near user's location
-  - Uses Uber's GetStatus GraphQL API (`m.uber.com/go/graphql`)
-  - **Coordinate-based deduplication**: Drivers within 100m are counted as one
-  - **Bearing check**: Drivers at same location facing opposite directions (>90°) counted separately
-  - **Velocity-based trajectory tracking**: Moving drivers are tracked using:
-    - Cross-track tolerance: 100m lateral deviation allowed
-    - Speed-based distance: max 30m/s (108km/h) × elapsed time
-    - Bearing alignment: driver must be moving in same direction (within 30°)
-    - Movement alignment: new position must be along expected trajectory (within 45°)
-  - **5 sample points**: Polls center + N/S/E/W within 2km radius of user location
-  - **3-second polling**: Rotates through sample points for broader coverage
-  - **40 sample limit**: Auto-pauses after 40 samples, resume for another scan
-  - **3-minute rolling window**: Accumulates unique drivers, older entries expire
-  - **Per-user cache**: Each user has separate driver cache, cleared on logout
-  - **Geolocation support**: Uses browser location or defaults to Perth CBD
-  - Displays product type breakdown (UberX, Comfort, XL, Black) and sample counter
-- **Homepage Drivers Nearby Widget**: Background scan displays driver counts on home page
-  - **Background scanning**: Runs every 5 minutes automatically (40 samples per scan)
-  - **Displayed types**: UberX, XL, Black (excluding Comfort as requested)
-  - **Change indicators**: Shows +/- change compared to previous scan
-  - **Auto-refresh**: Home page updates every 5 minutes without reload
-  - **Link to Live Drivers**: Quick access to full Live Drivers map
-
-### Uber Account Connection
-- Users can connect their Uber driver accounts via `/uber-connect`
-- Credentials are captured from Uber mobile app API requests and stored encrypted
-- CSRF-protected forms prevent unauthorized credential changes
-- Users can disconnect their accounts from profile settings
-- All Uber API functions accept per-user credentials as parameters
-- **Owner Credential Management**: Owners can view/edit/disconnect any user's Uber credentials via `/admin/uber-credentials/<user_id>`
+- Custom API client in `objects/uberDev.py` for interacting with Uber's internal endpoints.
+- **Per-user credentials**: Encrypted storage of Uber driver credentials (cookies, headers, refresh tokens) using Fernet.
+- Features include vehicle details, driver location tracking, token refresh, and fare pricing via GraphQL.
+- **Live Driver Accumulation System**: Counts unique drivers near user's location using Uber's GetStatus GraphQL API. Employs coordinate-based deduplication, bearing checks, and velocity-based trajectory tracking across 5 sample points, polling every 3 seconds within a 3-minute rolling window.
+- **Homepage Drivers Nearby Widget**: Provides background scanning of driver counts every 5 minutes, displaying UberX, XL, and Black types with change indicators.
 
 ### Frontend Architecture
-- Server-side rendered templates using Jinja2
-- Tailwind CSS loaded via CDN for styling
-- Premium glassmorphism design with:
-  - Frosted glass panels with blur effects
-  - Custom RizTar logo (`static/images/logo.png`) - used site-wide with invert filter on dark backgrounds
-  - Dark/light contrast themes
-  - Responsive mobile-first design
-- Pages: login, register, home hub, location change, ride details, admin panel
-- **Async Loading**: Pages load instantly with skeleton animations, then fetch data via API endpoints:
-  - Home page (`/`): Shows skeleton loading for driver profile and vehicles
-  - Location page (`/change-location`): Shows skeleton loading for default vehicle
-  - Fetch Ride page (`/fetch-ride`): Shows spinner with rotating status messages
-- **User Feedback**: Status messages cycle during loading ("Connecting to Uber...", "Authenticating session...", etc.)
-- **Security**: All dynamic content properly escaped using `escapeHtml()` function to prevent XSS attacks
+- Server-side rendered templates using Jinja2.
+- **Tailwind CSS**: For styling, with a premium glassmorphism design featuring frosted panels, custom logo, and dark/light themes.
+- **Responsive design**: Mobile-first approach.
+- **Async Loading**: Pages load with skeleton animations, fetching data via API endpoints.
+- **User Feedback**: Status messages during loading processes.
+- **Security**: XSS protection via `escapeHtml()` function.
 
-### Real-Time Chat Lobby
-- **Flask-SocketIO** with eventlet async mode for real-time communication
-- **ChatMessage model**: Stores messages with user relationships, reply-to references, and timestamps
-- **Online Users Display**: Shows connected users in horizontal boxes with role-based gradient colors
-- **Features**:
-  - Real-time messaging with instant updates
-  - @mention system with user search dropdown
-  - Reply-to-message functionality with visual threading
-  - XSS protection via `|tojson` filter and `escapeHtml()` function
-- **Events**: `connect`, `disconnect`, `send_message`, `get_online_users`
+### Real-Time Communication
+- **Flask-SocketIO**: Powers a real-time chat lobby with instant messaging, @mentions, reply-to functionality, and online user display.
 
 ### Web Push Notifications
-- **VAPID Authentication**: Uses VAPID keys stored in environment variables (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`)
-- **PushSubscription Model**: Stores user subscriptions with endpoint, p256dh key, and auth key
-- **Service Worker**: Located at `/static/service-worker.js` for background push handling
-- **API Endpoints**:
-  - `/api/push/vapid-public-key`: Returns public VAPID key for client registration
-  - `/api/push/subscribe`: Registers a push subscription for the current user
-  - `/api/push/unsubscribe`: Removes push subscription
-  - `/api/push/status`: Checks if current user has active subscription
-  - `/api/push/test`: Sends a test notification to current user
-- **UI**: Notification bell icon in header with green indicator when subscribed
-- **Browser Support**: Works with Chrome, Firefox, Edge; iOS Safari requires PWA installation
-
-### Configuration Management
-- Environment variables for sensitive data (Flask secret key, database URL, owner credentials)
-- Global state stored in `config.py` for ride/stop signals and destination tracking
+- VAPID authenticated push notifications using `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`.
+- Service worker (`/static/service-worker.js`) handles background push notifications.
+- API endpoints for subscription management and testing.
 
 ### Intelligence Engine (Owner-Only)
-Self-learning 24/7 driver monitoring system covering all of Perth metro:
-
-**Architecture:**
-- **Database Models**: DriverObservation (raw sightings), DriverFingerprint (unique driver identities), ScanBatch (scan sessions), HourlySnapshot (aggregated hourly data), DailyPattern (day-of-week patterns), CorrelationModel (zone-to-zone relationships), PredictionModel (forecasts)
-- **Perth Grid** (`intelligence/grid.py`): 45+ zones covering 500+ coordinates, with dense zones (CBD, Airport) using 500m spacing and sparse zones using 1km spacing
-- **Deduplication Engine** (`intelligence/dedup.py`): Multi-factor fingerprinting using coordinates, vehicle type, bearing, trajectory tracking with confidence scoring
-  - Zone-adaptive thresholds: 50m for dense areas, 100m for sparse areas
-  - Trajectory prediction for moving drivers
-  - Bearing alignment checks (30° threshold)
-- **Background Daemon** (`intelligence/daemon.py`): Continuous 24/7 scanning with triple-confirmation per coordinate, callback-based data persistence
-- **Learning Engine** (`intelligence/learning.py`): 
-  - Hourly analysis: aggregates observations into zone snapshots
-  - Daily patterns: discovers day-of-week driver distribution patterns
-  - Correlation detection: identifies zone-to-zone relationships with time lag
-  - Prediction generation: forecasts driver counts based on learned patterns
-  - Prediction validation: compares predictions to actual data for self-improvement
-
-**Dashboard** (`/intelligence`):
-- Premium glassmorphism design with dark gradient theme
-- Real-time stats: total drivers, counts by type (UberX, XL, Black)
-- System health monitoring: uptime, coordinates scanned, observations, cycles
-- Live coverage map with zone visualization
-- Top hotspots display
-- Learned patterns chart (by day of week)
-- Upcoming predictions with confidence scores
-- Start/Stop engine controls
-
-**API Endpoints**:
-- `GET /api/intelligence/status`: Engine status and stats
-- `POST /api/intelligence/start`: Start background daemon
-- `POST /api/intelligence/stop`: Stop background daemon
-- `GET /api/intelligence/hotspots`: Top driver concentration zones
-- `GET /api/intelligence/patterns`: Learned daily patterns
-- `GET /api/intelligence/predictions`: Upcoming predictions
-- `POST /api/intelligence/run-learning`: Manual learning trigger
-
-## Project Structure
-
-```
-uber/
-├── main.py              # Flask application with routes and auth
-├── models.py            # SQLAlchemy User, Role, and Intelligence models
-├── forms.py             # WTForms for login/register
-├── config.py            # Global state variables
-├── objects/
-│   └── uberDev.py       # Uber API integration
-├── source/
-│   └── cred.py          # API credentials
-├── intelligence/
-│   ├── __init__.py      # Intelligence module initialization
-│   ├── grid.py          # Perth coordinate grid (500+ points, 45+ zones)
-│   ├── dedup.py         # Driver deduplication engine
-│   ├── daemon.py        # 24/7 background scanning daemon
-│   └── learning.py      # Self-learning analytics engine
-├── templates/
-│   ├── base.html        # Shared header/layout template
-│   ├── login.html       # Premium login page
-│   ├── register.html    # Account creation page
-│   ├── home.html        # Main hub with navigation
-│   ├── index.html       # Location change interface
-│   ├── ride_details.html # Ride info display
-│   ├── admin.html       # User management
-│   ├── roles.html       # Role & permission management
-│   ├── profile.html     # User profile & Uber connection status
-│   ├── uber_connect.html # Uber account connection page
-│   ├── chat_lobby.html  # Real-time chat with online users
-│   ├── demand_intel.html # Unified Demand Intelligence (Hotspots, Surge Map, Events tabs)
-│   ├── live_drivers.html # Live driver density map with product type breakdown
-│   ├── smart_route.html  # Smart Route Planner
-│   ├── flight_center.html # Live flight arrivals
-│   └── intelligence.html # Intelligence Engine dashboard (owner-only)
-└── static/
-    ├── images/          # Static assets
-    └── service-worker.js # Push notification handler
-```
+- A self-learning 24/7 driver monitoring system for Perth metro.
+- **Architecture**: Includes database models for `DriverObservation`, `DriverFingerprint`, `ScanBatch`, `HourlySnapshot`, `DailyPattern`, `CorrelationModel`, and `PredictionModel`.
+- **Perth Grid**: 45+ zones with varying coordinate spacing.
+- **Deduplication Engine**: Multi-factor fingerprinting with zone-adaptive thresholds and speed limits.
+- **Trajectory Analyzer**: Tracks driver movements, predicts destinations, and records zone-to-zone transitions.
+- **Background Daemon**: Continuous 24/7 scanning with crash recovery, retry mechanisms, and a watchdog timer.
+- **Learning Engine**: Performs hourly analysis, discovers daily patterns, detects correlations, and generates/validates predictions.
+- **Dashboard**: Premium glassmorphism design displaying real-time stats, system health, live coverage map with movement trails, zone flow, hotspots, learned patterns, and predictions.
 
 ## External Dependencies
 
 ### Database
-- PostgreSQL (configured via `DATABASE_URL` environment variable)
+- **PostgreSQL**: Configured via `DATABASE_URL` environment variable.
 
 ### Third-Party APIs
-- **Uber Internal APIs** (`cn-geo1.uber.com`): Vehicle data, driver status, location updates
-- **OpenStreetMap Nominatim**: Address geocoding for location tracking
-- **Ticketmaster Discovery API**: Perth event calendar integration
-- **Perth Airport Web Scraping**: Live flight arrival data
-
-### Required Environment Variables
-- `DATABASE_URL`: PostgreSQL connection string (auto-configured)
-- `FLASK_SECRET_KEY`: Session encryption key
-- `RIZTAR_OWNER_EMAIL`: Auto-create owner account email
-- `RIZTAR_OWNER_PASSWORD`: Auto-create owner account password
-- `VAPID_PUBLIC_KEY`: Web push notification public key
-- `VAPID_PRIVATE_KEY`: Web push notification private key
+- **Uber Internal APIs**: For vehicle details, driver status, location updates, and fare pricing.
+- **OpenStreetMap Nominatim**: For address geocoding.
+- **Ticketmaster Discovery API**: For Perth event calendar integration.
+- **Perth Airport Web Scraping**: For live flight arrival data.
 
 ### Python Dependencies
 - Flask, Flask-Login, Flask-SQLAlchemy, Flask-WTF
-- Requests (HTTP client for Uber API)
-- WTForms with email-validator
-- Werkzeug (password hashing)
-- psycopg2-binary (PostgreSQL adapter)
-- Gunicorn (production server)
-- cryptography (Fernet encryption for Uber credentials)
-- Flask-SocketIO, eventlet (real-time chat)
-- pywebpush, py-vapid (web push notifications)
+- Requests
+- WTForms
+- Werkzeug
+- psycopg2-binary
+- Gunicorn
+- cryptography
+- Flask-SocketIO, eventlet
+- pywebpush, py-vapid

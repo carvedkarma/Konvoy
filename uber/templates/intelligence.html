@@ -172,6 +172,14 @@
                         <p class="text-xs md:text-sm text-zinc-500 text-center py-2 md:py-4">Loading...</p>
                     </div>
                 </div>
+                
+                <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6">
+                    <h2 class="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">Driver Flow</h2>
+                    <p id="trajectory-stats" class="text-xs text-zinc-500 mb-3">Loading...</p>
+                    <div id="zone-flows" class="space-y-1">
+                        <p class="text-xs text-zinc-500 text-center py-2">Loading flow data...</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -197,10 +205,13 @@
 let map;
 let zoneMarkers = {};
 let driverMarkers = {};
+let driverTrails = {};
 let patternsChart;
 let refreshInterval;
 let driverRefreshInterval;
+let trailRefreshInterval;
 let lastMaxId = 0;
+let showTrails = true;
 
 const vehicleColors = {
     'UberX': '#22c55e',
@@ -217,9 +228,13 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPatterns();
     loadPredictions();
     loadDrivers();
+    loadTrails();
+    loadFlows();
     
     refreshInterval = setInterval(loadStatus, 5000);
     driverRefreshInterval = setInterval(loadDrivers, 3000);
+    trailRefreshInterval = setInterval(loadTrails, 5000);
+    setInterval(loadFlows, 10000);
     
     document.getElementById('toggle-daemon').addEventListener('click', toggleDaemon);
     document.getElementById('reset-map').addEventListener('click', resetMap);
@@ -232,13 +247,121 @@ function initMap() {
         attribution: '&copy; OpenStreetMap, &copy; CARTO',
         maxZoom: 19
     }).addTo(map);
+    
+    window.addEventListener('resize', function() {
+        setTimeout(function() { map.invalidateSize(); }, 100);
+    });
+    window.addEventListener('orientationchange', function() {
+        setTimeout(function() { map.invalidateSize(); }, 200);
+    });
+    setTimeout(function() { map.invalidateSize(); }, 500);
 }
 
 function resetMap() {
     Object.values(driverMarkers).forEach(marker => map.removeLayer(marker));
+    Object.values(driverTrails).forEach(trail => map.removeLayer(trail));
     driverMarkers = {};
+    driverTrails = {};
     lastMaxId = 0;
     document.getElementById('map-driver-count').textContent = '0';
+}
+
+async function loadTrails() {
+    if (!showTrails) return;
+    
+    try {
+        const res = await fetch('/api/intelligence/trails?minutes=10');
+        const data = await res.json();
+        
+        if (data.success && data.trails) {
+            Object.values(driverTrails).forEach(trail => map.removeLayer(trail));
+            driverTrails = {};
+            
+            data.trails.forEach(trail => {
+                if (trail.trail && trail.trail.length >= 2) {
+                    const color = vehicleColors[trail.vehicle_type] || vehicleColors.default;
+                    const polyline = L.polyline(trail.trail, {
+                        color: color,
+                        weight: 3,
+                        opacity: 0.6,
+                        dashArray: '5, 5'
+                    });
+                    
+                    let destText = trail.predicted_destination ? 
+                        `Heading to: ${trail.predicted_destination.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}` : 
+                        'Direction unknown';
+                    
+                    polyline.bindPopup(`
+                        <div class="text-sm">
+                            <p class="font-bold">${trail.vehicle_type} Trail</p>
+                            <p class="text-gray-600">${destText}</p>
+                            <p class="text-xs text-gray-500">Speed: ${trail.speed_kmh.toFixed(1)} km/h</p>
+                        </div>
+                    `);
+                    
+                    polyline.addTo(map);
+                    driverTrails[trail.fingerprint_id] = polyline;
+                }
+            });
+            
+            if (data.stats) {
+                updateTrajectoryStats(data.stats);
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load trails:', e);
+    }
+}
+
+async function loadFlows() {
+    try {
+        const res = await fetch('/api/intelligence/flows?minutes=30');
+        const data = await res.json();
+        
+        if (data.success && data.flows) {
+            updateFlowDisplay(data.flows);
+        }
+    } catch (e) {
+        console.error('Failed to load flows:', e);
+    }
+}
+
+function updateTrajectoryStats(stats) {
+    const trajEl = document.getElementById('trajectory-stats');
+    if (trajEl) {
+        trajEl.innerHTML = `
+            <span class="text-violet-600 font-bold">${stats.active_trajectories}</span> tracked |
+            <span class="text-emerald-600 font-bold">${stats.with_predictions}</span> with destination
+        `;
+    }
+}
+
+function updateFlowDisplay(flows) {
+    const flowEl = document.getElementById('zone-flows');
+    if (!flowEl) return;
+    
+    let html = '';
+    const topZones = ['perth_airport', 'perth_cbd', 'fremantle', 'northbridge'];
+    
+    topZones.forEach(zone => {
+        let count = 0;
+        for (const [source, targets] of Object.entries(flows)) {
+            const match = targets.find(t => t.target_zone.toLowerCase().includes(zone.replace('perth_', '')));
+            if (match) count += match.driver_count;
+        }
+        
+        if (count > 0) {
+            const zoneName = zone.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            html += `
+                <div class="flex items-center justify-between py-1.5 border-b border-zinc-100 last:border-0">
+                    <span class="text-xs md:text-sm text-zinc-600">${zoneName}</span>
+                    <span class="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-bold rounded-full">${count} drivers</span>
+                </div>
+            `;
+        }
+    });
+    
+    flowEl.innerHTML = html || '<p class="text-xs text-zinc-500 text-center py-2">No flow data yet</p>';
 }
 
 async function loadDrivers() {

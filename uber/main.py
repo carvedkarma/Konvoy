@@ -3895,6 +3895,59 @@ def api_intelligence_grid():
     return jsonify(success=True, grid=PERTH_GRID.get_stats())
 
 
+@app.route('/api/intelligence/trails')
+@login_required
+def api_intelligence_trails():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        from uber.intelligence.trajectory import get_trajectory_analyzer
+        analyzer = get_trajectory_analyzer()
+        
+        minutes = request.args.get('minutes', 10, type=int)
+        trails = analyzer.get_active_driver_trails(minutes=minutes)
+        
+        return jsonify(success=True, trails=trails, stats=analyzer.get_stats())
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/flows')
+@login_required
+def api_intelligence_flows():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        from uber.intelligence.trajectory import get_trajectory_analyzer
+        analyzer = get_trajectory_analyzer()
+        
+        minutes = request.args.get('minutes', 30, type=int)
+        flows = analyzer.get_zone_flow_summary(minutes=minutes)
+        
+        return jsonify(success=True, flows=flows)
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/drivers-heading-to/<zone_id>')
+@login_required
+def api_intelligence_drivers_heading_to(zone_id):
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        from uber.intelligence.trajectory import get_trajectory_analyzer
+        analyzer = get_trajectory_analyzer()
+        
+        drivers = analyzer.get_drivers_heading_to(zone_id)
+        
+        return jsonify(success=True, zone=zone_id, drivers=drivers, count=len(drivers))
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
 if __name__ == '__main__':
     print("Starting RizTar server on port 5000...", flush=True)
     socketio.run(app, host='0.0.0.0', port=5000)
