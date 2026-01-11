@@ -1911,6 +1911,73 @@ def api_live_drivers_reset():
         del driver_cache[user_id]
     return jsonify(success=True)
 
+
+homepage_scan_cache = {}
+
+@app.route('/api/drivers-nearby')
+@login_required
+def api_drivers_nearby():
+    """
+    Fresh driver scan for home page - no accumulation, returns only current sample.
+    Keeps its own simple cache that resets on each new scan.
+    """
+    from datetime import datetime
+    from objects.uberDev import fetch_drivers_at_location
+    
+    user_id = current_user.id
+    lat = request.args.get('lat', type=float)
+    lng = request.args.get('lng', type=float)
+    reset = request.args.get('reset', type=str) == 'true'
+    
+    if lat is None or lng is None:
+        lat, lng = -31.9505, 115.8605
+    
+    if reset or user_id not in homepage_scan_cache:
+        homepage_scan_cache[user_id] = {'drivers': {}, 'sample_count': 0}
+    
+    cache = homepage_scan_cache[user_id]
+    now = datetime.now()
+    
+    try:
+        new_drivers = fetch_drivers_at_location(lat, lng)
+        cache['sample_count'] += 1
+        
+        for driver in new_drivers:
+            driver_key = f"{driver.get('lat', 0):.5f},{driver.get('lng', 0):.5f}"
+            ptype = driver.get('product_type', 'UberX')
+            if ptype in ['UBERX', 'UberX']:
+                ptype = 'UberX'
+            elif ptype in ['XL']:
+                ptype = 'XL'
+            elif ptype in ['BLACK', 'Black']:
+                ptype = 'Black'
+            else:
+                ptype = 'UberX'
+            
+            if driver_key not in cache['drivers']:
+                cache['drivers'][driver_key] = ptype
+        
+        counts = {'uberx': 0, 'xl': 0, 'black': 0, 'total': 0}
+        for ptype in cache['drivers'].values():
+            if ptype == 'UberX':
+                counts['uberx'] += 1
+            elif ptype == 'XL':
+                counts['xl'] += 1
+            elif ptype == 'Black':
+                counts['black'] += 1
+            counts['total'] += 1
+        
+        return jsonify({
+            'success': True,
+            'counts': counts,
+            'sampleCount': cache['sample_count'],
+            'updated': now.strftime('%H:%M:%S')
+        })
+    except Exception as e:
+        print(f"Drivers nearby API error: {e}")
+        return jsonify(success=False, message=str(e)), 500
+
+
 def clear_driver_cache_for_user(user_id):
     """Clear driver cache when user logs out."""
     if user_id in driver_cache:

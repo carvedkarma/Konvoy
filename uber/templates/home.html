@@ -2019,7 +2019,7 @@ document.addEventListener('DOMContentLoaded', function() {
         isScanning = false;
     }
     
-    async function fetchSample() {
+    async function fetchSample(isFirst = false) {
         if (!isScanning || samplesCollected >= MAX_SAMPLES) {
             scanComplete(lastCounts);
             return;
@@ -2030,7 +2030,8 @@ document.addEventListener('DOMContentLoaded', function() {
         samplesCollected++;
         
         try {
-            const response = await fetch(`/api/live-drivers?lat=${point.lat}&lng=${point.lng}`, {
+            const resetParam = isFirst ? '&reset=true' : '';
+            const response = await fetch(`/api/drivers-nearby?lat=${point.lat}&lng=${point.lng}${resetParam}`, {
                 credentials: 'same-origin'
             });
             
@@ -2057,7 +2058,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function scheduleNextPoll() {
         if (isScanning && samplesCollected < MAX_SAMPLES) {
-            pollTimer = setTimeout(fetchSample, POLL_INTERVAL);
+            pollTimer = setTimeout(() => fetchSample(false), POLL_INTERVAL);
         }
     }
     
@@ -2071,9 +2072,7 @@ document.addEventListener('DOMContentLoaded', function() {
         isScanning = true;
         lastCounts = { uberx: 0, xl: 0, black: 0, total: 0 };
         
-        fetch('/api/live-drivers/reset', { credentials: 'same-origin' })
-            .then(() => fetchSample())
-            .catch(() => fetchSample());
+        fetchSample(true);
     }
     
     function initDriversNearby() {
