@@ -26,6 +26,8 @@ except Exception as e:
     sys.exit(1)
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.jinja_env.auto_reload = True
 UPLOAD_FOLDER = os.path.join('static', 'uploads', 'profile_images')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB max-limit
