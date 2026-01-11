@@ -20,6 +20,7 @@ try:
     import secrets
     import json
     import os
+    import requests
     print("All imports successful", flush=True)
 except Exception as e:
     print(f"Import error: {e}", flush=True)
