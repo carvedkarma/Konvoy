@@ -20,7 +20,7 @@ class IntelligenceDaemon:
     CYCLE_PAUSE_SEC = 5
     
     MAX_FETCH_RETRIES = 3
-    FETCH_RETRY_DELAY = 2
+    FETCH_RETRY_DELAY = 3
     WATCHDOG_INTERVAL = 60
     
     def __init__(self, fetch_drivers_func: Callable):

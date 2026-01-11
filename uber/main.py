@@ -3957,6 +3957,112 @@ def api_intelligence_drivers_heading_to(zone_id):
         return jsonify(success=False, message=str(e))
 
 
+def auto_start_intelligence_engine():
+    """Auto-start the Intelligence Engine on server startup for 24/7 operation"""
+    global _intelligence_daemon
+    
+    try:
+        from objects.uberDev import fetch_drivers_at_location
+        
+        if _intelligence_daemon is None:
+            _intelligence_daemon = IntelligenceDaemon(fetch_drivers_at_location)
+            
+            _active_batches = {}
+            _flask_app = app
+            
+            def on_observation(data):
+                try:
+                    with _flask_app.app_context():
+                        batch_id = data.get('batch_id', 'unknown')
+                        
+                        if batch_id not in _active_batches:
+                            scan_batch = ScanBatch(
+                                batch_id=batch_id,
+                                started_at=datetime.now(),
+                                status='running'
+                            )
+                            db.session.add(scan_batch)
+                            db.session.flush()
+                            _active_batches[batch_id] = scan_batch
+                        
+                        for obs in data.get('observations', []):
+                            fp_id = obs['fingerprint_id']
+                            existing_fp = DriverFingerprint.query.filter_by(fingerprint_id=fp_id).first()
+                            
+                            if existing_fp:
+                                existing_fp.last_seen_lat = obs['lat']
+                                existing_fp.last_seen_lng = obs['lng']
+                                existing_fp.last_bearing = obs.get('bearing')
+                                existing_fp.last_seen_at = obs['timestamp']
+                                existing_fp.observation_count += 1
+                                existing_fp.confidence_score = min(0.99, existing_fp.confidence_score + 0.02)
+                                existing_fp.primary_zone = obs['zone_id']
+                            elif obs.get('is_new', False):
+                                new_fp = DriverFingerprint(
+                                    fingerprint_id=fp_id,
+                                    vehicle_type=obs['vehicle_type'],
+                                    first_seen_lat=obs['lat'],
+                                    first_seen_lng=obs['lng'],
+                                    last_seen_lat=obs['lat'],
+                                    last_seen_lng=obs['lng'],
+                                    last_bearing=obs.get('bearing'),
+                                    confidence_score=obs['confidence'],
+                                    primary_zone=obs['zone_id'],
+                                    first_seen_at=obs['timestamp'],
+                                    last_seen_at=obs['timestamp']
+                                )
+                                db.session.add(new_fp)
+                            
+                            db_obs = DriverObservation(
+                                scan_batch_id=batch_id,
+                                lat=obs['lat'],
+                                lng=obs['lng'],
+                                bearing=obs.get('bearing'),
+                                vehicle_type=obs['vehicle_type'],
+                                zone_id=obs['zone_id'],
+                                fingerprint_id=fp_id,
+                                confidence=obs['confidence'],
+                                observed_at=obs['timestamp']
+                            )
+                            db.session.add(db_obs)
+                        
+                        db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"[Intelligence] DB observation error: {e}", flush=True)
+            
+            def on_cycle_complete(data):
+                try:
+                    with _flask_app.app_context():
+                        for batch_id, batch in list(_active_batches.items()):
+                            scan_batch = ScanBatch.query.filter_by(batch_id=batch_id).first()
+                            if scan_batch:
+                                scan_batch.completed_at = datetime.now()
+                                scan_batch.unique_drivers = data.get('unique_drivers', 0)
+                                scan_batch.status = 'completed'
+                            del _active_batches[batch_id]
+                        db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"[Intelligence] DB cycle complete error: {e}", flush=True)
+            
+            _intelligence_daemon.register_callback('on_observation', on_observation)
+            _intelligence_daemon.register_callback('on_cycle_complete', on_cycle_complete)
+        
+        if not _intelligence_daemon.is_running:
+            result = _intelligence_daemon.start()
+            if result:
+                print("[Intelligence] Engine auto-started for 24/7 operation", flush=True)
+            else:
+                print("[Intelligence] Engine already running", flush=True)
+    except Exception as e:
+        print(f"[Intelligence] Auto-start failed: {e}", flush=True)
+
+
+with app.app_context():
+    auto_start_intelligence_engine()
+
+
 if __name__ == '__main__':
     print("Starting RizTar server on port 5000...", flush=True)
     socketio.run(app, host='0.0.0.0', port=5000)
