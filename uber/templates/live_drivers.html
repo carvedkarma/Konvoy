@@ -237,8 +237,26 @@
             </div>
         </div>
         
-        <div id="drivers-map"></div>
-        <p id="map-status" class="text-xs text-zinc-400 mt-2 text-center"></p>
+        <div id="drivers-map" class="relative">
+            <div id="map-loading-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-[1000] hidden flex items-center justify-center rounded-xl">
+                <div class="text-center">
+                    <svg class="w-10 h-10 text-blue-500 animate-spin mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p id="loading-message" class="text-sm font-medium text-zinc-700">Looking for drivers...</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center justify-between mt-2">
+            <p id="map-status" class="text-xs text-zinc-400"></p>
+            <button id="back-to-location-btn" onclick="backToMyLocation()" class="hidden px-3 py-1.5 bg-zinc-100 text-zinc-700 rounded-lg hover:bg-zinc-200 transition-all text-xs font-medium flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                </svg>
+                Back to My Location
+            </button>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -473,12 +491,18 @@
         searchBtn.disabled = true;
         searchLoading.classList.remove('hidden');
         searchResult.classList.remove('hidden');
-        searchStatus.textContent = 'Geocoding location...';
+        searchStatus.textContent = 'Searching...';
         document.getElementById('search-driver-count').textContent = '--';
         document.getElementById('search-uberx').textContent = '--';
         document.getElementById('search-comfort').textContent = '--';
         document.getElementById('search-xl').textContent = '--';
         document.getElementById('search-black').textContent = '--';
+        
+        const loadingOverlay = document.getElementById('map-loading-overlay');
+        const loadingMessage = document.getElementById('loading-message');
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.classList.add('flex');
+        loadingMessage.textContent = `Looking for drivers near ${location}...`;
         
         try {
             const response = await fetch(`/api/location-drivers?location=${encodeURIComponent(location)}`);
@@ -509,6 +533,7 @@
                 document.getElementById('sample-count').textContent = `${data.samples} samples collected`;
                 document.getElementById('last-updated').textContent = `Search: ${data.location_name.split(',')[0]}`;
                 document.getElementById('scanning-status').innerHTML = '<span class="text-sm text-blue-600 font-medium">Search Results</span>';
+                document.getElementById('back-to-location-btn').classList.remove('hidden');
                 
                 if (data.lat && data.lng) {
                     driverMarkers.forEach(m => map.removeLayer(m));
@@ -551,7 +576,57 @@
         } finally {
             searchBtn.disabled = false;
             searchLoading.classList.add('hidden');
+            const loadingOverlay = document.getElementById('map-loading-overlay');
+            loadingOverlay.classList.add('hidden');
+            loadingOverlay.classList.remove('flex');
         }
+    }
+    
+    function backToMyLocation() {
+        document.getElementById('back-to-location-btn').classList.add('hidden');
+        document.getElementById('search-result').classList.add('hidden');
+        document.getElementById('location-search').value = '';
+        
+        driverMarkers.forEach(m => map.removeLayer(m));
+        driverMarkers = [];
+        
+        map.setView([userLocation.lat, userLocation.lng], 13);
+        samplePoints = generateSamplePoints(userLocation.lat, userLocation.lng);
+        currentPointIndex = 0;
+        totalSamplesCollected = 0;
+        
+        if (userMarker) map.removeLayer(userMarker);
+        userMarker = L.circleMarker([userLocation.lat, userLocation.lng], {
+            radius: 8,
+            fillColor: '#3b82f6',
+            color: '#fff',
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 1
+        }).addTo(map);
+        userMarker.bindPopup('<div class="p-2"><p class="text-sm font-semibold">Your Location</p></div>');
+        
+        document.getElementById('total-drivers').textContent = '--';
+        document.getElementById('count-uberx').textContent = '--';
+        document.getElementById('count-comfort').textContent = '--';
+        document.getElementById('count-xl').textContent = '--';
+        document.getElementById('count-black').textContent = '--';
+        document.getElementById('sample-count').textContent = '0 samples collected';
+        document.getElementById('last-updated').textContent = 'Waiting for data...';
+        document.getElementById('scanning-status').innerHTML = `
+            <span class="scanning-dot"></span>
+            <span class="scanning-dot"></span>
+            <span class="scanning-dot"></span>
+            <span class="text-sm text-emerald-600 font-medium">Scanning...</span>
+        `;
+        
+        document.getElementById('toggle-icon').textContent = '⏸';
+        document.getElementById('toggle-text').textContent = 'Pause';
+        document.getElementById('toggle-btn').classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        document.getElementById('toggle-btn').classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+        
+        isScanning = true;
+        startPolling();
     }
     
     function escapeHtml(text) {
