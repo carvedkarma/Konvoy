@@ -1825,6 +1825,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let isScanning = false;
     let pollTimer = null;
     let lastCounts = { uberx: 0, xl: 0, black: 0, total: 0 };
+    let currentScanId = null;
     
     function generateSamplePoints(lat, lng, radiusKm) {
         const offset = radiusKm / 111;
@@ -1903,10 +1904,14 @@ document.addEventListener('DOMContentLoaded', function() {
         samplesCollected++;
         
         try {
-            const resetParam = isFirst ? '&reset=true' : '';
-            const response = await fetch(`/api/drivers-nearby?lat=${point.lat}&lng=${point.lng}${resetParam}`, {
-                credentials: 'same-origin'
-            });
+            let url = `/api/drivers-nearby?lat=${point.lat}&lng=${point.lng}`;
+            if (isFirst) {
+                url += '&reset=true';
+            } else if (currentScanId) {
+                url += `&scan_id=${currentScanId}`;
+            }
+            
+            const response = await fetch(url, { credentials: 'same-origin' });
             
             if (!response.ok) {
                 scheduleNextPoll();
@@ -1914,6 +1919,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const data = await response.json();
+            
+            if (data.stale) {
+                return;
+            }
+            
+            if (data.scan_id) {
+                currentScanId = data.scan_id;
+            }
             
             if (data.success && data.counts) {
                 updateUI(data.counts, samplesCollected);
@@ -1936,7 +1949,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function startScanning(lat, lng) {
-        if (isScanning) return;
+        if (pollTimer) {
+            clearTimeout(pollTimer);
+            pollTimer = null;
+        }
         
         userLocation = { lat, lng };
         samplePoints = generateSamplePoints(lat, lng, RADIUS_KM);
@@ -1944,6 +1960,7 @@ document.addEventListener('DOMContentLoaded', function() {
         samplesCollected = 0;
         isScanning = true;
         lastCounts = { uberx: 0, xl: 0, black: 0, total: 0 };
+        currentScanId = null;
         
         fetchSample(true);
     }
