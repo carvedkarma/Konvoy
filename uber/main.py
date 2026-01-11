@@ -101,11 +101,9 @@ def load_user(user_id):
 
 @app.after_request
 def add_no_cache_headers(response):
-    if request.endpoint in ['login', 'register', 'logout', 'root']:
-        response.headers[
-            'Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
 
