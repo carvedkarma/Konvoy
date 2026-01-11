@@ -142,19 +142,8 @@
                     <div class="w-4 h-4 bg-emerald-500 rounded-full"></div>
                 </div>
                 <div>
-                    <p class="text-xs text-zinc-500 font-medium">UberX</p>
+                    <p class="text-xs text-zinc-500 font-medium">UberX & Comfort</p>
                     <p id="count-uberx" class="text-2xl font-bold text-zinc-900">--</p>
-                </div>
-            </div>
-        </div>
-        <div class="count-card glass-panel rounded-xl p-4 premium-shadow">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
-                </div>
-                <div>
-                    <p class="text-xs text-zinc-500 font-medium">Comfort</p>
-                    <p id="count-comfort" class="text-2xl font-bold text-zinc-900">--</p>
                 </div>
             </div>
         </div>
@@ -197,7 +186,7 @@
         </div>
         <div id="drivers-map"></div>
         <p id="map-status" class="text-xs text-zinc-400 mt-3 text-center"></p>
-        <p class="text-xs text-zinc-400 mt-2 text-center">Scanning 2km radius. 40 samples per scan. Drivers within 100m are counted as one.</p>
+        <p class="text-xs text-zinc-400 mt-2 text-center">Scanning 1km radius. 30 samples per scan.</p>
     </div>
 </div>
 {% endblock %}
@@ -214,9 +203,9 @@
     let samplePoints = [];
     let currentPointIndex = 0;
     let totalSamplesCollected = 0;
-    const MAX_SAMPLES = 40;
+    const MAX_SAMPLES = 30;
     
-    function generateSamplePoints(centerLat, centerLng, radiusKm = 2) {
+    function generateSamplePoints(centerLat, centerLng, radiusKm = 1) {
         const offset = radiusKm / 111;
         return [
             { lat: centerLat, lng: centerLng },
