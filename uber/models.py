@@ -309,6 +309,230 @@ class PageVisit(db.Model):
         return f'<PageVisit {self.page} at {self.visited_at}>'
 
 
+class DriverObservation(db.Model):
+    __tablename__ = 'driver_observations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    scan_batch_id = db.Column(db.String(50), nullable=False, index=True)
+    lat = db.Column(db.Float, nullable=False)
+    lng = db.Column(db.Float, nullable=False)
+    bearing = db.Column(db.Float, nullable=True)
+    vehicle_type = db.Column(db.String(20), nullable=False)
+    zone_id = db.Column(db.String(50), nullable=False, index=True)
+    fingerprint_id = db.Column(db.String(100), nullable=True, index=True)
+    confidence = db.Column(db.Float, default=0.5)
+    observed_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    __table_args__ = (
+        db.Index('idx_obs_zone_time', 'zone_id', 'observed_at'),
+        db.Index('idx_obs_fingerprint_time', 'fingerprint_id', 'observed_at'),
+    )
+    
+    def __repr__(self):
+        return f'<DriverObservation {self.id} at {self.lat},{self.lng}>'
+
+
+class DriverFingerprint(db.Model):
+    __tablename__ = 'driver_fingerprints'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    fingerprint_id = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    vehicle_type = db.Column(db.String(20), nullable=False)
+    first_seen_lat = db.Column(db.Float, nullable=False)
+    first_seen_lng = db.Column(db.Float, nullable=False)
+    last_seen_lat = db.Column(db.Float, nullable=False)
+    last_seen_lng = db.Column(db.Float, nullable=False)
+    last_bearing = db.Column(db.Float, nullable=True)
+    avg_speed = db.Column(db.Float, default=0)
+    observation_count = db.Column(db.Integer, default=1)
+    confidence_score = db.Column(db.Float, default=0.5)
+    primary_zone = db.Column(db.String(50), nullable=True, index=True)
+    first_seen_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    def __repr__(self):
+        return f'<DriverFingerprint {self.fingerprint_id}>'
+
+
+class ZoneConfig(db.Model):
+    __tablename__ = 'zone_configs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    zone_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)
+    center_lat = db.Column(db.Float, nullable=False)
+    center_lng = db.Column(db.Float, nullable=False)
+    radius_km = db.Column(db.Float, default=1.0)
+    grid_spacing_m = db.Column(db.Integer, default=1000)
+    is_dense = db.Column(db.Boolean, default=False)
+    dedup_threshold_m = db.Column(db.Integer, default=100)
+    bearing_threshold_deg = db.Column(db.Integer, default=30)
+    priority = db.Column(db.Integer, default=5)
+    is_active = db.Column(db.Boolean, default=True)
+    avg_driver_count = db.Column(db.Float, default=0)
+    peak_hour_start = db.Column(db.Integer, nullable=True)
+    peak_hour_end = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<ZoneConfig {self.name}>'
+
+
+class HourlySnapshot(db.Model):
+    __tablename__ = 'hourly_snapshots'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    zone_id = db.Column(db.String(50), nullable=False, index=True)
+    hour = db.Column(db.DateTime, nullable=False, index=True)
+    day_of_week = db.Column(db.Integer, nullable=False)
+    unique_drivers = db.Column(db.Integer, default=0)
+    total_observations = db.Column(db.Integer, default=0)
+    uberx_count = db.Column(db.Integer, default=0)
+    comfort_count = db.Column(db.Integer, default=0)
+    xl_count = db.Column(db.Integer, default=0)
+    black_count = db.Column(db.Integer, default=0)
+    avg_bearing = db.Column(db.Float, nullable=True)
+    bearing_variance = db.Column(db.Float, nullable=True)
+    primary_direction = db.Column(db.String(20), nullable=True)
+    movement_pattern = db.Column(db.String(50), nullable=True)
+    avg_confidence = db.Column(db.Float, default=0)
+    anomaly_score = db.Column(db.Float, default=0)
+    
+    __table_args__ = (
+        db.Index('idx_snapshot_zone_hour', 'zone_id', 'hour'),
+        db.Index('idx_snapshot_dow', 'day_of_week', 'hour'),
+    )
+    
+    def __repr__(self):
+        return f'<HourlySnapshot {self.zone_id} at {self.hour}>'
+
+
+class DailyPattern(db.Model):
+    __tablename__ = 'daily_patterns'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    zone_id = db.Column(db.String(50), nullable=False, index=True)
+    day_of_week = db.Column(db.Integer, nullable=False)
+    hour_of_day = db.Column(db.Integer, nullable=False)
+    avg_drivers = db.Column(db.Float, default=0)
+    std_drivers = db.Column(db.Float, default=0)
+    min_drivers = db.Column(db.Integer, default=0)
+    max_drivers = db.Column(db.Integer, default=0)
+    avg_uberx_pct = db.Column(db.Float, default=0)
+    avg_xl_pct = db.Column(db.Float, default=0)
+    avg_black_pct = db.Column(db.Float, default=0)
+    primary_direction = db.Column(db.String(20), nullable=True)
+    sample_count = db.Column(db.Integer, default=0)
+    confidence = db.Column(db.Float, default=0)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('zone_id', 'day_of_week', 'hour_of_day', name='unique_daily_pattern'),
+        db.Index('idx_pattern_zone_dow', 'zone_id', 'day_of_week'),
+    )
+    
+    def __repr__(self):
+        return f'<DailyPattern {self.zone_id} dow={self.day_of_week} hour={self.hour_of_day}>'
+
+
+class CorrelationModel(db.Model):
+    __tablename__ = 'correlation_models'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    source_zone_id = db.Column(db.String(50), nullable=False, index=True)
+    target_zone_id = db.Column(db.String(50), nullable=False, index=True)
+    lag_hours = db.Column(db.Integer, nullable=False)
+    correlation_strength = db.Column(db.Float, default=0)
+    cause_pattern = db.Column(db.String(100), nullable=True)
+    effect_pattern = db.Column(db.String(100), nullable=True)
+    sample_count = db.Column(db.Integer, default=0)
+    confidence = db.Column(db.Float, default=0)
+    is_validated = db.Column(db.Boolean, default=False)
+    last_validated_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('source_zone_id', 'target_zone_id', 'lag_hours', name='unique_correlation'),
+    )
+    
+    def __repr__(self):
+        return f'<Correlation {self.source_zone_id} -> {self.target_zone_id} ({self.lag_hours}h)>'
+
+
+class PredictionModel(db.Model):
+    __tablename__ = 'prediction_models'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    zone_id = db.Column(db.String(50), nullable=False, index=True)
+    prediction_type = db.Column(db.String(50), nullable=False)
+    target_time = db.Column(db.DateTime, nullable=False, index=True)
+    predicted_drivers = db.Column(db.Integer, nullable=True)
+    predicted_surge = db.Column(db.Float, nullable=True)
+    predicted_direction = db.Column(db.String(20), nullable=True)
+    confidence = db.Column(db.Float, default=0)
+    factors_used = db.Column(db.Text, nullable=True)
+    actual_drivers = db.Column(db.Integer, nullable=True)
+    actual_surge = db.Column(db.Float, nullable=True)
+    accuracy_score = db.Column(db.Float, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    validated_at = db.Column(db.DateTime, nullable=True)
+    
+    __table_args__ = (
+        db.Index('idx_pred_zone_time', 'zone_id', 'target_time'),
+    )
+    
+    def __repr__(self):
+        return f'<Prediction {self.zone_id} for {self.target_time}>'
+
+
+class IntelligenceConfig(db.Model):
+    __tablename__ = 'intelligence_config'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(50), unique=True, nullable=False)
+    value = db.Column(db.Text, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @staticmethod
+    def get(key, default=None):
+        config = IntelligenceConfig.query.filter_by(key=key).first()
+        return config.value if config else default
+    
+    @staticmethod
+    def set(key, value):
+        config = IntelligenceConfig.query.filter_by(key=key).first()
+        if config:
+            config.value = str(value)
+        else:
+            config = IntelligenceConfig(key=key, value=str(value))
+            db.session.add(config)
+        db.session.commit()
+    
+    def __repr__(self):
+        return f'<IntelligenceConfig {self.key}>'
+
+
+class ScanBatch(db.Model):
+    __tablename__ = 'scan_batches'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    batch_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    zones_scanned = db.Column(db.Integer, default=0)
+    coordinates_scanned = db.Column(db.Integer, default=0)
+    total_observations = db.Column(db.Integer, default=0)
+    unique_drivers = db.Column(db.Integer, default=0)
+    errors = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='running')
+    
+    def __repr__(self):
+        return f'<ScanBatch {self.batch_id}>'
+
+
 def create_default_roles():
     default_roles = [
         {

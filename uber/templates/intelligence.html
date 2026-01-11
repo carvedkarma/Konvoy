@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Intelligence Dashboard - RizTar{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    #intel-map { height: 500px; border-radius: 16px; }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .stat-glow {
+        box-shadow: 0 0 30px rgba(139, 92, 246, 0.15);
+    }
+    .pulse-dot {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-violet-900 to-slate-900">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                    </div>
+                    Intelligence Engine
+                </h1>
+                <p class="text-violet-200">Self-learning 24/7 driver monitoring system</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="daemon-status" class="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700">
+                    <span id="status-dot" class="w-3 h-3 rounded-full bg-zinc-500"></span>
+                    <span id="status-text" class="text-sm text-zinc-400">Loading...</span>
+                </div>
+                <button id="toggle-daemon" class="px-6 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-bold rounded-full hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/30">
+                    Start Engine
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="glass-card stat-glow rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-violet-600 uppercase tracking-wide">Total Drivers</span>
+                    <span class="pulse-dot w-2 h-2 bg-violet-500 rounded-full"></span>
+                </div>
+                <p id="stat-total" class="text-4xl font-black text-zinc-900">--</p>
+                <p class="text-xs text-zinc-500 mt-1">Unique drivers tracked</p>
+            </div>
+            <div class="glass-card stat-glow rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-emerald-600 uppercase tracking-wide">UberX</span>
+                </div>
+                <p id="stat-uberx" class="text-4xl font-black text-zinc-900">--</p>
+                <p class="text-xs text-zinc-500 mt-1">Active UberX drivers</p>
+            </div>
+            <div class="glass-card stat-glow rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-amber-600 uppercase tracking-wide">XL</span>
+                </div>
+                <p id="stat-xl" class="text-4xl font-black text-zinc-900">--</p>
+                <p class="text-xs text-zinc-500 mt-1">Active XL drivers</p>
+            </div>
+            <div class="glass-card stat-glow rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-zinc-600 uppercase tracking-wide">Black</span>
+                </div>
+                <p id="stat-black" class="text-4xl font-black text-zinc-900">--</p>
+                <p class="text-xs text-zinc-500 mt-1">Active Black drivers</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="lg:col-span-2">
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-lg font-bold text-zinc-900 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                        </svg>
+                        Live Coverage Map
+                    </h2>
+                    <div id="intel-map" class="shadow-xl"></div>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-lg font-bold text-zinc-900 mb-4">System Health</h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-600">Uptime</span>
+                            <span id="health-uptime" class="text-sm font-mono text-zinc-900">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-600">Coordinates Scanned</span>
+                            <span id="health-coords" class="text-sm font-mono text-zinc-900">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-600">Total Observations</span>
+                            <span id="health-obs" class="text-sm font-mono text-zinc-900">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-600">Scan Cycles</span>
+                            <span id="health-cycles" class="text-sm font-mono text-zinc-900">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-600">Grid Points</span>
+                            <span id="health-grid" class="text-sm font-mono text-zinc-900">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-zinc-600">Avg Confidence</span>
+                            <span id="health-confidence" class="text-sm font-mono text-zinc-900">--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-lg font-bold text-zinc-900 mb-4">Current Zone</h2>
+                    <div class="text-center py-4">
+                        <p id="current-zone" class="text-2xl font-bold text-violet-600">--</p>
+                        <p class="text-sm text-zinc-500 mt-2">
+                            Point <span id="current-coord" class="font-mono">--</span> / Poll <span id="current-poll" class="font-mono">--</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-6">
+                    <h2 class="text-lg font-bold text-zinc-900 mb-4">Top Hotspots</h2>
+                    <div id="hotspots-list" class="space-y-2">
+                        <p class="text-sm text-zinc-500 text-center py-4">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass-card rounded-2xl p-6">
+                <h2 class="text-lg font-bold text-zinc-900 mb-4">Learned Patterns</h2>
+                <div id="patterns-container">
+                    <canvas id="patterns-chart" height="200"></canvas>
+                </div>
+            </div>
+            
+            <div class="glass-card rounded-2xl p-6">
+                <h2 class="text-lg font-bold text-zinc-900 mb-4">Predictions</h2>
+                <div id="predictions-list" class="space-y-3">
+                    <p class="text-sm text-zinc-500 text-center py-4">Predictions will appear after learning period...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let map;
+let zoneMarkers = {};
+let patternsChart;
+let refreshInterval;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initMap();
+    loadStatus();
+    loadHotspots();
+    loadPatterns();
+    loadPredictions();
+    
+    refreshInterval = setInterval(loadStatus, 5000);
+    
+    document.getElementById('toggle-daemon').addEventListener('click', toggleDaemon);
+});
+
+function initMap() {
+    map = L.map('intel-map').setView([-31.9505, 115.8605], 11);
+    
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap, &copy; CARTO',
+        maxZoom: 19
+    }).addTo(map);
+}
+
+async function loadStatus() {
+    try {
+        const res = await fetch('/api/intelligence/status');
+        const data = await res.json();
+        
+        if (data.success) {
+            updateStatusUI(data.status);
+        }
+    } catch (e) {
+        console.error('Failed to load status:', e);
+    }
+}
+
+function updateStatusUI(status) {
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const toggleBtn = document.getElementById('toggle-daemon');
+    
+    if (status.is_running) {
+        statusDot.className = 'w-3 h-3 rounded-full bg-emerald-500 pulse-dot';
+        statusText.textContent = 'Running';
+        statusText.className = 'text-sm text-emerald-400';
+        toggleBtn.textContent = 'Stop Engine';
+        toggleBtn.className = 'px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-full hover:from-red-600 hover:to-red-700 transition-all shadow-lg shadow-red-500/30';
+    } else {
+        statusDot.className = 'w-3 h-3 rounded-full bg-zinc-500';
+        statusText.textContent = 'Stopped';
+        statusText.className = 'text-sm text-zinc-400';
+        toggleBtn.textContent = 'Start Engine';
+        toggleBtn.className = 'px-6 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-bold rounded-full hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/30';
+    }
+    
+    const counts = status.counts_by_type || {};
+    document.getElementById('stat-total').textContent = status.unique_drivers || 0;
+    document.getElementById('stat-uberx').textContent = counts.UberX || 0;
+    document.getElementById('stat-xl').textContent = counts.XL || 0;
+    document.getElementById('stat-black').textContent = counts.Black || 0;
+    
+    if (status.uptime_seconds) {
+        const hours = Math.floor(status.uptime_seconds / 3600);
+        const mins = Math.floor((status.uptime_seconds % 3600) / 60);
+        document.getElementById('health-uptime').textContent = `${hours}h ${mins}m`;
+    }
+    
+    document.getElementById('health-coords').textContent = status.coordinates_scanned || 0;
+    document.getElementById('health-obs').textContent = status.total_observations || 0;
+    document.getElementById('health-cycles').textContent = status.cycle_count || 0;
+    
+    if (status.grid_stats) {
+        document.getElementById('health-grid').textContent = status.grid_stats.total_points || 0;
+    }
+    
+    if (status.dedup_stats) {
+        const conf = status.dedup_stats.avg_confidence || 0;
+        document.getElementById('health-confidence').textContent = (conf * 100).toFixed(1) + '%';
+    }
+    
+    document.getElementById('current-zone').textContent = status.current_zone ? status.current_zone.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '--';
+    document.getElementById('current-coord').textContent = status.current_coordinate || 0;
+    document.getElementById('current-poll').textContent = status.current_poll || 0;
+}
+
+async function toggleDaemon() {
+    const btn = document.getElementById('toggle-daemon');
+    const isRunning = btn.textContent.includes('Stop');
+    
+    try {
+        const res = await fetch(`/api/intelligence/${isRunning ? 'stop' : 'start'}`, {
+            method: 'POST'
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            loadStatus();
+        } else {
+            alert(data.message || 'Failed to toggle engine');
+        }
+    } catch (e) {
+        alert('Failed to toggle engine: ' + e.message);
+    }
+}
+
+async function loadHotspots() {
+    try {
+        const res = await fetch('/api/intelligence/hotspots');
+        const data = await res.json();
+        
+        if (data.success && data.hotspots) {
+            const container = document.getElementById('hotspots-list');
+            
+            if (data.hotspots.length === 0) {
+                container.innerHTML = '<p class="text-sm text-zinc-500 text-center py-4">No data yet...</p>';
+                return;
+            }
+            
+            container.innerHTML = data.hotspots.map((h, i) => `
+                <div class="flex items-center justify-between p-2 rounded-lg ${i === 0 ? 'bg-violet-50' : 'bg-zinc-50'}">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold ${i === 0 ? 'text-violet-600' : 'text-zinc-500'}">#${i + 1}</span>
+                        <span class="text-sm font-medium text-zinc-900">${h.zone_id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                    </div>
+                    <span class="text-sm font-bold ${i === 0 ? 'text-violet-600' : 'text-zinc-600'}">${h.drivers} drivers</span>
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        console.error('Failed to load hotspots:', e);
+    }
+}
+
+async function loadPatterns() {
+    try {
+        const res = await fetch('/api/intelligence/patterns');
+        const data = await res.json();
+        
+        if (data.success && data.patterns) {
+            renderPatternsChart(data.patterns);
+        }
+    } catch (e) {
+        console.error('Failed to load patterns:', e);
+    }
+}
+
+function renderPatternsChart(patterns) {
+    const ctx = document.getElementById('patterns-chart').getContext('2d');
+    
+    const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+    const datasets = [];
+    
+    const colors = {
+        0: '#ef4444',
+        1: '#f97316',
+        2: '#eab308',
+        3: '#22c55e',
+        4: '#06b6d4',
+        5: '#3b82f6',
+        6: '#8b5cf6'
+    };
+    
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    
+    for (let day = 0; day < 7; day++) {
+        const dayData = patterns[day] || [];
+        const hourlyData = new Array(24).fill(0);
+        
+        dayData.forEach(p => {
+            if (p.hour >= 0 && p.hour < 24) {
+                hourlyData[p.hour] = p.avg_drivers || 0;
+            }
+        });
+        
+        datasets.push({
+            label: dayNames[day],
+            data: hourlyData,
+            borderColor: colors[day],
+            backgroundColor: colors[day] + '20',
+            fill: false,
+            tension: 0.4
+        });
+    }
+    
+    if (patternsChart) {
+        patternsChart.destroy();
+    }
+    
+    patternsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: hours,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Avg Drivers'
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function loadPredictions() {
+    try {
+        const res = await fetch('/api/intelligence/predictions');
+        const data = await res.json();
+        
+        if (data.success && data.predictions && data.predictions.length > 0) {
+            const container = document.getElementById('predictions-list');
+            
+            container.innerHTML = data.predictions.map(p => {
+                const time = new Date(p.target_time).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+                const confPct = (p.confidence * 100).toFixed(0);
+                
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl">
+                        <div>
+                            <p class="text-sm font-bold text-zinc-900">${p.zone_id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                            <p class="text-xs text-zinc-500">${time} • ${p.direction || 'N/A'}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold text-violet-600">${p.predicted_drivers} drivers</p>
+                            <p class="text-xs text-zinc-400">${confPct}% confident</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (e) {
+        console.error('Failed to load predictions:', e);
+    }
+}
+</script>
+{% endblock %}

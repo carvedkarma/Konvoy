@@ -3595,6 +3595,207 @@ def handle_get_online_users():
     emit('online_users', list(online_users.values()))
 
 
+from intelligence.grid import PERTH_GRID
+from intelligence.dedup import DriverDeduplicator, DriverSighting
+from intelligence.daemon import IntelligenceDaemon, get_daemon, start_daemon, stop_daemon
+from intelligence.learning import LearningEngine
+from models import DriverObservation, DriverFingerprint, ZoneConfig, HourlySnapshot, DailyPattern, CorrelationModel, PredictionModel, IntelligenceConfig, ScanBatch
+
+_intelligence_daemon = None
+
+def get_fetch_drivers_func():
+    from objects.uberDev import fetch_drivers_at_location
+    return fetch_drivers_at_location
+
+
+@app.route('/intelligence')
+@login_required
+def intelligence_dashboard():
+    if not current_user.is_owner():
+        flash('Access denied. Owner privileges required.', 'error')
+        return redirect(url_for('root'))
+    return render_template('intelligence.html')
+
+
+@app.route('/api/intelligence/status')
+@login_required
+def api_intelligence_status():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    global _intelligence_daemon
+    
+    if _intelligence_daemon is None:
+        return jsonify(success=True, status={
+            'is_running': False,
+            'unique_drivers': 0,
+            'counts_by_type': {},
+            'coordinates_scanned': 0,
+            'total_observations': 0,
+            'cycle_count': 0,
+            'grid_stats': PERTH_GRID.get_stats()
+        })
+    
+    return jsonify(success=True, status=_intelligence_daemon.get_status())
+
+
+@app.route('/api/intelligence/start', methods=['POST'])
+@login_required
+def api_intelligence_start():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    global _intelligence_daemon
+    
+    try:
+        from objects.uberDev import fetch_drivers_at_location
+        
+        if _intelligence_daemon is None:
+            _intelligence_daemon = IntelligenceDaemon(fetch_drivers_at_location)
+            
+            def on_observation(data):
+                try:
+                    with app.app_context():
+                        batch_id = data.get('batch_id', 'unknown')
+                        for obs in data.get('observations', []):
+                            db_obs = DriverObservation(
+                                scan_batch_id=batch_id,
+                                lat=obs['lat'],
+                                lng=obs['lng'],
+                                bearing=obs.get('bearing'),
+                                vehicle_type=obs['vehicle_type'],
+                                zone_id=obs['zone_id'],
+                                fingerprint_id=obs['fingerprint_id'],
+                                confidence=obs['confidence'],
+                                observed_at=obs['timestamp']
+                            )
+                            db.session.add(db_obs)
+                        db.session.commit()
+                except Exception as e:
+                    print(f"DB observation error: {e}")
+            
+            _intelligence_daemon.register_callback('on_observation', on_observation)
+        
+        result = _intelligence_daemon.start()
+        return jsonify(success=result, message='Intelligence engine started' if result else 'Already running')
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/stop', methods=['POST'])
+@login_required
+def api_intelligence_stop():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    global _intelligence_daemon
+    
+    if _intelligence_daemon is None:
+        return jsonify(success=False, message='Engine not initialized')
+    
+    result = _intelligence_daemon.stop()
+    return jsonify(success=result, message='Intelligence engine stopped' if result else 'Already stopped')
+
+
+@app.route('/api/intelligence/hotspots')
+@login_required
+def api_intelligence_hotspots():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        learning = LearningEngine(db.session)
+        hotspots = learning.get_hotspots(10)
+        return jsonify(success=True, hotspots=hotspots)
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/patterns')
+@login_required
+def api_intelligence_patterns():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        patterns = DailyPattern.query.all()
+        
+        by_day = {}
+        for p in patterns:
+            if p.day_of_week not in by_day:
+                by_day[p.day_of_week] = []
+            by_day[p.day_of_week].append({
+                'hour': p.hour_of_day,
+                'avg_drivers': p.avg_drivers,
+                'zone': p.zone_id
+            })
+        
+        return jsonify(success=True, patterns=by_day)
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/predictions')
+@login_required
+def api_intelligence_predictions():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        now = datetime.now()
+        predictions = PredictionModel.query.filter(
+            PredictionModel.target_time >= now,
+            PredictionModel.validated_at.is_(None)
+        ).order_by(PredictionModel.target_time).limit(10).all()
+        
+        result = [{
+            'zone_id': p.zone_id,
+            'target_time': p.target_time.isoformat(),
+            'predicted_drivers': p.predicted_drivers,
+            'direction': p.predicted_direction,
+            'confidence': p.confidence
+        } for p in predictions]
+        
+        return jsonify(success=True, predictions=result)
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/run-learning', methods=['POST'])
+@login_required
+def api_intelligence_run_learning():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        learning = LearningEngine(db.session)
+        
+        hourly = learning.run_hourly_analysis()
+        daily = learning.run_daily_analysis()
+        correlations = learning.learn_correlations()
+        predictions = learning.generate_predictions()
+        validated = learning.validate_predictions()
+        
+        return jsonify(success=True, results={
+            'hourly_snapshots': hourly,
+            'daily_patterns': daily,
+            'correlations_found': correlations,
+            'predictions_made': predictions,
+            'predictions_validated': validated
+        })
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/grid')
+@login_required
+def api_intelligence_grid():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    return jsonify(success=True, grid=PERTH_GRID.get_stats())
+
+
 if __name__ == '__main__':
     print("Starting RizTar server on port 5000...", flush=True)
     socketio.run(app, host='0.0.0.0', port=5000)
