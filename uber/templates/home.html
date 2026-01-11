@@ -2052,19 +2052,32 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function initDriversNearby() {
         const section = document.getElementById('drivers-nearby-section');
-        if (!section) return;
+        if (!section) return false;
         
         const resetBtn = document.getElementById('reset-scan-btn');
-        if (resetBtn) {
+        if (resetBtn && !resetBtn.hasAttribute('data-init')) {
+            resetBtn.setAttribute('data-init', 'true');
             resetBtn.addEventListener('click', () => {
                 triggerScan(true);
             });
         }
         
         triggerScan(true);
+        return true;
     }
     
-    setTimeout(initDriversNearby, 1000);
+    // Poll for section to exist (handles async content loading)
+    let initAttempts = 0;
+    const tryInit = () => {
+        initAttempts++;
+        if (initDriversNearby()) {
+            return; // Success
+        }
+        if (initAttempts < 20) {
+            setTimeout(tryInit, 500); // Retry every 500ms up to 10 seconds
+        }
+    };
+    tryInit();
 })();
 </script>
 {% endblock %}
