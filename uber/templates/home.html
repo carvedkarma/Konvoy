@@ -680,11 +680,10 @@ fetch('/api/home-data')
                             </div>
                         </div>
                         <div class="flex items-center gap-1.5 flex-shrink-0">
-                            <button id="start-scan-btn" class="px-2.5 py-1 bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full hover:from-violet-600 hover:to-indigo-600 transition-all shadow-md shadow-violet-200 flex items-center gap-1">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            <button id="reset-scan-btn" class="p-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors" title="Reset & Rescan">
+                                <svg class="w-3 h-3 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                 </svg>
-                                <span>Scan</span>
                             </button>
                             <span id="drivers-scanning-badge" class="hidden px-2 py-0.5 bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[8px] sm:text-[9px] font-bold rounded-full animate-pulse">LIVE</span>
                             <span id="nearby-status" class="text-[9px] sm:text-[10px] text-violet-400 font-medium hidden sm:inline">Waiting</span>
@@ -1890,7 +1889,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const nearbyStatusEl = document.getElementById('nearby-status');
         const scanningBadge = document.getElementById('drivers-scanning-badge');
         const nearbyCountEl = document.getElementById('nearby-count');
-        const startBtn = document.getElementById('start-scan-btn');
+        const resetBtn = document.getElementById('reset-scan-btn');
         
         if (nearbyStatusEl) nearbyStatusEl.textContent = 'Done';
         if (scanningBadge) scanningBadge.classList.add('hidden');
@@ -1898,9 +1897,9 @@ document.addEventListener('DOMContentLoaded', function() {
             nearbyCountEl.textContent = `${finalCounts.total} drivers nearby`;
         }
         
-        if (startBtn) {
-            startBtn.disabled = false;
-            startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        if (resetBtn) {
+            resetBtn.disabled = false;
+            resetBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         }
         
         isScanning = false;
@@ -2009,11 +2008,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function triggerScan(isReset = false) {
         const userCoordsEl = document.getElementById('user-coords');
         const nearbyCountEl = document.getElementById('nearby-count');
-        const startBtn = document.getElementById('start-scan-btn');
+        const resetBtn = document.getElementById('reset-scan-btn');
         
-        if (startBtn) {
-            startBtn.disabled = true;
-            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        if (resetBtn) {
+            resetBtn.disabled = true;
+            resetBtn.classList.add('opacity-50', 'cursor-not-allowed');
         }
         
         if (nearbyCountEl) nearbyCountEl.textContent = 'Getting location...';
@@ -2055,14 +2054,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const section = document.getElementById('drivers-nearby-section');
         if (!section) return;
         
-        const startBtn = document.getElementById('start-scan-btn');
-        if (startBtn) {
-            startBtn.addEventListener('click', () => {
+        const resetBtn = document.getElementById('reset-scan-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
                 triggerScan(true);
             });
         }
         
-        triggerScan(false);
+        triggerScan(true);
     }
     
     setTimeout(initDriversNearby, 1000);
