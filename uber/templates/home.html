@@ -1941,62 +1941,191 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 (function() {
-    const REFRESH_INTERVAL = 300000;
+    const MAX_SAMPLES = 25;
+    const RADIUS_KM = 1;
+    const POLL_INTERVAL = 2000;
     
-    async function fetchDriversNearby() {
+    let userLocation = null;
+    let samplePoints = [];
+    let currentPointIndex = 0;
+    let samplesCollected = 0;
+    let isScanning = false;
+    let pollTimer = null;
+    let previousCounts = { uberx: 0, xl: 0, black: 0 };
+    
+    function generateSamplePoints(lat, lng, radiusKm) {
+        const offset = radiusKm / 111;
+        return [
+            { lat: lat + offset, lng: lng },
+            { lat: lat - offset, lng: lng },
+            { lat: lat, lng: lng + offset },
+            { lat: lat, lng: lng - offset }
+        ];
+    }
+    
+    function updateUI(counts, sampleNum) {
+        const uberxEl = document.getElementById('hp-uberx-count');
+        const xlEl = document.getElementById('hp-xl-count');
+        const blackEl = document.getElementById('hp-black-count');
+        const nearbyCountEl = document.getElementById('nearby-count');
+        const nearbyStatusEl = document.getElementById('nearby-status');
+        const scanningBadge = document.getElementById('drivers-scanning-badge');
+        
+        if (uberxEl) uberxEl.textContent = counts.uberx.toLocaleString();
+        if (xlEl) xlEl.textContent = counts.xl.toLocaleString();
+        if (blackEl) blackEl.textContent = counts.black.toLocaleString();
+        
+        if (nearbyCountEl) {
+            nearbyCountEl.textContent = `${counts.total} drivers found`;
+        }
+        
+        if (nearbyStatusEl) {
+            nearbyStatusEl.textContent = `${sampleNum}/${MAX_SAMPLES}`;
+        }
+        
+        if (scanningBadge) {
+            scanningBadge.classList.remove('hidden');
+        }
+        
+        function formatChange(curr, prev) {
+            const diff = curr - prev;
+            if (diff > 0) return `<span class="text-emerald-600">+${diff}</span>`;
+            if (diff < 0) return `<span class="text-red-500">${diff}</span>`;
+            return '--';
+        }
+        
+        const uberxChange = document.getElementById('hp-uberx-change');
+        const xlChange = document.getElementById('hp-xl-change');
+        const blackChange = document.getElementById('hp-black-change');
+        
+        if (uberxChange) uberxChange.innerHTML = formatChange(counts.uberx, previousCounts.uberx);
+        if (xlChange) xlChange.innerHTML = formatChange(counts.xl, previousCounts.xl);
+        if (blackChange) blackChange.innerHTML = formatChange(counts.black, previousCounts.black);
+    }
+    
+    function scanComplete() {
+        const nearbyStatusEl = document.getElementById('nearby-status');
+        const scanningBadge = document.getElementById('drivers-scanning-badge');
+        const nearbyCountEl = document.getElementById('nearby-count');
+        
+        if (nearbyStatusEl) nearbyStatusEl.textContent = 'Complete';
+        if (scanningBadge) scanningBadge.classList.add('hidden');
+        if (nearbyCountEl) {
+            const total = document.getElementById('hp-uberx-count')?.textContent || '0';
+            const xlTotal = document.getElementById('hp-xl-count')?.textContent || '0';
+            const blackTotal = document.getElementById('hp-black-count')?.textContent || '0';
+            const sum = parseInt(total) + parseInt(xlTotal) + parseInt(blackTotal);
+            nearbyCountEl.textContent = `${sum} drivers (scan done)`;
+        }
+        
+        isScanning = false;
+    }
+    
+    async function fetchSample() {
+        if (!isScanning || samplesCollected >= MAX_SAMPLES) {
+            scanComplete();
+            return;
+        }
+        
+        const point = samplePoints[currentPointIndex];
+        currentPointIndex = (currentPointIndex + 1) % samplePoints.length;
+        samplesCollected++;
+        
         try {
-            const response = await fetch('/api/homepage-drivers', {
+            const response = await fetch(`/api/live-drivers?lat=${point.lat}&lng=${point.lng}`, {
                 credentials: 'same-origin'
             });
+            
             if (!response.ok) {
-                console.error('Drivers nearby API returned status:', response.status);
+                console.error('Driver API error:', response.status);
+                schedulNextPoll();
                 return;
             }
+            
             const data = await response.json();
             
             if (data.success) {
-                document.getElementById('hp-uberx-count').textContent = data.current.uberx.toLocaleString();
-                document.getElementById('hp-xl-count').textContent = data.current.xl.toLocaleString();
-                document.getElementById('hp-black-count').textContent = data.current.black.toLocaleString();
-                
-                const uberxChange = document.getElementById('hp-uberx-change');
-                const xlChange = document.getElementById('hp-xl-change');
-                const blackChange = document.getElementById('hp-black-change');
-                
-                function formatChange(change) {
-                    if (change.startsWith('+')) {
-                        return `<span class="text-emerald-600">${change}</span>`;
-                    } else if (change.startsWith('-')) {
-                        return `<span class="text-red-500">${change}</span>`;
-                    }
-                    return change;
-                }
-                
-                uberxChange.innerHTML = formatChange(data.changes.uberx);
-                xlChange.innerHTML = formatChange(data.changes.xl);
-                blackChange.innerHTML = formatChange(data.changes.black);
-                
-                const scanningBadge = document.getElementById('drivers-scanning-badge');
-                if (data.scanning) {
-                    scanningBadge.classList.remove('hidden');
-                } else {
-                    scanningBadge.classList.add('hidden');
-                }
-                
-                const updatedEl = document.getElementById('drivers-updated');
-                if (data.updated) {
-                    updatedEl.textContent = `Updated ${data.updated}`;
-                } else {
-                    updatedEl.textContent = 'Scanning...';
-                }
+                updateUI(data.counts, samplesCollected);
+            }
+            
+            if (samplesCollected >= MAX_SAMPLES) {
+                previousCounts = { 
+                    uberx: data.counts?.uberx || 0, 
+                    xl: data.counts?.xl || 0, 
+                    black: data.counts?.black || 0 
+                };
+                scanComplete();
+            } else {
+                schedulNextPoll();
             }
         } catch (error) {
-            console.error('Error fetching drivers nearby:', error);
+            console.error('Error fetching drivers:', error);
+            schedulNextPoll();
         }
     }
     
-    fetchDriversNearby();
-    setInterval(fetchDriversNearby, REFRESH_INTERVAL);
+    function schedulNextPoll() {
+        if (isScanning && samplesCollected < MAX_SAMPLES) {
+            pollTimer = setTimeout(fetchSample, POLL_INTERVAL);
+        }
+    }
+    
+    function startScanning(lat, lng) {
+        if (isScanning) return;
+        
+        userLocation = { lat, lng };
+        samplePoints = generateSamplePoints(lat, lng, RADIUS_KM);
+        currentPointIndex = 0;
+        samplesCollected = 0;
+        isScanning = true;
+        
+        fetch('/api/live-drivers/reset', { credentials: 'same-origin' })
+            .then(() => fetchSample())
+            .catch(() => fetchSample());
+    }
+    
+    function initDriversNearby() {
+        const section = document.getElementById('drivers-nearby-section');
+        if (!section) return;
+        
+        const userCoordsEl = document.getElementById('user-coords');
+        const nearbyCountEl = document.getElementById('nearby-count');
+        
+        if (nearbyCountEl) nearbyCountEl.textContent = 'Getting location...';
+        
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    if (userCoordsEl) {
+                        userCoordsEl.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                    }
+                    if (nearbyCountEl) {
+                        nearbyCountEl.textContent = 'Starting scan...';
+                    }
+                    
+                    startScanning(lat, lng);
+                },
+                (error) => {
+                    console.log('Geolocation error:', error);
+                    if (userCoordsEl) {
+                        userCoordsEl.textContent = 'Perth CBD (default)';
+                    }
+                    startScanning(-31.9505, 115.8605);
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        } else {
+            if (userCoordsEl) {
+                userCoordsEl.textContent = 'Perth CBD (default)';
+            }
+            startScanning(-31.9505, 115.8605);
+        }
+    }
+    
+    setTimeout(initDriversNearby, 1000);
 })();
 </script>
 {% endblock %}
