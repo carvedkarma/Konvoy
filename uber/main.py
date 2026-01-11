@@ -3769,6 +3769,47 @@ def api_intelligence_hotspots():
         return jsonify(success=False, message=str(e))
 
 
+@app.route('/api/intelligence/drivers')
+@login_required
+def api_intelligence_drivers():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        minutes_ago = request.args.get('minutes', 10, type=int)
+        since_id = request.args.get('since_id', 0, type=int)
+        
+        cutoff = datetime.now() - timedelta(minutes=minutes_ago)
+        
+        query = DriverFingerprint.query.filter(
+            DriverFingerprint.last_seen_at >= cutoff
+        )
+        
+        if since_id > 0:
+            query = query.filter(DriverFingerprint.id > since_id)
+        
+        drivers = query.order_by(DriverFingerprint.last_seen_at.desc()).limit(500).all()
+        
+        result = [{
+            'id': d.id,
+            'fingerprint_id': d.fingerprint_id,
+            'lat': d.last_seen_lat,
+            'lng': d.last_seen_lng,
+            'bearing': d.last_bearing,
+            'vehicle_type': d.vehicle_type,
+            'zone': d.primary_zone,
+            'confidence': d.confidence_score,
+            'observations': d.observation_count,
+            'last_seen': d.last_seen_at.isoformat() if d.last_seen_at else None
+        } for d in drivers]
+        
+        max_id = max([d.id for d in drivers]) if drivers else since_id
+        
+        return jsonify(success=True, drivers=result, max_id=max_id, count=len(result))
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
 @app.route('/api/intelligence/patterns')
 @login_required
 def api_intelligence_patterns():
