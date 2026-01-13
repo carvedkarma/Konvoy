@@ -750,8 +750,8 @@ fetch('/api/home-data')
         }
         
         let activeRideSection = '';
-        if (activeRide) {
-            const riderInitials = activeRide.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        if (activeRide && activeRide.full_name) {
+            const riderInitials = (activeRide.full_name || 'RR').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             activeRideSection = `
                 <a href="/fetch-ride" class="block mb-5 transform hover:scale-[1.01] transition-all duration-300">
                     <div class="active-ride-card rounded-xl p-4 text-white relative overflow-hidden">
@@ -1391,8 +1391,8 @@ function updateActiveRideSection(activeRide) {
         existingSection.closest('a').remove();
     }
     
-    if (activeRide) {
-        const riderInitials = activeRide.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    if (activeRide && activeRide.full_name) {
+        const riderInitials = (activeRide.full_name || 'RR').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         const rideHtml = `
             <a href="/fetch-ride" class="block mb-5 transform hover:scale-[1.01] transition-all duration-300" id="active-ride-link">
                 <div class="active-ride-card rounded-xl p-4 text-white relative overflow-hidden">
@@ -1403,7 +1403,7 @@ function updateActiveRideSection(activeRide) {
                                 <span class="live-dot w-2 h-2 bg-white rounded-full mr-2"></span>
                                 <span class="text-xs font-bold tracking-wide">ACTIVE RIDE</span>
                             </div>
-                            <span class="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-xs font-medium">${activeRide.ride_type}</span>
+                            <span class="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-xs font-medium">${activeRide.ride_type || 'Ride'}</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">

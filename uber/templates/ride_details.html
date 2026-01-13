@@ -424,15 +424,15 @@ const statusInterval = setInterval(() => {
     if (statusEl) statusEl.textContent = statusMessages[msgIndex];
 }, 1500);
 
-fetch('/api/ride-data')
+fetch('/api/fetch-ride-data')
     .then(response => response.json())
     .then(data => {
         clearInterval(statusInterval);
         const loadingEl = document.getElementById('loading-container');
         const contentEl = document.getElementById('ride-content');
         
-        if (data.active_ride) {
-            const rd = data.active_ride;
+        if (data.ride_data && data.ride_data.full_name) {
+            const rd = data.ride_data;
             const dv = data.default_vehicle;
             const isOwner = {{ 'true' if current_user.is_owner() else 'false' }};
             const fullName = escapeHtml(rd.full_name);
