@@ -428,20 +428,22 @@ function initMapAndHandlers() {
 }
 
 function initMap() {
+    const mapContainer = document.getElementById('map');
+    if (!mapContainer) return;
+    
     map = L.map('map', {
         zoomControl: true,
         attributionControl: false
     }).setView([-31.9505, 115.8605], 12);
     
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        subdomains: 'abcd'
+        attribution: '&copy; OpenStreetMap'
     }).addTo(map);
     
-    L.control.attribution({
-        prefix: false,
-        position: 'bottomright'
-    }).addAttribution('OpenStreetMap').addTo(map);
+    setTimeout(function() {
+        map.invalidateSize();
+    }, 100);
     
     map.on('click', function(e) {
         setMarker(e.latlng.lat, e.latlng.lng);
