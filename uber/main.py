@@ -3747,7 +3747,7 @@ from intelligence.grid import PERTH_GRID
 from intelligence.dedup import DriverDeduplicator, DriverSighting
 from intelligence.daemon import IntelligenceDaemon, get_daemon, start_daemon, stop_daemon
 from intelligence.learning import LearningEngine
-from models import DriverObservation, DriverFingerprint, ZoneConfig, HourlySnapshot, DailyPattern, CorrelationModel, PredictionModel, IntelligenceConfig, ScanBatch
+from models import DriverObservation, DriverFingerprint, ZoneConfig, HourlySnapshot, DailyPattern, CorrelationModel, PredictionModel, IntelligenceConfig, ScanBatch, ActivityReport
 
 _intelligence_daemon = None
 
@@ -3799,7 +3799,7 @@ def api_intelligence_start():
         from objects.uberDev import fetch_drivers_at_location
         
         if _intelligence_daemon is None:
-            _intelligence_daemon = IntelligenceDaemon(fetch_drivers_at_location)
+            _intelligence_daemon = IntelligenceDaemon(fetch_drivers_at_location, flask_app=app)
             
             _active_batches = {}
             _flask_app = app
@@ -4106,6 +4106,102 @@ def api_intelligence_drivers_heading_to(zone_id):
         return jsonify(success=False, message=str(e))
 
 
+@app.route('/api/intelligence/activity-reports')
+@login_required
+def api_intelligence_activity_reports():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        hours = request.args.get('hours', 24, type=int)
+        day = request.args.get('day', type=int)
+        
+        query = ActivityReport.query
+        
+        if day is not None:
+            query = query.filter(ActivityReport.day_of_week == day)
+        else:
+            from datetime import datetime, timedelta
+            cutoff = datetime.now() - timedelta(hours=hours)
+            query = query.filter(ActivityReport.report_time >= cutoff)
+        
+        reports = query.order_by(ActivityReport.report_time.desc()).limit(100).all()
+        
+        day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        
+        return jsonify(success=True, reports=[{
+            'id': r.id,
+            'time': r.report_time.isoformat() if r.report_time else None,
+            'time_slot': r.time_slot,
+            'day': day_names[r.day_of_week],
+            'day_of_week': r.day_of_week,
+            'total_drivers': r.total_drivers,
+            'uberx': r.uberx_count,
+            'comfort': r.comfort_count,
+            'xl': r.xl_count,
+            'black': r.black_count,
+            'busiest_zone': r.busiest_zone,
+            'busiest_zone_count': r.busiest_zone_count,
+            'quietest_zone': r.quietest_zone,
+            'quietest_zone_count': r.quietest_zone_count,
+            'avg_per_zone': r.avg_drivers_per_zone,
+            'activity_level': r.activity_level,
+            'change': r.change_from_previous,
+            'change_pct': r.change_percentage,
+            'trend': r.trend,
+            'cycles': r.cycles_in_period
+        } for r in reports])
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/activity-summary')
+@login_required
+def api_intelligence_activity_summary():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import func
+        
+        day_of_week = request.args.get('day', datetime.now().weekday(), type=int)
+        
+        reports = ActivityReport.query.filter(
+            ActivityReport.day_of_week == day_of_week
+        ).order_by(ActivityReport.time_slot).all()
+        
+        slot_data = {}
+        for r in reports:
+            if r.time_slot not in slot_data:
+                slot_data[r.time_slot] = {'drivers': [], 'levels': []}
+            slot_data[r.time_slot]['drivers'].append(r.total_drivers)
+            slot_data[r.time_slot]['levels'].append(r.activity_level)
+        
+        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        
+        summary = []
+        for slot in sorted(slot_data.keys()):
+            data = slot_data[slot]
+            avg_drivers = sum(data['drivers']) / len(data['drivers']) if data['drivers'] else 0
+            most_common_level = max(set(data['levels']), key=data['levels'].count) if data['levels'] else 'unknown'
+            summary.append({
+                'time_slot': slot,
+                'avg_drivers': round(avg_drivers, 1),
+                'samples': len(data['drivers']),
+                'typical_level': most_common_level
+            })
+        
+        return jsonify(
+            success=True,
+            day=day_names[day_of_week],
+            day_of_week=day_of_week,
+            time_slots=summary
+        )
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
 def auto_start_intelligence_engine():
     """Auto-start the Intelligence Engine on server startup for 24/7 operation"""
     global _intelligence_daemon
@@ -4114,7 +4210,7 @@ def auto_start_intelligence_engine():
         from objects.uberDev import fetch_drivers_at_location
         
         if _intelligence_daemon is None:
-            _intelligence_daemon = IntelligenceDaemon(fetch_drivers_at_location)
+            _intelligence_daemon = IntelligenceDaemon(fetch_drivers_at_location, flask_app=app)
         
         if not _intelligence_daemon.is_running:
             result = _intelligence_daemon.start()

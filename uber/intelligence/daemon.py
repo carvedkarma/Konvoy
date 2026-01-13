@@ -23,13 +23,17 @@ class IntelligenceDaemon:
     FETCH_RETRY_DELAY = 3
     WATCHDOG_INTERVAL = 60
     
-    def __init__(self, fetch_drivers_func: Callable):
+    REPORT_INTERVAL_MIN = 30
+    
+    def __init__(self, fetch_drivers_func: Callable, flask_app=None):
         self.fetch_drivers = fetch_drivers_func
+        self.flask_app = flask_app
         self.deduplicator = DriverDeduplicator()
         self.trajectory_analyzer = get_trajectory_analyzer()
         self.is_running = False
         self._thread: Optional[threading.Thread] = None
         self._watchdog_thread: Optional[threading.Thread] = None
+        self._report_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._last_heartbeat = datetime.now()
         
@@ -44,12 +48,17 @@ class IntelligenceDaemon:
         self.started_at: Optional[datetime] = None
         self.consecutive_errors = 0
         
+        self._last_report_time: Optional[datetime] = None
+        self._cycles_since_report = 0
+        self._period_driver_samples: List[int] = []
+        
         self._callbacks: Dict[str, List[Callable]] = {
             'on_observation': [],
             'on_cycle_complete': [],
             'on_error': [],
             'on_batch_complete': [],
-            'on_flow_event': []
+            'on_flow_event': [],
+            'on_activity_report': []
         }
     
     def register_callback(self, event: str, callback: Callable):
@@ -77,6 +86,11 @@ class IntelligenceDaemon:
         
         self._watchdog_thread = threading.Thread(target=self._run_watchdog, daemon=True)
         self._watchdog_thread.start()
+        
+        self._report_thread = threading.Thread(target=self._run_report_timer, daemon=True)
+        self._report_thread.start()
+        
+        self._last_report_time = self._get_last_slot_time()
         
         return True
     
@@ -158,6 +172,7 @@ class IntelligenceDaemon:
             try:
                 self._run_cycle(grid_points)
                 self.cycle_count += 1
+                self._record_cycle_sample()
                 
                 self._emit('on_cycle_complete', {
                     'cycle': self.cycle_count,
@@ -284,25 +299,180 @@ class IntelligenceDaemon:
         self.cycle_count = 0
         self.last_error = None
         self.deduplicator.reset()
+    
+    def _get_last_slot_time(self) -> datetime:
+        now = datetime.now()
+        minutes = (now.minute // self.REPORT_INTERVAL_MIN) * self.REPORT_INTERVAL_MIN
+        return now.replace(minute=minutes, second=0, microsecond=0)
+    
+    def _get_next_slot_time(self) -> datetime:
+        last_slot = self._get_last_slot_time()
+        return last_slot + timedelta(minutes=self.REPORT_INTERVAL_MIN)
+    
+    def _run_report_timer(self):
+        while not self._stop_event.is_set():
+            now = datetime.now()
+            next_slot = self._get_next_slot_time()
+            wait_seconds = (next_slot - now).total_seconds()
+            
+            if wait_seconds > 0:
+                self._stop_event.wait(min(wait_seconds + 5, 60))
+            
+            if self._stop_event.is_set():
+                break
+            
+            now = datetime.now()
+            current_slot = self._get_last_slot_time()
+            
+            if self._last_report_time and current_slot <= self._last_report_time:
+                continue
+            
+            try:
+                self._generate_activity_report(current_slot)
+                self._last_report_time = current_slot
+            except Exception as e:
+                print(f"[Report] Error generating activity report: {e}")
+    
+    def _generate_activity_report(self, report_time: datetime):
+        if not self.flask_app:
+            print("[Report] No Flask app context available")
+            return
+        
+        try:
+            from uber.models import db, ActivityReport
+        except ImportError:
+            print("[Report] Cannot import models")
+            return
+        
+        counts = self.deduplicator.get_counts_by_type()
+        zone_counts = self.deduplicator.get_counts_by_zone()
+        total_drivers = self.deduplicator.get_driver_count()
+        
+        busiest_zone = None
+        busiest_count = 0
+        quietest_zone = None
+        quietest_count = float('inf')
+        
+        for zone_id, zcounts in zone_counts.items():
+            zone_total = sum(zcounts.values())
+            if zone_total > busiest_count:
+                busiest_count = zone_total
+                busiest_zone = zone_id
+            if zone_total < quietest_count:
+                quietest_count = zone_total
+                quietest_zone = zone_id
+        
+        if quietest_count == float('inf'):
+            quietest_count = 0
+        
+        avg_per_zone = total_drivers / max(len(zone_counts), 1)
+        
+        if total_drivers >= 30:
+            activity_level = 'very_busy'
+        elif total_drivers >= 20:
+            activity_level = 'busy'
+        elif total_drivers >= 10:
+            activity_level = 'moderate'
+        elif total_drivers >= 5:
+            activity_level = 'quiet'
+        else:
+            activity_level = 'very_quiet'
+        
+        time_slot = report_time.strftime('%H:%M')
+        day_of_week = report_time.weekday()
+        
+        try:
+            with self.flask_app.app_context():
+                prev_report = ActivityReport.query.filter(
+                    ActivityReport.report_time < report_time
+                ).order_by(ActivityReport.report_time.desc()).first()
+                
+                change_from_previous = 0
+                change_percentage = 0.0
+                trend = 'stable'
+                
+                if prev_report:
+                    change_from_previous = total_drivers - prev_report.total_drivers
+                    if prev_report.total_drivers > 0:
+                        change_percentage = (change_from_previous / prev_report.total_drivers) * 100
+                    
+                    if change_percentage >= 20:
+                        trend = 'surging'
+                    elif change_percentage >= 10:
+                        trend = 'rising'
+                    elif change_percentage <= -20:
+                        trend = 'dropping'
+                    elif change_percentage <= -10:
+                        trend = 'declining'
+                    else:
+                        trend = 'stable'
+                
+                report = ActivityReport(
+                    report_time=report_time,
+                    day_of_week=day_of_week,
+                    time_slot=time_slot,
+                    total_drivers=total_drivers,
+                    uberx_count=counts.get('UberX', 0),
+                    comfort_count=counts.get('Comfort', 0),
+                    xl_count=counts.get('XL', 0),
+                    black_count=counts.get('Black', 0),
+                    busiest_zone=busiest_zone,
+                    busiest_zone_count=busiest_count,
+                    quietest_zone=quietest_zone,
+                    quietest_zone_count=int(quietest_count),
+                    avg_drivers_per_zone=round(avg_per_zone, 2),
+                    activity_level=activity_level,
+                    change_from_previous=change_from_previous,
+                    change_percentage=round(change_percentage, 1),
+                    trend=trend,
+                    cycles_in_period=self._cycles_since_report
+                )
+                
+                db.session.add(report)
+                db.session.commit()
+                
+                self._cycles_since_report = 0
+                
+                report_data = {
+                    'time': time_slot,
+                    'day': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day_of_week],
+                    'total_drivers': total_drivers,
+                    'activity_level': activity_level,
+                    'trend': trend,
+                    'change': change_from_previous,
+                    'busiest_zone': busiest_zone
+                }
+                
+                self._emit('on_activity_report', report_data)
+                
+                print(f"[Report] {time_slot} - {total_drivers} drivers ({activity_level}, {trend})")
+                
+        except Exception as e:
+            print(f"[Report] Database error: {e}")
+    
+    def _record_cycle_sample(self):
+        driver_count = self.deduplicator.get_driver_count()
+        self._period_driver_samples.append(driver_count)
+        self._cycles_since_report += 1
 
 
 _daemon_instance: Optional[IntelligenceDaemon] = None
 
 
-def get_daemon(fetch_drivers_func: Optional[Callable] = None) -> Optional[IntelligenceDaemon]:
+def get_daemon(fetch_drivers_func: Optional[Callable] = None, flask_app=None) -> Optional[IntelligenceDaemon]:
     global _daemon_instance
     
     if _daemon_instance is None and fetch_drivers_func:
-        _daemon_instance = IntelligenceDaemon(fetch_drivers_func)
+        _daemon_instance = IntelligenceDaemon(fetch_drivers_func, flask_app)
     
     return _daemon_instance
 
 
-def start_daemon(fetch_drivers_func: Callable) -> bool:
+def start_daemon(fetch_drivers_func: Callable, flask_app=None) -> bool:
     global _daemon_instance
     
     if _daemon_instance is None:
-        _daemon_instance = IntelligenceDaemon(fetch_drivers_func)
+        _daemon_instance = IntelligenceDaemon(fetch_drivers_func, flask_app)
     
     return _daemon_instance.start()
 

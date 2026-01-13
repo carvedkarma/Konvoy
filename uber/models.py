@@ -437,6 +437,38 @@ class DailyPattern(db.Model):
         return f'<DailyPattern {self.zone_id} dow={self.day_of_week} hour={self.hour_of_day}>'
 
 
+class ActivityReport(db.Model):
+    __tablename__ = 'activity_reports'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    report_time = db.Column(db.DateTime, nullable=False, index=True)
+    day_of_week = db.Column(db.Integer, nullable=False)
+    time_slot = db.Column(db.String(10), nullable=False)
+    total_drivers = db.Column(db.Integer, default=0)
+    uberx_count = db.Column(db.Integer, default=0)
+    comfort_count = db.Column(db.Integer, default=0)
+    xl_count = db.Column(db.Integer, default=0)
+    black_count = db.Column(db.Integer, default=0)
+    busiest_zone = db.Column(db.String(50), nullable=True)
+    busiest_zone_count = db.Column(db.Integer, default=0)
+    quietest_zone = db.Column(db.String(50), nullable=True)
+    quietest_zone_count = db.Column(db.Integer, default=0)
+    avg_drivers_per_zone = db.Column(db.Float, default=0)
+    activity_level = db.Column(db.String(20), nullable=True)
+    change_from_previous = db.Column(db.Integer, default=0)
+    change_percentage = db.Column(db.Float, default=0)
+    trend = db.Column(db.String(20), nullable=True)
+    cycles_in_period = db.Column(db.Integer, default=0)
+    notes = db.Column(db.Text, nullable=True)
+    
+    __table_args__ = (
+        db.Index('idx_report_time_dow', 'day_of_week', 'time_slot'),
+    )
+    
+    def __repr__(self):
+        return f'<ActivityReport {self.time_slot} on dow={self.day_of_week}>'
+
+
 class CorrelationModel(db.Model):
     __tablename__ = 'correlation_models'
     
