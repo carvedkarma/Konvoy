@@ -1,6 +1,6 @@
 """
 Perth Coordinate Grid System
-Covers 500+ coordinates across Perth metro with dense/sparse zones
+Focused on Fremantle and Perth CBD for targeted analysis
 """
 
 import math
@@ -20,52 +20,14 @@ class GridPoint:
 
 class PerthGrid:
     PERTH_ZONES = [
-        {'name': 'Perth CBD', 'lat': -31.9505, 'lng': 115.8605, 'radius': 3, 'dense': True, 'priority': 10},
-        {'name': 'Northbridge', 'lat': -31.9440, 'lng': 115.8575, 'radius': 1.5, 'dense': True, 'priority': 9},
-        {'name': 'Perth Airport', 'lat': -31.9403, 'lng': 115.9670, 'radius': 3, 'dense': True, 'priority': 10},
-        {'name': 'Fremantle', 'lat': -32.0569, 'lng': 115.7439, 'radius': 2.5, 'dense': True, 'priority': 8},
-        {'name': 'Subiaco', 'lat': -31.9490, 'lng': 115.8270, 'radius': 2, 'dense': True, 'priority': 7},
-        {'name': 'Leederville', 'lat': -31.9360, 'lng': 115.8410, 'radius': 1.5, 'dense': True, 'priority': 7},
-        {'name': 'Victoria Park', 'lat': -31.9760, 'lng': 115.8970, 'radius': 2, 'dense': False, 'priority': 6},
-        {'name': 'South Perth', 'lat': -31.9720, 'lng': 115.8650, 'radius': 2, 'dense': False, 'priority': 6},
-        {'name': 'Claremont', 'lat': -31.9810, 'lng': 115.7810, 'radius': 2, 'dense': False, 'priority': 5},
-        {'name': 'Cottesloe', 'lat': -31.9950, 'lng': 115.7550, 'radius': 2, 'dense': False, 'priority': 5},
-        {'name': 'Scarborough', 'lat': -31.8940, 'lng': 115.7610, 'radius': 2.5, 'dense': False, 'priority': 5},
-        {'name': 'Mount Lawley', 'lat': -31.9290, 'lng': 115.8720, 'radius': 1.5, 'dense': False, 'priority': 6},
-        {'name': 'Burswood', 'lat': -31.9590, 'lng': 115.8920, 'radius': 2, 'dense': True, 'priority': 8},
-        {'name': 'Optus Stadium', 'lat': -31.9510, 'lng': 115.8890, 'radius': 1, 'dense': True, 'priority': 9},
-        {'name': 'Cannington', 'lat': -32.0180, 'lng': 115.9350, 'radius': 2.5, 'dense': False, 'priority': 5},
-        {'name': 'Carousel', 'lat': -32.0240, 'lng': 115.9180, 'radius': 1.5, 'dense': False, 'priority': 5},
-        {'name': 'Belmont', 'lat': -31.9560, 'lng': 115.9380, 'radius': 2, 'dense': False, 'priority': 5},
-        {'name': 'Midland', 'lat': -31.8890, 'lng': 116.0050, 'radius': 2.5, 'dense': False, 'priority': 5},
-        {'name': 'Joondalup', 'lat': -31.7470, 'lng': 115.7680, 'radius': 3, 'dense': False, 'priority': 5},
-        {'name': 'Karrinyup', 'lat': -31.8720, 'lng': 115.7780, 'radius': 2, 'dense': False, 'priority': 4},
-        {'name': 'Morley', 'lat': -31.8980, 'lng': 115.9050, 'radius': 2.5, 'dense': False, 'priority': 5},
-        {'name': 'Stirling', 'lat': -31.8730, 'lng': 115.8320, 'radius': 2, 'dense': False, 'priority': 4},
-        {'name': 'Innaloo', 'lat': -31.8930, 'lng': 115.7980, 'radius': 2, 'dense': False, 'priority': 4},
-        {'name': 'Osborne Park', 'lat': -31.9000, 'lng': 115.8110, 'radius': 2, 'dense': False, 'priority': 4},
-        {'name': 'Rockingham', 'lat': -32.2820, 'lng': 115.7300, 'radius': 3, 'dense': False, 'priority': 4},
-        {'name': 'Mandurah', 'lat': -32.5270, 'lng': 115.7440, 'radius': 3, 'dense': False, 'priority': 4},
-        {'name': 'Armadale', 'lat': -32.1530, 'lng': 116.0150, 'radius': 2.5, 'dense': False, 'priority': 4},
-        {'name': 'Thornlie', 'lat': -32.0590, 'lng': 115.9540, 'radius': 2, 'dense': False, 'priority': 4},
-        {'name': 'Canning Vale', 'lat': -32.0740, 'lng': 115.9180, 'radius': 2, 'dense': False, 'priority': 4},
-        {'name': 'Ellenbrook', 'lat': -31.7670, 'lng': 116.0190, 'radius': 2.5, 'dense': False, 'priority': 3},
-        {'name': 'Wanneroo', 'lat': -31.7510, 'lng': 115.8090, 'radius': 2.5, 'dense': False, 'priority': 3},
-        {'name': 'Clarkson', 'lat': -31.6850, 'lng': 115.7270, 'radius': 2.5, 'dense': False, 'priority': 3},
-        {'name': 'Butler', 'lat': -31.6460, 'lng': 115.7050, 'radius': 2, 'dense': False, 'priority': 3},
-        {'name': 'Hillarys', 'lat': -31.8240, 'lng': 115.7380, 'radius': 2, 'dense': False, 'priority': 4},
-        {'name': 'Wembley', 'lat': -31.9310, 'lng': 115.8130, 'radius': 1.5, 'dense': False, 'priority': 5},
-        {'name': 'Nedlands', 'lat': -31.9800, 'lng': 115.8050, 'radius': 2, 'dense': False, 'priority': 5},
-        {'name': 'Applecross', 'lat': -32.0130, 'lng': 115.8380, 'radius': 2, 'dense': False, 'priority': 5},
-        {'name': 'Como', 'lat': -32.0010, 'lng': 115.8650, 'radius': 1.5, 'dense': False, 'priority': 5},
-        {'name': 'East Perth', 'lat': -31.9550, 'lng': 115.8750, 'radius': 1.5, 'dense': True, 'priority': 8},
-        {'name': 'West Perth', 'lat': -31.9480, 'lng': 115.8430, 'radius': 1.5, 'dense': True, 'priority': 7},
-        {'name': 'Kings Park', 'lat': -31.9630, 'lng': 115.8320, 'radius': 1.5, 'dense': False, 'priority': 6},
-        {'name': 'Mount Hawthorn', 'lat': -31.9210, 'lng': 115.8350, 'radius': 1.5, 'dense': False, 'priority': 5},
-        {'name': 'Highgate', 'lat': -31.9380, 'lng': 115.8680, 'radius': 1, 'dense': False, 'priority': 6},
-        {'name': 'Perth Train Station', 'lat': -31.9505, 'lng': 115.8605, 'radius': 0.5, 'dense': True, 'priority': 10},
+        {'name': 'Perth CBD', 'lat': -31.9505, 'lng': 115.8605, 'radius': 2, 'dense': True, 'priority': 10},
+        {'name': 'Northbridge', 'lat': -31.9440, 'lng': 115.8575, 'radius': 1, 'dense': True, 'priority': 9},
+        {'name': 'East Perth', 'lat': -31.9550, 'lng': 115.8750, 'radius': 1, 'dense': True, 'priority': 8},
+        {'name': 'West Perth', 'lat': -31.9480, 'lng': 115.8430, 'radius': 1, 'dense': True, 'priority': 7},
         {'name': 'Elizabeth Quay', 'lat': -31.9580, 'lng': 115.8580, 'radius': 0.5, 'dense': True, 'priority': 9},
-        {'name': 'Crown Perth', 'lat': -31.9598, 'lng': 115.8888, 'radius': 1, 'dense': True, 'priority': 9},
+        {'name': 'Fremantle', 'lat': -32.0569, 'lng': 115.7439, 'radius': 2, 'dense': True, 'priority': 10},
+        {'name': 'Fremantle Port', 'lat': -32.0480, 'lng': 115.7380, 'radius': 1, 'dense': True, 'priority': 8},
+        {'name': 'South Fremantle', 'lat': -32.0720, 'lng': 115.7500, 'radius': 1, 'dense': True, 'priority': 7},
     ]
     
     def __init__(self):
