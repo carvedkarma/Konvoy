@@ -102,13 +102,13 @@ class SpatialGrid:
         lng_cell = int((lng + 180) * 111000 * math.cos(math.radians(lat)) / self.CELL_SIZE_M)
         return (lat_cell, lng_cell)
     
-    def get_adjacent_cells(self, cell: Tuple[int, int]) -> List[Tuple[int, int]]:
+    def get_adjacent_cells(self, cell: Tuple[int, int], radius: int = 1) -> List[Tuple[int, int]]:
         cx, cy = cell
-        return [
-            (cx-1, cy-1), (cx, cy-1), (cx+1, cy-1),
-            (cx-1, cy),   (cx, cy),   (cx+1, cy),
-            (cx-1, cy+1), (cx, cy+1), (cx+1, cy+1)
-        ]
+        cells = []
+        for dx in range(-radius, radius + 1):
+            for dy in range(-radius, radius + 1):
+                cells.append((cx + dx, cy + dy))
+        return cells
     
     def add_driver(self, fingerprint_id: str, lat: float, lng: float) -> Tuple[int, int]:
         cell = self._lat_lng_to_cell(lat, lng)
@@ -127,10 +127,10 @@ class SpatialGrid:
         self.cells[new_cell].add(fingerprint_id)
         return new_cell
     
-    def get_nearby_drivers(self, lat: float, lng: float) -> Set[str]:
+    def get_nearby_drivers(self, lat: float, lng: float, radius: int = 1) -> Set[str]:
         cell = self._lat_lng_to_cell(lat, lng)
         nearby = set()
-        for adj_cell in self.get_adjacent_cells(cell):
+        for adj_cell in self.get_adjacent_cells(cell, radius):
             nearby.update(self.cells.get(adj_cell, set()))
         return nearby
 
@@ -201,12 +201,21 @@ class DriverDeduplicator:
             return 12
         return self.MAX_SPEED_MS
     
+    def _is_freeway_zone(self, zone_id: str) -> bool:
+        if not zone_id:
+            return False
+        zone_lower = zone_id.lower()
+        return any(kw in zone_lower for kw in ['fwy', 'freeway', 'hwy', 'highway', 'motorway'])
+    
     def process_observation(self, sighting: DriverSighting, is_dense: bool = False) -> Tuple[str, float, bool]:
         threshold_m = self.get_threshold_for_zone(sighting.zone_id, is_dense)
         
         self._update_track_states()
         
-        nearby_ids = self.spatial_grid.get_nearby_drivers(sighting.lat, sighting.lng)
+        is_freeway = self._is_freeway_zone(sighting.zone_id)
+        grid_radius = 5 if is_freeway else 1
+        
+        nearby_ids = self.spatial_grid.get_nearby_drivers(sighting.lat, sighting.lng, radius=grid_radius)
         
         match, score = self._find_best_match(sighting, threshold_m, nearby_ids)
         
@@ -214,6 +223,13 @@ class DriverDeduplicator:
             self._update_driver(match, sighting)
             self._stats['matches'] += 1
             return match.fingerprint_id, match.confidence, False
+        
+        if not match and is_freeway:
+            match, score = self._find_high_speed_match(sighting, threshold_m)
+            if match:
+                self._update_driver(match, sighting)
+                self._stats['matches'] += 1
+                return match.fingerprint_id, match.confidence, False
         
         resurrected = self._try_resurrect(sighting, threshold_m)
         if resurrected:
@@ -224,6 +240,42 @@ class DriverDeduplicator:
         self._add_new_driver(fingerprint_id, sighting)
         self._stats['new_tracks'] += 1
         return fingerprint_id, 0.5, True
+    
+    def _find_high_speed_match(self, sighting: DriverSighting, threshold_m: int) -> Tuple[Optional[TrackedDriver], float]:
+        best_match = None
+        best_score = 0
+        now = sighting.timestamp
+        
+        for fid, driver in self.tracked_drivers.items():
+            if driver.vehicle_type != sighting.vehicle_type:
+                continue
+            if driver.state == TrackState.DEAD:
+                continue
+            if driver.last_speed_ms < 15:
+                continue
+            
+            if not driver.positions:
+                continue
+            last_time = driver.positions[-1][2]
+            time_diff = (now - last_time).total_seconds()
+            if time_diff < 0 or time_diff > 30:
+                continue
+            
+            pred_lat, pred_lng = driver.get_predicted_position(now)
+            distance_to_pred = haversine_m(pred_lat, pred_lng, sighting.lat, sighting.lng)
+            
+            max_allowed = 28 * time_diff + 200
+            
+            if distance_to_pred > max_allowed:
+                continue
+            
+            score = self._calculate_match_score(driver, sighting, threshold_m)
+            
+            if score > best_score and score >= 0.45:
+                best_score = score
+                best_match = driver
+        
+        return best_match, best_score
     
     def _find_best_match(self, sighting: DriverSighting, threshold_m: int, 
                           candidate_ids: Set[str]) -> Tuple[Optional[TrackedDriver], float]:
