@@ -1,6 +1,7 @@
 """
-Self-Learning Engine
+Self-Learning Engine v2.0
 Analyzes data to discover patterns, correlations, and predictions
+Includes: Anomaly detection, expected values, confidence-weighted decisions
 """
 
 from datetime import datetime, timedelta
@@ -10,11 +11,18 @@ import math
 
 
 class LearningEngine:
+    CONFIDENCE_THRESHOLD = 0.6
+    ANOMALY_THRESHOLD = 2.0
+    
     def __init__(self, db_session):
         self.db = db_session
         self._hourly_cache: Dict[str, Dict] = {}
         self._pattern_cache: Dict[str, Dict] = {}
         self._correlation_cache: List[Dict] = []
+        
+        self._expected_values: Dict[str, Dict] = {}
+        self._anomaly_history: List[Dict] = []
+        self._decision_log: List[Dict] = []
     
     def run_hourly_analysis(self):
         from uber.models import DriverObservation, HourlySnapshot, ZoneConfig
@@ -158,6 +166,186 @@ class LearningEngine:
         
         self.db.commit()
         return len(pattern_data)
+    
+    def get_expected_drivers(self, zone_id: str, target_time: Optional[datetime] = None) -> Dict:
+        from uber.models import DailyPattern
+        
+        if target_time is None:
+            target_time = datetime.now()
+        
+        dow = target_time.weekday()
+        hour = target_time.hour
+        
+        pattern = DailyPattern.query.filter_by(
+            zone_id=zone_id,
+            day_of_week=dow,
+            hour_of_day=hour
+        ).first()
+        
+        if not pattern:
+            return {
+                'expected_drivers': None,
+                'std_dev': None,
+                'confidence': 0,
+                'has_data': False
+            }
+        
+        return {
+            'expected_drivers': pattern.avg_drivers,
+            'std_dev': pattern.std_drivers,
+            'min_expected': pattern.min_drivers,
+            'max_expected': pattern.max_drivers,
+            'primary_direction': pattern.primary_direction,
+            'confidence': pattern.confidence,
+            'sample_count': pattern.sample_count,
+            'has_data': True
+        }
+    
+    def detect_anomaly(self, zone_id: str, current_drivers: int, 
+                       target_time: Optional[datetime] = None) -> Dict:
+        expected = self.get_expected_drivers(zone_id, target_time)
+        
+        if not expected['has_data'] or expected['std_dev'] is None or expected['std_dev'] == 0:
+            return {
+                'is_anomaly': False,
+                'anomaly_score': 0,
+                'direction': 'unknown',
+                'confidence': 0
+            }
+        
+        z_score = (current_drivers - expected['expected_drivers']) / expected['std_dev']
+        
+        is_anomaly = abs(z_score) > self.ANOMALY_THRESHOLD
+        direction = 'high' if z_score > 0 else 'low'
+        
+        anomaly_result = {
+            'is_anomaly': is_anomaly,
+            'anomaly_score': round(abs(z_score), 2),
+            'z_score': round(z_score, 2),
+            'direction': direction if is_anomaly else 'normal',
+            'current_drivers': current_drivers,
+            'expected_drivers': round(expected['expected_drivers'], 1),
+            'std_dev': round(expected['std_dev'], 2),
+            'confidence': expected['confidence'],
+            'zone_id': zone_id,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        if is_anomaly:
+            self._anomaly_history.append(anomaly_result)
+            if len(self._anomaly_history) > 100:
+                self._anomaly_history = self._anomaly_history[-100:]
+        
+        return anomaly_result
+    
+    def should_recommend_movement(self, from_zone: str, to_zone: str,
+                                   current_data: Dict[str, int]) -> Dict:
+        from_expected = self.get_expected_drivers(from_zone)
+        to_expected = self.get_expected_drivers(to_zone)
+        
+        min_confidence = self.CONFIDENCE_THRESHOLD
+        
+        if from_expected['confidence'] < min_confidence or to_expected['confidence'] < min_confidence:
+            return {
+                'should_move': False,
+                'reason': 'insufficient_data',
+                'confidence': min(from_expected['confidence'], to_expected['confidence'])
+            }
+        
+        from_current = current_data.get(from_zone, 0)
+        to_current = current_data.get(to_zone, 0)
+        
+        from_anomaly = self.detect_anomaly(from_zone, from_current)
+        to_anomaly = self.detect_anomaly(to_zone, to_current)
+        
+        from_surplus = from_current > from_expected['expected_drivers']
+        to_shortage = to_current < to_expected['expected_drivers']
+        
+        data_volume = from_expected.get('sample_count', 0) + to_expected.get('sample_count', 0)
+        consistency = 1 - (abs(from_anomaly.get('z_score', 0)) + abs(to_anomaly.get('z_score', 0))) / 10
+        recency = 1.0
+        
+        decision_confidence = min(1.0, (
+            0.4 * (data_volume / 20) +
+            0.3 * max(0, consistency) +
+            0.3 * recency
+        ))
+        
+        should_move = (
+            from_surplus and 
+            to_shortage and 
+            decision_confidence >= self.CONFIDENCE_THRESHOLD
+        )
+        
+        decision = {
+            'should_move': should_move,
+            'from_zone': from_zone,
+            'to_zone': to_zone,
+            'confidence': round(decision_confidence, 3),
+            'from_current': from_current,
+            'from_expected': round(from_expected['expected_drivers'], 1) if from_expected['expected_drivers'] else None,
+            'to_current': to_current,
+            'to_expected': round(to_expected['expected_drivers'], 1) if to_expected['expected_drivers'] else None,
+            'from_surplus': from_surplus,
+            'to_shortage': to_shortage,
+            'reason': 'recommended' if should_move else 'not_recommended',
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        self._decision_log.append(decision)
+        if len(self._decision_log) > 50:
+            self._decision_log = self._decision_log[-50:]
+        
+        return decision
+    
+    def get_movement_suggestions(self, current_zone_counts: Dict[str, int], 
+                                  top_n: int = 3) -> List[Dict]:
+        suggestions = []
+        
+        oversupplied = []
+        undersupplied = []
+        
+        for zone_id, count in current_zone_counts.items():
+            expected = self.get_expected_drivers(zone_id)
+            if not expected['has_data']:
+                continue
+            
+            diff = count - expected['expected_drivers']
+            std = expected['std_dev'] or 1
+            
+            if diff > std:
+                oversupplied.append({
+                    'zone_id': zone_id,
+                    'surplus': diff,
+                    'z_score': diff / std,
+                    'confidence': expected['confidence']
+                })
+            elif diff < -std:
+                undersupplied.append({
+                    'zone_id': zone_id,
+                    'shortage': abs(diff),
+                    'z_score': diff / std,
+                    'confidence': expected['confidence']
+                })
+        
+        for from_zone in sorted(oversupplied, key=lambda x: -x['surplus'])[:3]:
+            for to_zone in sorted(undersupplied, key=lambda x: -x['shortage'])[:3]:
+                if from_zone['confidence'] >= self.CONFIDENCE_THRESHOLD and \
+                   to_zone['confidence'] >= self.CONFIDENCE_THRESHOLD:
+                    
+                    priority = (from_zone['surplus'] + to_zone['shortage']) * \
+                               min(from_zone['confidence'], to_zone['confidence'])
+                    
+                    suggestions.append({
+                        'from_zone': from_zone['zone_id'],
+                        'to_zone': to_zone['zone_id'],
+                        'priority': round(priority, 2),
+                        'surplus': round(from_zone['surplus'], 1),
+                        'shortage': round(to_zone['shortage'], 1),
+                        'confidence': round(min(from_zone['confidence'], to_zone['confidence']), 2)
+                    })
+        
+        return sorted(suggestions, key=lambda x: -x['priority'])[:top_n]
     
     def learn_correlations(self):
         from uber.models import HourlySnapshot, CorrelationModel
@@ -368,10 +556,18 @@ class LearningEngine:
             by_day[p.day_of_week].append({
                 'hour': p.hour_of_day,
                 'avg_drivers': p.avg_drivers,
-                'direction': p.primary_direction
+                'std_drivers': p.std_drivers,
+                'direction': p.primary_direction,
+                'confidence': p.confidence
             })
         
         return dict(by_day)
+    
+    def get_anomaly_history(self, limit: int = 20) -> List[Dict]:
+        return self._anomaly_history[-limit:]
+    
+    def get_decision_log(self, limit: int = 20) -> List[Dict]:
+        return self._decision_log[-limit:]
     
     def _bearing_to_direction(self, bearing: float) -> str:
         directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
