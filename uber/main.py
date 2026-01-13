@@ -1649,13 +1649,26 @@ def reset_password(token):
 @login_required
 def home():
     has_permission = current_user.has_permission('can_change_location')
-    loading = current_user.uber_connected and has_permission
-    disconnect_form = UberDisconnectForm(
-    ) if current_user.uber_connected else None
+    disconnect_form = UberDisconnectForm() if current_user.uber_connected else None
+    
+    default_vehicle = None
+    if current_user.uber_connected and has_permission:
+        try:
+            cookies, headers, refresh_token = current_user.get_uber_credentials()
+            def fetch_vehicles():
+                return vehicleDetails(cookies, headers, refresh_token)
+            vehicles = cache.get_vehicles(current_user.id, fetch_vehicles)
+            for v in vehicles:
+                if v.get('isDefault'):
+                    default_vehicle = v
+                    break
+        except Exception as e:
+            print(f"Error getting vehicle for change-location: {e}")
+    
     return render_template('index.html',
                            has_permission=has_permission,
-                           default_vehicle=None,
-                           loading=loading,
+                           default_vehicle=default_vehicle,
+                           loading=False,
                            uber_connected=current_user.uber_connected,
                            username=current_user.get_display_name(),
                            disconnect_form=disconnect_form)
