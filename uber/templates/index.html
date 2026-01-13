@@ -3,6 +3,7 @@
 {% block title %}RizTar | Location{% endblock %}
 
 {% block extra_styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
 .pulse-ring {
     animation: pulse-ring 2s infinite ease-out;
@@ -25,12 +26,62 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
 }
+#map {
+    height: 300px;
+    width: 100%;
+    border-radius: 16px;
+    z-index: 1;
+}
+.leaflet-control-zoom {
+    border: none !important;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+}
+.leaflet-control-zoom a {
+    background: white !important;
+    color: #18181b !important;
+    border: none !important;
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    font-size: 18px !important;
+}
+.leaflet-control-zoom a:hover {
+    background: #f4f4f5 !important;
+}
+.map-overlay {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 12px 16px;
+    z-index: 1000;
+}
+.coord-display {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    font-size: 11px;
+}
+@keyframes marker-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.4); }
+    50% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); }
+}
+.custom-marker {
+    background: #000;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: marker-pulse 2s infinite;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
-    <div id="container" class="w-full max-w-md">
+<div class="min-h-[80vh] px-4 py-8">
+    <div id="container" class="w-full max-w-lg mx-auto">
         
         {% if loading %}
         <div id="loading-skeleton">
@@ -40,17 +91,9 @@
                 <div class="h-3 w-24 skeleton rounded mt-2 mx-auto"></div>
             </div>
             <div class="bg-white rounded-b-2xl shadow-xl p-6">
-                <div class="flex items-center mb-5">
-                    <div class="w-10 h-10 skeleton-light rounded-full mr-3"></div>
-                    <div>
-                        <div class="h-5 w-28 skeleton-light rounded mb-1"></div>
-                        <div class="h-3 w-20 skeleton-light rounded"></div>
-                    </div>
-                </div>
-                <div class="space-y-4">
-                    <div class="h-12 skeleton-light rounded-xl"></div>
-                    <div class="h-12 skeleton-light rounded-xl"></div>
-                </div>
+                <div class="h-[300px] skeleton-light rounded-xl mb-4"></div>
+                <div class="h-12 skeleton-light rounded-xl mb-3"></div>
+                <div class="h-12 skeleton-light rounded-xl"></div>
             </div>
         </div>
         <div id="location-content" class="hidden"></div>
@@ -70,51 +113,97 @@
         {% else %}
         <div id="searchState">
             {% if default_vehicle %}
-            <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-6 text-center">
+            <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-5 text-center">
                 <div class="relative inline-block">
                     {% if default_vehicle.imageUrl %}
                     <img src="{{ default_vehicle.imageUrl }}" alt="{{ default_vehicle.make }} {{ default_vehicle.model }}" 
-                        class="w-48 h-28 object-contain mx-auto drop-shadow-2xl">
+                        class="w-40 h-24 object-contain mx-auto drop-shadow-2xl">
                     {% else %}
-                    <div class="w-48 h-28 bg-zinc-700 rounded-lg flex items-center justify-center mx-auto">
-                        <svg class="w-20 h-20 text-zinc-500" fill="currentColor" viewBox="0 0 24 24">
+                    <div class="w-40 h-24 bg-zinc-700 rounded-lg flex items-center justify-center mx-auto">
+                        <svg class="w-16 h-16 text-zinc-500" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
                         </svg>
                     </div>
                     {% endif %}
                 </div>
-                <p class="text-white font-semibold mt-3">{{ default_vehicle.make }} {{ default_vehicle.model }}</p>
+                <p class="text-white font-semibold mt-2">{{ default_vehicle.make }} {{ default_vehicle.model }}</p>
                 <p class="text-zinc-400 text-xs">{{ default_vehicle.year }} · {{ default_vehicle.licensePlate }}</p>
             </div>
             {% endif %}
             
-            <div class="bg-white rounded-b-2xl shadow-xl p-6 {% if not default_vehicle %}rounded-t-2xl{% endif %}">
-                <div class="flex items-center mb-5">
-                    <div class="w-10 h-10 bg-black rounded-full flex items-center justify-center mr-3">
-                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                        </svg>
+            <div class="bg-white {% if default_vehicle %}rounded-b-2xl{% else %}rounded-2xl{% endif %} shadow-xl p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-black rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-zinc-900">Change Location</h2>
+                            <p class="text-xs text-zinc-500">Tap map or enter address</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-zinc-900">Change Location</h2>
-                        <p class="text-xs text-zinc-500">Update driver position</p>
+                    <button id="locateMeBtn" class="p-2.5 bg-zinc-100 rounded-xl hover:bg-zinc-200 transition-colors" title="Use my location">
+                        <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="relative mb-4">
+                    <div id="map" class="border border-zinc-200 shadow-inner"></div>
+                    <div id="mapOverlay" class="map-overlay hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-white/60 text-[10px] uppercase tracking-wide mb-0.5">Selected Location</p>
+                                <p id="coordDisplay" class="text-white coord-display">-31.9505, 115.8605</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button id="clearMapBtn" class="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="space-y-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="flex-1 h-px bg-zinc-200"></div>
+                    <span class="text-xs text-zinc-400 px-2">or search by address</span>
+                    <div class="flex-1 h-px bg-zinc-200"></div>
+                </div>
+                
+                <div class="space-y-3">
                     <div class="relative">
                         <input type="text" id="destinationInput" 
-                            class="w-full px-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-black focus:ring-2 focus:ring-black/5 transition-all"
-                            placeholder="Enter address or city">
+                            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-black focus:ring-2 focus:ring-black/5 transition-all pr-10"
+                            placeholder="Enter address, suburb or city">
+                        <svg class="w-5 h-5 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
                     </div>
                     
                     <button id="searchBtn" 
-                        class="w-full bg-black text-white py-3.5 rounded-xl font-semibold text-sm hover:bg-zinc-800 transition-colors flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="w-full bg-black text-white py-3.5 rounded-xl font-semibold text-sm hover:bg-zinc-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                         </svg>
                         Update Location
                     </button>
+                </div>
+                
+                <div id="quickLocations" class="mt-4 pt-4 border-t border-zinc-100">
+                    <p class="text-xs text-zinc-400 mb-2">Quick locations</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="quick-loc px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 rounded-full text-xs font-medium text-zinc-700 transition-colors" data-lat="-31.9505" data-lng="115.8605">Perth CBD</button>
+                        <button class="quick-loc px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 rounded-full text-xs font-medium text-zinc-700 transition-colors" data-lat="-31.9403" data-lng="115.9670">Perth Airport</button>
+                        <button class="quick-loc px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 rounded-full text-xs font-medium text-zinc-700 transition-colors" data-lat="-32.0569" data-lng="115.7445">Fremantle</button>
+                        <button class="quick-loc px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 rounded-full text-xs font-medium text-zinc-700 transition-colors" data-lat="-31.8963" data-lng="115.8008">Scarborough</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -172,7 +261,7 @@
                 <div class="p-4">
                     <div id="flightGrid" class="grid grid-cols-6 gap-1.5">
                         {% for hour in range(24) %}
-                        <div class="flight-hour bg-zinc-50 rounded-lg p-2 text-center hover:bg-zinc-100 transition-colors" data-hour="{{ hour }}">
+                        <div class="flight-hour bg-zinc-50 rounded-lg p-2 text-center hover:bg-zinc-100 transition-colors cursor-pointer" data-hour="{{ hour }}">
                             <p class="text-zinc-400 text-[10px] font-medium">{{ '%02d' % hour }}:00</p>
                             <p class="text-zinc-900 font-bold text-sm flight-count">-</p>
                         </div>
@@ -267,6 +356,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 {% if loading %}
 <script>
 function escapeHtml(text) {
@@ -281,107 +371,9 @@ fetch('/api/location-data')
     .then(data => {
         const loadingEl = document.getElementById('loading-skeleton');
         const contentEl = document.getElementById('location-content');
-        const v = data.default_vehicle;
-        const ds = data.driver_status;
-        
-        const driverStatusHtml = ds ? `
-            <div class="flex items-center justify-center gap-3 mt-3 pt-3 border-t border-zinc-700">
-                <div class="flex items-center ${ds.online ? 'text-emerald-400' : 'text-zinc-500'}">
-                    <span class="w-2 h-2 rounded-full ${ds.online ? 'bg-emerald-400' : 'bg-zinc-500'} mr-1.5"></span>
-                    <span class="text-xs font-medium">${ds.online ? 'Online' : 'Offline'}</span>
-                </div>
-                <span class="text-zinc-600">|</span>
-                <div class="flex items-center ${ds.available ? 'text-blue-400' : 'text-zinc-500'}">
-                    <span class="w-2 h-2 rounded-full ${ds.available ? 'bg-blue-400' : 'bg-zinc-500'} mr-1.5"></span>
-                    <span class="text-xs font-medium">${ds.available ? 'Available' : 'Busy'}</span>
-                </div>
-                <span class="text-zinc-600">|</span>
-                <div class="flex items-center ${ds.dispatchable ? 'text-purple-400' : 'text-zinc-500'}">
-                    <span class="w-2 h-2 rounded-full ${ds.dispatchable ? 'bg-purple-400' : 'bg-zinc-500'} mr-1.5"></span>
-                    <span class="text-xs font-medium">${ds.dispatchable ? 'Dispatchable' : 'Not Dispatchable'}</span>
-                </div>
-            </div>
-        ` : '';
-        
-        const vehicleHeader = v ? `
-            <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-6 text-center">
-                <div class="relative inline-block">
-                    ${v.imageUrl ? `<img src="${escapeHtml(v.imageUrl)}" alt="${escapeHtml(v.make)} ${escapeHtml(v.model)}" class="w-48 h-28 object-contain mx-auto drop-shadow-2xl">` : `
-                    <div class="w-48 h-28 bg-zinc-700 rounded-lg flex items-center justify-center mx-auto">
-                        <svg class="w-20 h-20 text-zinc-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-                        </svg>
-                    </div>`}
-                </div>
-                <p class="text-white font-semibold mt-3">${escapeHtml(v.make)} ${escapeHtml(v.model)}</p>
-                <p class="text-zinc-400 text-xs">${escapeHtml(v.year)} · ${escapeHtml(v.licensePlate)}</p>
-                ${driverStatusHtml}
-            </div>
-        ` : (ds ? `
-            <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-4">
-                ${driverStatusHtml}
-            </div>
-        ` : '');
-        
-        contentEl.innerHTML = `
-            <div id="searchState">
-                ${vehicleHeader}
-                <div class="bg-white ${(v || ds) ? 'rounded-b-2xl' : 'rounded-2xl'} shadow-xl p-6">
-                    <div class="flex items-center mb-5">
-                        <div class="w-10 h-10 bg-black rounded-full flex items-center justify-center mr-3">
-                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="text-lg font-bold text-zinc-900">Change Location</h2>
-                            <p class="text-xs text-zinc-500">Update driver position</p>
-                        </div>
-                    </div>
-                    <div class="space-y-4">
-                        <div class="relative">
-                            <input type="text" id="destinationInput" 
-                                class="w-full px-4 py-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-black focus:ring-2 focus:ring-black/5 transition-all"
-                                placeholder="Enter address or city">
-                        </div>
-                        <button id="searchBtn" 
-                            class="w-full bg-black text-white py-3.5 rounded-xl font-semibold text-sm hover:bg-zinc-800 transition-colors flex items-center justify-center">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            </svg>
-                            Update Location
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div id="pulsingState" class="hidden">
-                ${v ? `
-                <div class="bg-gradient-to-b from-zinc-900 to-zinc-800 rounded-t-2xl p-6 text-center">
-                    ${v.imageUrl ? `<img src="${escapeHtml(v.imageUrl)}" alt="Vehicle" class="w-40 h-24 object-contain mx-auto drop-shadow-2xl">` : ''}
-                    <p class="text-white font-semibold mt-2">${escapeHtml(v.make)} ${escapeHtml(v.model)}</p>
-                </div>
-                ` : ''}
-                <div class="bg-white ${(v || ds) ? 'rounded-b-2xl' : 'rounded-2xl'} shadow-xl p-8">
-                    <div class="flex flex-col items-center justify-center">
-                        <div class="relative flex items-center justify-center mb-6">
-                            <div class="pulse-ring absolute w-24 h-24 bg-black rounded-full opacity-20"></div>
-                            <div class="pulse-ring absolute w-32 h-32 bg-black rounded-full opacity-10" style="animation-delay: 0.5s"></div>
-                            <button id="stopBtn" 
-                                class="relative z-10 w-20 h-20 bg-black text-white rounded-full font-semibold text-sm shadow-lg flex items-center justify-center hover:bg-zinc-800 transition-colors">
-                                Stop
-                            </button>
-                        </div>
-                        <p class="text-base font-semibold text-zinc-900">Updating location...</p>
-                        <p id="destinationDisplay" class="text-sm text-zinc-500 mt-1"></p>
-                    </div>
-                </div>
-            </div>
-        `;
         
         loadingEl.classList.add('hidden');
         contentEl.classList.remove('hidden');
-        
-        initLocationHandlers();
         
         const driver = data.driver_info;
         if (driver) {
@@ -392,12 +384,9 @@ fetch('/api/location-data')
             if (profileName && driver.name) profileName.textContent = driver.name;
             if (profileEmail) profileEmail.textContent = driver.email || 'Not available';
             if (profilePhone) profilePhone.textContent = driver.phone || 'Not available';
-        } else {
-            const profileEmail = document.getElementById('profileEmail');
-            const profilePhone = document.getElementById('profilePhone');
-            if (profileEmail) profileEmail.textContent = 'Not available';
-            if (profilePhone) profilePhone.textContent = 'Not available';
         }
+        
+        initMapAndHandlers();
     })
     .catch(error => {
         console.error('Error loading location data:', error);
@@ -407,7 +396,13 @@ fetch('/api/location-data')
             </div>
         `;
     });
+</script>
+{% endif %}
 
+{% if has_permission %}
+<script>
+let map, marker;
+let selectedLat = null, selectedLng = null;
 let locationLoopActive = false;
 
 async function stopLocationLoop() {
@@ -425,6 +420,106 @@ async function stopLocationLoop() {
 window.addEventListener('beforeunload', stopLocationLoop);
 window.addEventListener('pagehide', stopLocationLoop);
 
+function initMapAndHandlers() {
+    initMap();
+    initLocationHandlers();
+    loadFlightData();
+    initDisconnectModal();
+}
+
+function initMap() {
+    map = L.map('map', {
+        zoomControl: true,
+        attributionControl: false
+    }).setView([-31.9505, 115.8605], 12);
+    
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd'
+    }).addTo(map);
+    
+    L.control.attribution({
+        prefix: false,
+        position: 'bottomright'
+    }).addAttribution('OpenStreetMap').addTo(map);
+    
+    map.on('click', function(e) {
+        setMarker(e.latlng.lat, e.latlng.lng);
+    });
+    
+    document.querySelectorAll('.quick-loc').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const lat = parseFloat(this.dataset.lat);
+            const lng = parseFloat(this.dataset.lng);
+            setMarker(lat, lng);
+            map.setView([lat, lng], 14);
+        });
+    });
+    
+    const locateMeBtn = document.getElementById('locateMeBtn');
+    if (locateMeBtn) {
+        locateMeBtn.addEventListener('click', function() {
+            if (navigator.geolocation) {
+                this.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="4" class="opacity-25"></circle><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor" class="opacity-75"></path></svg>';
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        setMarker(pos.coords.latitude, pos.coords.longitude);
+                        map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+                        this.innerHTML = '<svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
+                    },
+                    (err) => {
+                        console.error('Geolocation error:', err);
+                        this.innerHTML = '<svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            }
+        });
+    }
+    
+    const clearMapBtn = document.getElementById('clearMapBtn');
+    if (clearMapBtn) {
+        clearMapBtn.addEventListener('click', function() {
+            clearMarker();
+        });
+    }
+}
+
+function setMarker(lat, lng) {
+    selectedLat = lat;
+    selectedLng = lng;
+    
+    if (marker) {
+        map.removeLayer(marker);
+    }
+    
+    const customIcon = L.divIcon({
+        className: 'custom-marker-container',
+        html: '<div class="custom-marker"></div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+    });
+    
+    marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+    
+    const overlay = document.getElementById('mapOverlay');
+    const coordDisplay = document.getElementById('coordDisplay');
+    overlay.classList.remove('hidden');
+    coordDisplay.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    
+    document.getElementById('destinationInput').value = '';
+}
+
+function clearMarker() {
+    if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+    }
+    selectedLat = null;
+    selectedLng = null;
+    document.getElementById('mapOverlay').classList.add('hidden');
+}
+
 function initLocationHandlers() {
     const searchState = document.getElementById('searchState');
     const pulsingState = document.getElementById('pulsingState');
@@ -433,12 +528,21 @@ function initLocationHandlers() {
     const destinationInput = document.getElementById('destinationInput');
     const destinationDisplay = document.getElementById('destinationDisplay');
 
+    if (!searchBtn) return;
+
     searchBtn.addEventListener('click', async () => {
-        const destination = destinationInput.value.trim();
+        let destination = destinationInput.value.trim();
+        
+        if (selectedLat !== null && selectedLng !== null && !destination) {
+            destination = `${selectedLat.toFixed(6)}, ${selectedLng.toFixed(6)}`;
+        }
+        
         if (!destination) {
             destinationInput.style.borderColor = '#ef4444';
+            destinationInput.placeholder = 'Tap on map or enter address';
             return;
         }
+        
         destinationInput.style.borderColor = '';
         destinationDisplay.textContent = destination;
         
@@ -455,22 +559,28 @@ function initLocationHandlers() {
         } catch (e) { console.error(e); }
     });
 
-    stopBtn.addEventListener('click', async () => {
-        locationLoopActive = false;
-        try {
-            await fetch('/stop', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
-        } catch (e) { console.error(e); }
+    if (stopBtn) {
+        stopBtn.addEventListener('click', async () => {
+            locationLoopActive = false;
+            try {
+                await fetch('/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+            } catch (e) { console.error(e); }
 
-        pulsingState.classList.add('hidden');
-        searchState.classList.remove('hidden');
-        destinationInput.value = '';
-    });
+            pulsingState.classList.add('hidden');
+            searchState.classList.remove('hidden');
+            destinationInput.value = '';
+            clearMarker();
+        });
+    }
 
     destinationInput.addEventListener('input', () => {
         destinationInput.style.borderColor = '';
+        if (destinationInput.value.trim()) {
+            clearMarker();
+        }
     });
 }
 
@@ -479,7 +589,6 @@ function loadFlightData() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const flightHours = document.querySelectorAll('.flight-hour');
                 data.hourly_flights.forEach(hourData => {
                     const hourEl = document.querySelector(`.flight-hour[data-hour="${hourData.hour}"]`);
                     if (hourEl) {
@@ -496,146 +605,25 @@ function loadFlightData() {
                         }
                     }
                 });
-                document.querySelector('#flightTotal p:last-child').textContent = data.total_flights;
+                const totalEl = document.querySelector('#flightTotal p:last-child');
+                if (totalEl) totalEl.textContent = data.total_flights;
             }
         })
         .catch(error => console.error('Error loading flight data:', error));
 }
 
-document.addEventListener('DOMContentLoaded', loadFlightData);
-</script>
-{% elif has_permission %}
-<script>
-    let locationLoopActive = false;
-
-    async function stopLocationLoop() {
-        if (locationLoopActive) {
-            try {
-                await fetch('/stop', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
-            } catch (e) { console.error(e); }
-            locationLoopActive = false;
-        }
-    }
-
-    window.addEventListener('beforeunload', stopLocationLoop);
-    window.addEventListener('pagehide', stopLocationLoop);
-
-    const searchState = document.getElementById('searchState');
-    const pulsingState = document.getElementById('pulsingState');
-    const searchBtn = document.getElementById('searchBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const destinationInput = document.getElementById('destinationInput');
-    const destinationDisplay = document.getElementById('destinationDisplay');
-
-    searchBtn.addEventListener('click', async () => {
-        const destination = destinationInput.value.trim();
-        if (!destination) {
-            destinationInput.style.borderColor = '#ef4444';
-            return;
-        }
-        destinationInput.style.borderColor = '';
-        destinationDisplay.textContent = destination;
-        
-        searchState.classList.add('hidden');
-        pulsingState.classList.remove('hidden');
-        locationLoopActive = true;
-        
-        try {
-            await fetch('/submit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `destination=${encodeURIComponent(destination)}`
-            });
-        } catch (e) { console.error(e); }
-    });
-
-    stopBtn.addEventListener('click', async () => {
-        locationLoopActive = false;
-        try {
-            await fetch('/stop', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
-        } catch (e) { console.error(e); }
-
-        pulsingState.classList.add('hidden');
-        searchState.classList.remove('hidden');
-        destinationInput.value = '';
-    });
-
-    destinationInput.addEventListener('input', () => {
-        destinationInput.style.borderColor = '';
-    });
-
-    function loadFlightData() {
-        fetch('/api/flight-arrivals')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    data.hourly_flights.forEach(hourData => {
-                        const hourEl = document.querySelector(`.flight-hour[data-hour="${hourData.hour}"]`);
-                        if (hourEl) {
-                            const countEl = hourEl.querySelector('.flight-count');
-                            countEl.textContent = hourData.count;
-                            if (hourData.count > 5) {
-                                hourEl.classList.remove('bg-zinc-50');
-                                hourEl.classList.add('bg-blue-50');
-                                countEl.classList.add('text-blue-600');
-                            } else if (hourData.count > 0) {
-                                hourEl.classList.remove('bg-zinc-50');
-                                hourEl.classList.add('bg-emerald-50');
-                                countEl.classList.add('text-emerald-600');
-                            }
-                        }
-                    });
-                    document.querySelector('#flightTotal p:last-child').textContent = data.total_flights;
-                }
-            })
-            .catch(error => console.error('Error loading flight data:', error));
-    }
-
-    loadFlightData();
-    
+function initDisconnectModal() {
     const disconnectBtn = document.getElementById('disconnectBtn');
     const disconnectModal = document.getElementById('disconnectModal');
     const cancelDisconnect = document.getElementById('cancelDisconnect');
     
-    if (disconnectBtn) {
+    if (disconnectBtn && disconnectModal) {
         disconnectBtn.addEventListener('click', () => {
             disconnectModal.classList.remove('hidden');
         });
     }
     
-    if (cancelDisconnect) {
-        cancelDisconnect.addEventListener('click', () => {
-            disconnectModal.classList.add('hidden');
-        });
-    }
-    
-    disconnectModal.addEventListener('click', (e) => {
-        if (e.target === disconnectModal) {
-            disconnectModal.classList.add('hidden');
-        }
-    });
-</script>
-{% endif %}
-
-{% if has_permission and not loading %}
-<script>
-    const disconnectBtn = document.getElementById('disconnectBtn');
-    const disconnectModal = document.getElementById('disconnectModal');
-    const cancelDisconnect = document.getElementById('cancelDisconnect');
-    
-    if (disconnectBtn) {
-        disconnectBtn.addEventListener('click', () => {
-            disconnectModal.classList.remove('hidden');
-        });
-    }
-    
-    if (cancelDisconnect) {
+    if (cancelDisconnect && disconnectModal) {
         cancelDisconnect.addEventListener('click', () => {
             disconnectModal.classList.add('hidden');
         });
@@ -648,6 +636,13 @@ document.addEventListener('DOMContentLoaded', loadFlightData);
             }
         });
     }
+}
+
+{% if not loading %}
+document.addEventListener('DOMContentLoaded', function() {
+    initMapAndHandlers();
+});
+{% endif %}
 </script>
 {% endif %}
 {% endblock %}
