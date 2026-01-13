@@ -213,7 +213,7 @@ class DriverDeduplicator:
         self._update_track_states()
         
         is_freeway = self._is_freeway_zone(sighting.zone_id)
-        grid_radius = 5 if is_freeway else 1
+        grid_radius = 5 if is_freeway else 3
         
         nearby_ids = self.spatial_grid.get_nearby_drivers(sighting.lat, sighting.lng, radius=grid_radius)
         
@@ -224,12 +224,11 @@ class DriverDeduplicator:
             self._stats['matches'] += 1
             return match.fingerprint_id, match.confidence, False
         
-        if not match and is_freeway:
-            match, score = self._find_high_speed_match(sighting, threshold_m)
-            if match:
-                self._update_driver(match, sighting)
-                self._stats['matches'] += 1
-                return match.fingerprint_id, match.confidence, False
+        match, score = self._find_recent_match(sighting, threshold_m)
+        if match:
+            self._update_driver(match, sighting)
+            self._stats['matches'] += 1
+            return match.fingerprint_id, match.confidence, False
         
         resurrected = self._try_resurrect(sighting, threshold_m)
         if resurrected:
@@ -241,37 +240,42 @@ class DriverDeduplicator:
         self._stats['new_tracks'] += 1
         return fingerprint_id, 0.5, True
     
-    def _find_high_speed_match(self, sighting: DriverSighting, threshold_m: int) -> Tuple[Optional[TrackedDriver], float]:
+    def _find_recent_match(self, sighting: DriverSighting, threshold_m: int) -> Tuple[Optional[TrackedDriver], float]:
         best_match = None
         best_score = 0
         now = sighting.timestamp
+        zone_speed = self._get_zone_speed(sighting.zone_id)
         
         for fid, driver in self.tracked_drivers.items():
             if driver.vehicle_type != sighting.vehicle_type:
                 continue
             if driver.state == TrackState.DEAD:
                 continue
-            if driver.last_speed_ms < 15:
-                continue
             
             if not driver.positions:
                 continue
             last_time = driver.positions[-1][2]
             time_diff = (now - last_time).total_seconds()
-            if time_diff < 0 or time_diff > 30:
+            if time_diff < 0 or time_diff > 60:
                 continue
+            
+            last_lat, last_lng, _ = driver.positions[-1]
+            distance_to_last = haversine_m(last_lat, last_lng, sighting.lat, sighting.lng)
             
             pred_lat, pred_lng = driver.get_predicted_position(now)
             distance_to_pred = haversine_m(pred_lat, pred_lng, sighting.lat, sighting.lng)
             
-            max_allowed = 28 * time_diff + 200
+            use_pred = len(driver.positions) >= 2 and driver.last_speed_ms > 1
+            distance = distance_to_pred if use_pred else distance_to_last
             
-            if distance_to_pred > max_allowed:
+            max_allowed = zone_speed * time_diff + threshold_m + 100
+            
+            if distance > max_allowed:
                 continue
             
             score = self._calculate_match_score(driver, sighting, threshold_m)
             
-            if score > best_score and score >= 0.45:
+            if score > best_score and score >= 0.40:
                 best_score = score
                 best_match = driver
         
