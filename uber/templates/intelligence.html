@@ -183,6 +183,40 @@
             </div>
         </div>
 
+        <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                <h2 class="text-base md:text-lg font-bold text-zinc-900 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Activity Reports (30-min intervals)
+                </h2>
+                <div class="flex items-center gap-2">
+                    <select id="activity-day-filter" class="px-3 py-1.5 bg-zinc-100 text-zinc-700 text-xs font-medium rounded-lg border-none">
+                        <option value="">Last 24 hours</option>
+                        <option value="0">Monday</option>
+                        <option value="1">Tuesday</option>
+                        <option value="2">Wednesday</option>
+                        <option value="3">Thursday</option>
+                        <option value="4">Friday</option>
+                        <option value="5">Saturday</option>
+                        <option value="6">Sunday</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lg:col-span-2">
+                    <canvas id="activity-chart" height="180"></canvas>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-700 mb-3">Recent Reports</h3>
+                    <div id="activity-reports-list" class="space-y-2 max-h-[250px] overflow-y-auto">
+                        <p class="text-xs text-zinc-500 text-center py-4">Loading reports...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6">
                 <h2 class="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">Learned Patterns</h2>
@@ -207,6 +241,7 @@ let zoneMarkers = {};
 let driverMarkers = {};
 let driverTrails = {};
 let patternsChart;
+let activityChart;
 let refreshInterval;
 let driverRefreshInterval;
 let trailRefreshInterval;
@@ -230,14 +265,17 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDrivers();
     loadTrails();
     loadFlows();
+    loadActivityReports();
     
     refreshInterval = setInterval(loadStatus, 5000);
     driverRefreshInterval = setInterval(loadDrivers, 3000);
     trailRefreshInterval = setInterval(loadTrails, 5000);
     setInterval(loadFlows, 10000);
+    setInterval(loadActivityReports, 60000);
     
     document.getElementById('toggle-daemon').addEventListener('click', toggleDaemon);
     document.getElementById('reset-map').addEventListener('click', resetMap);
+    document.getElementById('activity-day-filter').addEventListener('change', loadActivityReports);
 });
 
 function initMap() {
@@ -632,6 +670,148 @@ async function loadPredictions() {
     } catch (e) {
         console.error('Failed to load predictions:', e);
     }
+}
+
+async function loadActivityReports() {
+    try {
+        const dayFilter = document.getElementById('activity-day-filter').value;
+        let url = '/api/intelligence/activity-reports?hours=24';
+        if (dayFilter !== '') {
+            url = `/api/intelligence/activity-reports?day=${dayFilter}`;
+        }
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.success && data.reports) {
+            renderActivityChart(data.reports);
+            renderActivityList(data.reports);
+        }
+    } catch (e) {
+        console.error('Failed to load activity reports:', e);
+    }
+}
+
+function renderActivityChart(reports) {
+    const ctx = document.getElementById('activity-chart');
+    if (!ctx) return;
+    
+    const sortedReports = [...reports].sort((a, b) => new Date(a.time) - new Date(b.time));
+    
+    const labels = sortedReports.map(r => r.time_slot);
+    const totals = sortedReports.map(r => r.total_drivers);
+    const uberx = sortedReports.map(r => r.uberx);
+    const xl = sortedReports.map(r => r.xl);
+    const black = sortedReports.map(r => r.black);
+    
+    if (activityChart) {
+        activityChart.destroy();
+    }
+    
+    activityChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'UberX',
+                    data: uberx,
+                    backgroundColor: '#22c55e',
+                    stack: 'Stack 0'
+                },
+                {
+                    label: 'XL',
+                    data: xl,
+                    backgroundColor: '#f59e0b',
+                    stack: 'Stack 0'
+                },
+                {
+                    label: 'Black',
+                    data: black,
+                    backgroundColor: '#1f2937',
+                    stack: 'Stack 0'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { size: 10 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        afterBody: function(context) {
+                            const idx = context[0].dataIndex;
+                            const report = sortedReports[idx];
+                            if (report) {
+                                return `Activity: ${report.activity_level || 'N/A'}\nTrend: ${report.trend || 'N/A'}`;
+                            }
+                            return '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    ticks: { font: { size: 9 } }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    title: { display: true, text: 'Drivers', font: { size: 10 } }
+                }
+            }
+        }
+    });
+}
+
+function renderActivityList(reports) {
+    const container = document.getElementById('activity-reports-list');
+    if (!container) return;
+    
+    if (reports.length === 0) {
+        container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">No reports yet. Reports are generated every 30 minutes.</p>';
+        return;
+    }
+    
+    const levelColors = {
+        'very_busy': 'bg-red-100 text-red-700',
+        'busy': 'bg-orange-100 text-orange-700',
+        'moderate': 'bg-yellow-100 text-yellow-700',
+        'quiet': 'bg-blue-100 text-blue-700',
+        'very_quiet': 'bg-zinc-100 text-zinc-600'
+    };
+    
+    const trendIcons = {
+        'surging': '🔥',
+        'rising': '📈',
+        'stable': '➡️',
+        'declining': '📉',
+        'dropping': '⬇️'
+    };
+    
+    container.innerHTML = reports.slice(0, 10).map(r => {
+        const levelClass = levelColors[r.activity_level] || 'bg-zinc-100 text-zinc-600';
+        const trendIcon = trendIcons[r.trend] || '';
+        const changeText = r.change > 0 ? `+${r.change}` : r.change;
+        
+        return `
+            <div class="p-2 bg-zinc-50 rounded-lg border border-zinc-100">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold text-zinc-700">${r.day} ${r.time_slot}</span>
+                    <span class="px-1.5 py-0.5 text-[10px] font-bold rounded ${levelClass}">${(r.activity_level || '').replace('_', ' ')}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-bold text-violet-600">${r.total_drivers} drivers</span>
+                    <span class="text-xs text-zinc-500">${trendIcon} ${changeText}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 </script>
 {% endblock %}
