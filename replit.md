@@ -60,6 +60,15 @@ Preferred communication style: Simple, everyday language.
   - Zone activity levels: HOT (short dwell + high outflow + moderate drivers), WARM (balanced flow), COLD, NO_DATA
   - MOVE/STAY recommendations based on zone comparison with confidence scoring
   - UI shows countdown timer, best zone, and actionable recommendations
+- **ML Training Data System (Demand Proxy Score)**:
+  - Collects per-zone per-15-min window features for machine learning
+  - Database model: `ZoneWindowFeature` stores training rows
+  - Features: driver_count, inflow_rate, outflow_rate, net_flow, avg_dwell_sec, avg_speed_ms, confidence_avg, anomaly_score
+  - Demand Proxy Score formula: `0.45 * outflow_rate_norm + 0.35 * (1 - dwell_norm) + 0.20 * drop_norm`
+  - Activity classification: HOT (>=0.6), WARM (>=0.35), COLD (<0.35)
+  - Zone flow tracking: Tracks inflow/outflow transitions and dwell times per zone
+  - API endpoints: `/api/intelligence/training-data` (JSON/CSV export), `/api/intelligence/training-stats`
+  - Produces ~15 training rows per 15-min window (~1,440 samples/day)
 - **Dashboard**: Premium dark-themed design with:
   - Larger responsive map (450px mobile, 600px tablet, 700px desktop)
   - CSS custom properties for consistent dark theme styling

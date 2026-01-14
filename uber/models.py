@@ -575,6 +575,76 @@ class ScanBatch(db.Model):
         return f'<ScanBatch {self.batch_id}>'
 
 
+class ZoneWindowFeature(db.Model):
+    """ML Training Data: Feature row per zone per 15-min window"""
+    __tablename__ = 'zone_window_features'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    zone_id = db.Column(db.String(50), nullable=False, index=True)
+    window_start = db.Column(db.DateTime, nullable=False, index=True)
+    day_of_week = db.Column(db.Integer, nullable=False)
+    time_bucket = db.Column(db.String(10), nullable=False)
+    
+    driver_count = db.Column(db.Integer, default=0)
+    driver_count_start = db.Column(db.Integer, default=0)
+    driver_count_end = db.Column(db.Integer, default=0)
+    driver_count_change = db.Column(db.Integer, default=0)
+    
+    inflow_count = db.Column(db.Integer, default=0)
+    outflow_count = db.Column(db.Integer, default=0)
+    inflow_rate = db.Column(db.Float, default=0)
+    outflow_rate = db.Column(db.Float, default=0)
+    net_flow = db.Column(db.Integer, default=0)
+    
+    avg_dwell_sec = db.Column(db.Float, default=0)
+    min_dwell_sec = db.Column(db.Float, nullable=True)
+    max_dwell_sec = db.Column(db.Float, nullable=True)
+    
+    avg_speed_ms = db.Column(db.Float, default=0)
+    max_speed_ms = db.Column(db.Float, nullable=True)
+    
+    confidence_avg = db.Column(db.Float, default=0)
+    observation_count = db.Column(db.Integer, default=0)
+    
+    anomaly_score = db.Column(db.Float, default=0)
+    
+    demand_proxy = db.Column(db.Float, default=0)
+    activity_class = db.Column(db.String(20), nullable=True)
+    
+    outflow_rate_norm = db.Column(db.Float, default=0)
+    dwell_norm = db.Column(db.Float, default=0)
+    drop_norm = db.Column(db.Float, default=0)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.Index('idx_zwf_zone_window', 'zone_id', 'window_start'),
+        db.Index('idx_zwf_time', 'day_of_week', 'time_bucket'),
+        db.UniqueConstraint('zone_id', 'window_start', name='unique_zone_window'),
+    )
+    
+    def to_training_dict(self):
+        return {
+            'zone_id': self.zone_id,
+            'day_of_week': self.day_of_week,
+            'time_bucket': self.time_bucket,
+            'driver_count': self.driver_count,
+            'driver_count_change': self.driver_count_change,
+            'inflow_rate': self.inflow_rate,
+            'outflow_rate': self.outflow_rate,
+            'net_flow': self.net_flow,
+            'avg_dwell_sec': self.avg_dwell_sec,
+            'avg_speed_ms': self.avg_speed_ms,
+            'confidence_avg': self.confidence_avg,
+            'anomaly_score': self.anomaly_score,
+            'demand_proxy': self.demand_proxy,
+            'activity_class': self.activity_class,
+        }
+    
+    def __repr__(self):
+        return f'<ZoneWindowFeature {self.zone_id} at {self.time_bucket}>'
+
+
 class DriverTrack(db.Model):
     __tablename__ = 'driver_tracks'
     

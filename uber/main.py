@@ -3747,7 +3747,7 @@ from intelligence.grid import PERTH_GRID
 from intelligence.dedup import DriverDeduplicator, DriverSighting
 from intelligence.daemon import IntelligenceDaemon, get_daemon, start_daemon, stop_daemon
 from intelligence.learning import LearningEngine
-from models import DriverObservation, DriverFingerprint, ZoneConfig, HourlySnapshot, DailyPattern, CorrelationModel, PredictionModel, IntelligenceConfig, ScanBatch, ActivityReport
+from models import DriverObservation, DriverFingerprint, ZoneConfig, HourlySnapshot, DailyPattern, CorrelationModel, PredictionModel, IntelligenceConfig, ScanBatch, ActivityReport, ZoneWindowFeature
 
 _intelligence_daemon = None
 
@@ -4313,6 +4313,133 @@ def api_intelligence_zone_history():
             }
         
         return jsonify(success=True, labels=time_labels, zones_data=zones_data, zones=list(zone_history.keys()))
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/training-data')
+@login_required
+def api_intelligence_training_data():
+    """Export ML training data (zone window features) as JSON"""
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        days = request.args.get('days', 7, type=int)
+        zone_id = request.args.get('zone_id', None)
+        format_type = request.args.get('format', 'json')
+        
+        cutoff = datetime.now() - timedelta(days=days)
+        
+        query = ZoneWindowFeature.query.filter(
+            ZoneWindowFeature.window_start >= cutoff
+        )
+        
+        if zone_id:
+            query = query.filter(ZoneWindowFeature.zone_id == zone_id)
+        
+        features = query.order_by(ZoneWindowFeature.window_start.asc()).all()
+        
+        data = []
+        for f in features:
+            row = {
+                'zone_id': f.zone_id,
+                'window_start': f.window_start.isoformat(),
+                'day_of_week': f.day_of_week,
+                'time_bucket': f.time_bucket,
+                'driver_count': f.driver_count,
+                'driver_count_change': f.driver_count_change,
+                'inflow_count': f.inflow_count,
+                'outflow_count': f.outflow_count,
+                'inflow_rate': f.inflow_rate,
+                'outflow_rate': f.outflow_rate,
+                'net_flow': f.net_flow,
+                'avg_dwell_sec': f.avg_dwell_sec,
+                'avg_speed_ms': f.avg_speed_ms,
+                'confidence_avg': f.confidence_avg,
+                'observation_count': f.observation_count,
+                'anomaly_score': f.anomaly_score,
+                'demand_proxy': f.demand_proxy,
+                'activity_class': f.activity_class,
+                'outflow_rate_norm': f.outflow_rate_norm,
+                'dwell_norm': f.dwell_norm,
+                'drop_norm': f.drop_norm,
+            }
+            data.append(row)
+        
+        if format_type == 'csv':
+            import io
+            import csv
+            output = io.StringIO()
+            if data:
+                writer = csv.DictWriter(output, fieldnames=data[0].keys())
+                writer.writeheader()
+                writer.writerows(data)
+            
+            response = app.response_class(
+                response=output.getvalue(),
+                status=200,
+                mimetype='text/csv'
+            )
+            response.headers['Content-Disposition'] = f'attachment; filename=training_data_{datetime.now().strftime("%Y%m%d")}.csv'
+            return response
+        
+        zones = list(set(f.zone_id for f in features))
+        return jsonify(
+            success=True,
+            count=len(data),
+            days=days,
+            zones=zones,
+            data=data
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify(success=False, message=str(e))
+
+
+@app.route('/api/intelligence/training-stats')
+@login_required
+def api_intelligence_training_stats():
+    """Get statistics about collected training data"""
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        total_rows = ZoneWindowFeature.query.count()
+        
+        if total_rows == 0:
+            return jsonify(
+                success=True,
+                total_rows=0,
+                message='No training data collected yet. Data is saved every 15 minutes.'
+            )
+        
+        first_record = ZoneWindowFeature.query.order_by(ZoneWindowFeature.window_start.asc()).first()
+        last_record = ZoneWindowFeature.query.order_by(ZoneWindowFeature.window_start.desc()).first()
+        
+        zones = db.session.query(ZoneWindowFeature.zone_id).distinct().count()
+        
+        avg_demand = db.session.query(db.func.avg(ZoneWindowFeature.demand_proxy)).scalar() or 0
+        
+        hot_count = ZoneWindowFeature.query.filter(ZoneWindowFeature.activity_class == 'HOT').count()
+        warm_count = ZoneWindowFeature.query.filter(ZoneWindowFeature.activity_class == 'WARM').count()
+        cold_count = ZoneWindowFeature.query.filter(ZoneWindowFeature.activity_class == 'COLD').count()
+        
+        return jsonify(
+            success=True,
+            total_rows=total_rows,
+            zones_tracked=zones,
+            first_record=first_record.window_start.isoformat() if first_record else None,
+            last_record=last_record.window_start.isoformat() if last_record else None,
+            avg_demand_proxy=round(avg_demand, 3),
+            activity_distribution={
+                'HOT': hot_count,
+                'WARM': warm_count,
+                'COLD': cold_count
+            },
+            estimated_days=(total_rows / zones / 96) if zones > 0 else 0
+        )
     except Exception as e:
         return jsonify(success=False, message=str(e))
 

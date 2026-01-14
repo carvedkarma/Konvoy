@@ -89,6 +89,8 @@ class IntelligenceDaemon:
         self.started_at = datetime.now()
         self.current_batch_id = str(uuid.uuid4())[:8]
         
+        self.deduplicator.start_window()
+        
         self._thread = threading.Thread(target=self._run_with_recovery, daemon=False)
         self._thread.start()
         
@@ -391,10 +393,10 @@ class IntelligenceDaemon:
             return
         
         try:
-            from models import db, ActivityReport
+            from models import db, ActivityReport, ZoneWindowFeature
         except ImportError:
             try:
-                from uber.models import db, ActivityReport
+                from uber.models import db, ActivityReport, ZoneWindowFeature
             except ImportError:
                 print("[Report] Cannot import models", flush=True)
                 return
@@ -490,6 +492,48 @@ class IntelligenceDaemon:
                 db.session.add(report)
                 db.session.commit()
                 
+                zone_features = self.deduplicator.get_zone_window_features(window_minutes=15.0)
+                features_saved = 0
+                
+                for zone_id, features in zone_features.items():
+                    try:
+                        zone_feature = ZoneWindowFeature(
+                            zone_id=zone_id,
+                            window_start=report_time,
+                            day_of_week=day_of_week,
+                            time_bucket=time_slot,
+                            driver_count=features.get('driver_count', 0),
+                            driver_count_start=features.get('driver_count_start', 0),
+                            driver_count_end=features.get('driver_count_end', 0),
+                            driver_count_change=features.get('driver_count_change', 0),
+                            inflow_count=features.get('inflow_count', 0),
+                            outflow_count=features.get('outflow_count', 0),
+                            inflow_rate=features.get('inflow_rate', 0),
+                            outflow_rate=features.get('outflow_rate', 0),
+                            net_flow=features.get('net_flow', 0),
+                            avg_dwell_sec=features.get('avg_dwell_sec', 0),
+                            min_dwell_sec=features.get('min_dwell_sec'),
+                            max_dwell_sec=features.get('max_dwell_sec'),
+                            avg_speed_ms=features.get('avg_speed_ms', 0),
+                            max_speed_ms=features.get('max_speed_ms'),
+                            confidence_avg=features.get('confidence_avg', 0),
+                            observation_count=features.get('observation_count', 0),
+                            anomaly_score=features.get('anomaly_score', 0),
+                            demand_proxy=features.get('demand_proxy', 0),
+                            activity_class=features.get('activity_class'),
+                            outflow_rate_norm=features.get('outflow_rate_norm', 0),
+                            dwell_norm=features.get('dwell_norm', 0),
+                            drop_norm=features.get('drop_norm', 0),
+                        )
+                        db.session.add(zone_feature)
+                        features_saved += 1
+                    except Exception as fe:
+                        print(f"[Report] Error saving zone feature for {zone_id}: {fe}", flush=True)
+                
+                if features_saved > 0:
+                    db.session.commit()
+                    print(f"[Report] Saved {features_saved} zone window features for ML training", flush=True)
+                
                 self._cycles_since_report = 0
                 
                 report_data = {
@@ -521,6 +565,8 @@ class IntelligenceDaemon:
         self.trajectory_analyzer.reset_window()
         self.deduplicator.reset()
         self._period_driver_samples.clear()
+        
+        self.deduplicator.start_window()
         
         print(f"[Window] Reset complete - {window_summary.get('total_unique_drivers', 0)} drivers cleared, "
               f"{len(window_summary.get('zones', {}))} zones reset")

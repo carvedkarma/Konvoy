@@ -218,6 +218,10 @@ class DriverDeduplicator:
             'expired': 0,
             'cycle_deduped': 0
         }
+        
+        self._zone_flow_tracking: Dict[str, Dict] = {}
+        self._window_start_counts: Dict[str, int] = {}
+        self._driver_zone_entry: Dict[str, Tuple[str, datetime]] = {}
     
     def start_cycle(self, zone_id: Optional[str] = None):
         self._seen_fingerprints_this_cycle.clear()
@@ -655,6 +659,8 @@ class DriverDeduplicator:
             del self.dead_archive[fid]
     
     def _update_driver(self, driver: TrackedDriver, sighting: DriverSighting):
+        old_zone = driver.zone_id
+        
         driver.positions.append((sighting.lat, sighting.lng, sighting.timestamp))
         if sighting.bearing is not None:
             driver.bearings.append(sighting.bearing)
@@ -677,6 +683,9 @@ class DriverDeduplicator:
         )
         
         self._update_cross_grid_cache(driver)
+        
+        self._track_zone_transition(driver, old_zone, sighting.zone_id)
+        self._track_observation(driver)
         
         if len(driver.positions) > 30:
             driver.positions = driver.positions[-30:]
@@ -771,12 +780,184 @@ class DriverDeduplicator:
         
         return result
     
+    def start_window(self):
+        """Call at start of each 15-min window to capture initial state"""
+        self._zone_flow_tracking.clear()
+        self._window_start_counts.clear()
+        self._driver_zone_entry.clear()
+        
+        zone_counts = self.get_counts_by_zone()
+        for zone_id, counts in zone_counts.items():
+            total = sum(counts.values())
+            self._window_start_counts[zone_id] = total
+            self._zone_flow_tracking[zone_id] = {
+                'inflow': 0,
+                'outflow': 0,
+                'dwell_times': [],
+                'speeds': [],
+                'confidences': [],
+                'observations': 0,
+                'start_count': total,
+                'end_count': total,
+            }
+        
+        for fid, driver in self.tracked_drivers.items():
+            if driver.state == TrackState.ACTIVE and driver.zone_id:
+                self._driver_zone_entry[fid] = (driver.zone_id, driver.last_seen)
+    
+    def _track_zone_transition(self, driver: TrackedDriver, old_zone: str, new_zone: str):
+        """Track when a driver moves between zones"""
+        if old_zone and old_zone != new_zone:
+            if old_zone not in self._zone_flow_tracking:
+                self._zone_flow_tracking[old_zone] = {
+                    'inflow': 0, 'outflow': 0, 'dwell_times': [], 
+                    'speeds': [], 'confidences': [], 'observations': 0,
+                    'start_count': 0, 'end_count': 0
+                }
+            self._zone_flow_tracking[old_zone]['outflow'] += 1
+            
+            if driver.fingerprint_id in self._driver_zone_entry:
+                entry_zone, entry_time = self._driver_zone_entry[driver.fingerprint_id]
+                if entry_zone == old_zone:
+                    dwell = (driver.last_seen - entry_time).total_seconds()
+                    self._zone_flow_tracking[old_zone]['dwell_times'].append(dwell)
+        
+        if new_zone:
+            if new_zone not in self._zone_flow_tracking:
+                self._zone_flow_tracking[new_zone] = {
+                    'inflow': 0, 'outflow': 0, 'dwell_times': [],
+                    'speeds': [], 'confidences': [], 'observations': 0,
+                    'start_count': 0, 'end_count': 0
+                }
+            if old_zone and old_zone != new_zone:
+                self._zone_flow_tracking[new_zone]['inflow'] += 1
+            
+            self._driver_zone_entry[driver.fingerprint_id] = (new_zone, driver.last_seen)
+    
+    def _track_observation(self, driver: TrackedDriver):
+        """Track speed and confidence observations for a zone"""
+        zone_id = driver.zone_id
+        if not zone_id:
+            return
+            
+        if zone_id not in self._zone_flow_tracking:
+            self._zone_flow_tracking[zone_id] = {
+                'inflow': 0, 'outflow': 0, 'dwell_times': [],
+                'speeds': [], 'confidences': [], 'observations': 0,
+                'start_count': 0, 'end_count': 0
+            }
+        
+        self._zone_flow_tracking[zone_id]['observations'] += 1
+        self._zone_flow_tracking[zone_id]['confidences'].append(driver.confidence)
+        if driver.last_speed_ms > 0:
+            self._zone_flow_tracking[zone_id]['speeds'].append(driver.last_speed_ms)
+    
+    def get_zone_window_features(self, window_minutes: float = 15.0) -> Dict[str, Dict]:
+        """Get ML features for all zones for the current window"""
+        zone_counts = self.get_counts_by_zone()
+        features = {}
+        
+        all_outflows = []
+        all_dwells = []
+        all_drops = []
+        
+        for zone_id in set(list(self._zone_flow_tracking.keys()) + list(zone_counts.keys())):
+            tracking = self._zone_flow_tracking.get(zone_id, {
+                'inflow': 0, 'outflow': 0, 'dwell_times': [],
+                'speeds': [], 'confidences': [], 'observations': 0,
+                'start_count': 0, 'end_count': 0
+            })
+            
+            counts = zone_counts.get(zone_id, {'UberX': 0, 'Comfort': 0, 'XL': 0, 'Black': 0})
+            current_count = sum(counts.values())
+            start_count = self._window_start_counts.get(zone_id, current_count)
+            
+            inflow = tracking['inflow']
+            outflow = tracking['outflow']
+            dwell_times = tracking['dwell_times']
+            speeds = tracking['speeds']
+            confidences = tracking['confidences']
+            observations = tracking['observations']
+            
+            inflow_rate = inflow / window_minutes if window_minutes > 0 else 0
+            outflow_rate = outflow / window_minutes if window_minutes > 0 else 0
+            net_flow = inflow - outflow
+            driver_count_change = current_count - start_count
+            
+            avg_dwell = sum(dwell_times) / len(dwell_times) if dwell_times else 0
+            min_dwell = min(dwell_times) if dwell_times else None
+            max_dwell = max(dwell_times) if dwell_times else None
+            
+            avg_speed = sum(speeds) / len(speeds) if speeds else 0
+            max_speed = max(speeds) if speeds else None
+            
+            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+            
+            features[zone_id] = {
+                'driver_count': current_count,
+                'driver_count_start': start_count,
+                'driver_count_end': current_count,
+                'driver_count_change': driver_count_change,
+                'inflow_count': inflow,
+                'outflow_count': outflow,
+                'inflow_rate': inflow_rate,
+                'outflow_rate': outflow_rate,
+                'net_flow': net_flow,
+                'avg_dwell_sec': avg_dwell,
+                'min_dwell_sec': min_dwell,
+                'max_dwell_sec': max_dwell,
+                'avg_speed_ms': avg_speed,
+                'max_speed_ms': max_speed,
+                'confidence_avg': avg_confidence,
+                'observation_count': observations,
+            }
+            
+            all_outflows.append(outflow_rate)
+            if avg_dwell > 0:
+                all_dwells.append(avg_dwell)
+            all_drops.append(-driver_count_change if driver_count_change < 0 else 0)
+        
+        max_outflow = max(all_outflows) if all_outflows else 1
+        max_dwell = max(all_dwells) if all_dwells else 1
+        max_drop = max(all_drops) if all_drops else 1
+        
+        for zone_id, feat in features.items():
+            outflow_norm = feat['outflow_rate'] / max_outflow if max_outflow > 0 else 0
+            dwell_norm = feat['avg_dwell_sec'] / max_dwell if max_dwell > 0 else 0
+            drop = -feat['driver_count_change'] if feat['driver_count_change'] < 0 else 0
+            drop_norm = drop / max_drop if max_drop > 0 else 0
+            
+            demand_proxy = (
+                0.45 * outflow_norm +
+                0.35 * (1 - dwell_norm) +
+                0.20 * drop_norm
+            )
+            
+            if demand_proxy >= 0.6:
+                activity_class = 'HOT'
+            elif demand_proxy >= 0.35:
+                activity_class = 'WARM'
+            else:
+                activity_class = 'COLD'
+            
+            feat['outflow_rate_norm'] = outflow_norm
+            feat['dwell_norm'] = dwell_norm
+            feat['drop_norm'] = drop_norm
+            feat['demand_proxy'] = demand_proxy
+            feat['activity_class'] = activity_class
+            feat['anomaly_score'] = 0
+        
+        return features
+    
     def reset(self):
         self.tracked_drivers.clear()
         self.dead_archive.clear()
         self.cross_grid_cache.clear()
         self.spatial_grid = SpatialGrid()
         self._seen_fingerprints_this_cycle.clear()
+        self._zone_flow_tracking.clear()
+        self._window_start_counts.clear()
+        self._driver_zone_entry.clear()
         self._stats = {'matches': 0, 'new_tracks': 0, 'resurrections': 0, 'expired': 0, 'cycle_deduped': 0}
     
     def get_stats(self) -> Dict:
