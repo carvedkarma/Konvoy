@@ -4261,18 +4261,20 @@ def api_intelligence_zone_history():
         time_labels = []
         
         for r in reports:
-            time_label = r.report_time.strftime('%H:%M')
+            perth_time = r.report_time + timedelta(hours=8)
+            time_label = perth_time.strftime('%H:%M')
             if time_label not in time_labels:
                 time_labels.append(time_label)
             
             zone_counts = r.get_zone_counts()
+            perth_label = perth_time.strftime('%H:%M')
             for zone_id, counts in zone_counts.items():
                 if zone_id not in zone_history:
                     zone_history[zone_id] = []
                 
                 zone_total = sum(counts.values()) if isinstance(counts, dict) else counts
                 zone_history[zone_id].append({
-                    'time': time_label,
+                    'time': perth_label,
                     'count': zone_total,
                     'uberx': counts.get('UberX', 0) if isinstance(counts, dict) else 0,
                     'xl': counts.get('XL', 0) if isinstance(counts, dict) else 0,
