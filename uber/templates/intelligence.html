@@ -327,8 +327,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
                         </svg>
                     </div>
-                    Zone Flow History
-                    <span class="text-xs font-normal text-zinc-500">(15-min intervals per zone)</span>
+                    15-Minute Driver Flow
                 </h2>
                 <select id="zone-history-hours" class="px-4 py-2 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg border border-zinc-700 focus:border-violet-500 focus:outline-none">
                     <option value="3">Last 3 hours</option>
@@ -337,7 +336,7 @@
                     <option value="24">Last 24 hours</option>
                 </select>
             </div>
-            <div class="h-[300px]">
+            <div class="h-[400px]">
                 <canvas id="zone-history-chart"></canvas>
             </div>
         </div>
@@ -1162,17 +1161,17 @@ function renderZoneHistoryChart(chartData) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Zone History (Perth Time - AWST)',
-                    color: '#a0a0b0',
-                    font: { size: 12 }
+                    text: '15-Minute Driver Flow (Perth Time - AWST)',
+                    color: '#fff',
+                    font: { size: 14, weight: 'bold' }
                 },
                 legend: {
                     position: 'bottom',
                     labels: {
-                        boxWidth: 12,
-                        font: { size: 11 },
+                        boxWidth: 16,
+                        font: { size: 12 },
                         color: '#a0a0b0',
-                        padding: 15
+                        padding: 20
                     }
                 },
                 tooltip: {
@@ -1180,27 +1179,38 @@ function renderZoneHistoryChart(chartData) {
                     titleColor: '#fff',
                     bodyColor: '#a0a0b0',
                     borderColor: 'rgba(139, 92, 246, 0.3)',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    callbacks: {
+                        afterBody: function(context) {
+                            const idx = context[0].dataIndex;
+                            const cbd = context[0].chart.data.datasets[0].data[idx];
+                            const freo = context[0].chart.data.datasets[1].data[idx];
+                            const total = context[0].chart.data.datasets[2].data[idx];
+                            const cbdPct = total > 0 ? Math.round((cbd / total) * 100) : 0;
+                            const freoPct = total > 0 ? Math.round((freo / total) * 100) : 0;
+                            return `CBD: ${cbdPct}% | Freo: ${freoPct}%`;
+                        }
+                    }
                 }
             },
             scales: {
                 x: {
                     ticks: {
-                        font: { size: 10 },
-                        color: '#6b7280',
-                        maxRotation: 45
+                        font: { size: 11 },
+                        color: '#a0a0b0',
+                        maxRotation: 0
                     },
-                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
-                    title: { display: true, text: 'Time (AWST)', color: '#6b7280', font: { size: 10 } }
+                    grid: { color: 'rgba(139, 92, 246, 0.15)' },
+                    title: { display: true, text: 'Time (AWST)', color: '#a0a0b0', font: { size: 11, weight: 'bold' } }
                 },
                 y: {
                     beginAtZero: true,
-                    ticks: { color: '#6b7280' },
-                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
+                    ticks: { color: '#a0a0b0', font: { size: 11 } },
+                    grid: { color: 'rgba(139, 92, 246, 0.15)' },
                     title: {
                         display: true,
-                        text: 'Drivers per Zone',
-                        font: { size: 11 },
+                        text: 'Driver Count',
+                        font: { size: 12, weight: 'bold' },
                         color: '#a0a0b0'
                     }
                 }
