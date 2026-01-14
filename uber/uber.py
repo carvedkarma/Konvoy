@@ -11,6 +11,8 @@ def main():
     #     car = vehicle['make'] + ' ' + vehicle['model']
     #     print(f'{vehicles.index(vehicle):<1}   {car:20}{vehicle['licensePlate']}\t\t{vehicle['isAccessible']}\t{vehicle['isDefault']}')
 
-    response = driverLocation()
+    # response = driverLocation()
+    pass
 
-main()
+if __name__ == "__main__":
+    main()
