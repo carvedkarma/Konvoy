@@ -801,18 +801,23 @@ async function loadHotspots() {
                 return;
             }
             
-            const cbdFreoZones = ['perth_cbd', 'fremantle', 'fremantle_port', 'south_fremantle'];
-            let cbdFreoTotal = 0;
+            const cbdZones = ['perth_cbd', 'west_perth', 'east_perth', 'northbridge', 'elizabeth_quay'];
+            const freoZones = ['fremantle', 'fremantle_port', 'south_fremantle'];
+            let cbdTotal = 0;
+            let freoTotal = 0;
             data.hotspots.forEach(h => {
-                if (cbdFreoZones.includes(h.zone_id)) {
-                    cbdFreoTotal += h.drivers;
-                }
+                if (cbdZones.includes(h.zone_id)) cbdTotal += h.drivers;
+                if (freoZones.includes(h.zone_id)) freoTotal += h.drivers;
             });
             
             container.innerHTML = `
+                <div class="flex items-center justify-between p-2 mb-1 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                    <span class="text-xs font-medium text-violet-400">Perth CBD</span>
+                    <span class="text-sm font-bold text-violet-400">${cbdTotal}</span>
+                </div>
                 <div class="flex items-center justify-between p-2 mb-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                    <span class="text-xs font-medium text-emerald-400">CBD + Fremantle</span>
-                    <span class="text-sm font-bold text-emerald-400">${cbdFreoTotal}</span>
+                    <span class="text-xs font-medium text-emerald-400">Fremantle</span>
+                    <span class="text-sm font-bold text-emerald-400">${freoTotal}</span>
                 </div>
             ` + data.hotspots.map((h, i) => `
                 <div class="flex items-center justify-between p-2 rounded-lg ${i === 0 ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-zinc-800/50'}">
