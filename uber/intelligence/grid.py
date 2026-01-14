@@ -51,21 +51,16 @@ class PerthGrid:
         self._generate_grid()
     
     def _generate_grid(self):
-        seen_coords = set()
-        
         for zone in self.PERTH_ZONES:
-            spacing_km = 1.5 if zone['dense'] else 2.5
-            points = self._generate_zone_points(
-                zone['lat'], zone['lng'], 
-                zone['radius'], spacing_km,
-                zone['name'], zone['dense'], zone['priority']
-            )
-            
-            for point in points:
-                coord_key = f"{point.lat:.4f},{point.lng:.4f}"
-                if coord_key not in seen_coords:
-                    seen_coords.add(coord_key)
-                    self.grid_points.append(point)
+            zone_id = zone['name'].lower().replace(' ', '_')
+            self.grid_points.append(GridPoint(
+                lat=zone['lat'],
+                lng=zone['lng'],
+                zone_id=zone_id,
+                zone_name=zone['name'],
+                is_dense=zone['dense'],
+                priority=zone['priority']
+            ))
         
         self.grid_points.sort(key=lambda p: -p.priority)
     
