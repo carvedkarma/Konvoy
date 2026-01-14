@@ -4339,7 +4339,9 @@ def auto_start_intelligence_engine():
             else:
                 print("[Intelligence] Engine already running", flush=True)
     except Exception as e:
+        import traceback
         print(f"[Intelligence] Auto-start failed: {e}", flush=True)
+        traceback.print_exc()
 
 
 with app.app_context():
