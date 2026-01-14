@@ -379,7 +379,9 @@ class IntelligenceDaemon:
                 self._reset_window_state()
                 self._last_report_time = current_slot
             except Exception as e:
+                import traceback
                 print(f"[Report] Error generating activity report: {e}")
+                traceback.print_exc()
     
     def _generate_activity_report(self, report_time: datetime):
         if not self.flask_app:
