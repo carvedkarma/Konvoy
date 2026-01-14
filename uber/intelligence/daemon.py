@@ -306,6 +306,18 @@ class IntelligenceDaemon:
         if self.started_at:
             uptime = (datetime.now() - self.started_at).total_seconds()
         
+        zone_counts = self.deduplicator.get_counts_by_zone()
+        top_zones_by_type = {}
+        for vtype in ['UberX', 'XL', 'Black']:
+            top_zone = None
+            top_count = 0
+            for zone, counts in zone_counts.items():
+                if counts.get(vtype, 0) > top_count:
+                    top_count = counts.get(vtype, 0)
+                    top_zone = zone
+            if top_zone and top_count > 0:
+                top_zones_by_type[vtype] = {'zone': top_zone, 'count': top_count}
+        
         return {
             'is_running': self.is_running,
             'started_at': self.started_at.isoformat() if self.started_at else None,
@@ -319,6 +331,8 @@ class IntelligenceDaemon:
             'cycle_count': self.cycle_count,
             'unique_drivers': self.deduplicator.get_driver_count(),
             'counts_by_type': self.deduplicator.get_counts_by_type(),
+            'counts_by_zone': zone_counts,
+            'top_zones_by_type': top_zones_by_type,
             'dedup_stats': self.deduplicator.get_stats(),
             'trajectory_stats': self.trajectory_analyzer.get_stats(),
             'last_error': self.last_error,

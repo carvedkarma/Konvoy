@@ -136,28 +136,28 @@
                     <span class="pulse-dot w-2.5 h-2.5 bg-violet-500 rounded-full"></span>
                 </div>
                 <p id="stat-total" class="text-3xl lg:text-4xl font-black text-white glow-text">--</p>
-                <p class="text-xs text-zinc-500 mt-1">Unique drivers</p>
+                <p id="stat-zone-label" class="text-xs text-violet-400 mt-1 truncate">All zones</p>
             </div>
             <div class="stat-card p-4">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">UberX</span>
                 </div>
                 <p id="stat-uberx" class="text-3xl lg:text-4xl font-black text-white">--</p>
-                <p class="text-xs text-zinc-500 mt-1">Active</p>
+                <p id="stat-uberx-zone" class="text-xs text-zinc-500 mt-1 truncate">--</p>
             </div>
             <div class="stat-card p-4">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">XL</span>
                 </div>
                 <p id="stat-xl" class="text-3xl lg:text-4xl font-black text-white">--</p>
-                <p class="text-xs text-zinc-500 mt-1">Active</p>
+                <p id="stat-xl-zone" class="text-xs text-zinc-500 mt-1 truncate">--</p>
             </div>
             <div class="stat-card p-4">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Black</span>
                 </div>
                 <p id="stat-black" class="text-3xl lg:text-4xl font-black text-white">--</p>
-                <p class="text-xs text-zinc-500 mt-1">Active</p>
+                <p id="stat-black-zone" class="text-xs text-zinc-500 mt-1 truncate">--</p>
             </div>
             <div class="window-card p-4 col-span-2 lg:col-span-1">
                 <div class="flex items-center gap-2 mb-2">
@@ -517,12 +517,15 @@ function updateFlowDisplay(flows) {
 
 async function loadDrivers() {
     try {
-        const res = await fetch(`/api/intelligence/drivers?minutes=10&since_id=${lastMaxId}`);
+        const res = await fetch(`/api/intelligence/drivers?minutes=5`);
         const data = await res.json();
         
         if (data.success && data.drivers) {
+            const activeFingerprints = new Set();
+            
             data.drivers.forEach(driver => {
                 const key = driver.fingerprint_id;
+                activeFingerprints.add(key);
                 const color = vehicleColors[driver.vehicle_type] || vehicleColors.default;
                 
                 if (driverMarkers[key]) {
@@ -552,9 +555,16 @@ async function loadDrivers() {
                 }
             });
             
-            if (data.max_id > lastMaxId) {
-                lastMaxId = data.max_id;
-            }
+            Object.keys(driverMarkers).forEach(key => {
+                if (!activeFingerprints.has(key)) {
+                    map.removeLayer(driverMarkers[key]);
+                    delete driverMarkers[key];
+                    if (driverTrails[key]) {
+                        map.removeLayer(driverTrails[key]);
+                        delete driverTrails[key];
+                    }
+                }
+            });
             
             document.getElementById('map-driver-count').textContent = Object.keys(driverMarkers).length;
         }
@@ -657,10 +667,50 @@ function updateStatusUI(status) {
     }
     
     const counts = status.counts_by_type || {};
+    const topZones = status.top_zones_by_type || {};
+    const zoneCounts = status.counts_by_zone || {};
+    
     document.getElementById('stat-total').textContent = status.unique_drivers || 0;
     document.getElementById('stat-uberx').textContent = counts.UberX || 0;
     document.getElementById('stat-xl').textContent = counts.XL || 0;
     document.getElementById('stat-black').textContent = counts.Black || 0;
+    
+    const formatZone = (zone) => zone ? zone.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '--';
+    
+    const zoneLabel = document.getElementById('stat-zone-label');
+    const zoneCount = Object.keys(zoneCounts).length;
+    if (zoneCount > 0) {
+        zoneLabel.textContent = `${zoneCount} zones scanned`;
+    } else {
+        zoneLabel.textContent = 'All zones';
+    }
+    
+    const uberxZone = document.getElementById('stat-uberx-zone');
+    if (topZones.UberX) {
+        uberxZone.textContent = `${topZones.UberX.count} in ${formatZone(topZones.UberX.zone)}`;
+        uberxZone.className = 'text-xs text-emerald-400/70 mt-1 truncate';
+    } else {
+        uberxZone.textContent = '--';
+        uberxZone.className = 'text-xs text-zinc-500 mt-1 truncate';
+    }
+    
+    const xlZone = document.getElementById('stat-xl-zone');
+    if (topZones.XL) {
+        xlZone.textContent = `${topZones.XL.count} in ${formatZone(topZones.XL.zone)}`;
+        xlZone.className = 'text-xs text-amber-400/70 mt-1 truncate';
+    } else {
+        xlZone.textContent = '--';
+        xlZone.className = 'text-xs text-zinc-500 mt-1 truncate';
+    }
+    
+    const blackZone = document.getElementById('stat-black-zone');
+    if (topZones.Black) {
+        blackZone.textContent = `${topZones.Black.count} in ${formatZone(topZones.Black.zone)}`;
+        blackZone.className = 'text-xs text-zinc-400 mt-1 truncate';
+    } else {
+        blackZone.textContent = '--';
+        blackZone.className = 'text-xs text-zinc-500 mt-1 truncate';
+    }
     
     if (status.uptime_seconds) {
         const hours = Math.floor(status.uptime_seconds / 3600);
