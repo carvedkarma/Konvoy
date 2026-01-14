@@ -375,24 +375,29 @@ class IntelligenceDaemon:
                 continue
             
             try:
+                print(f"[Report] Generating activity report for {current_slot.strftime('%H:%M')}", flush=True)
                 self._generate_activity_report(current_slot)
                 self._reset_window_state()
                 self._last_report_time = current_slot
+                print(f"[Report] Activity report saved successfully", flush=True)
             except Exception as e:
                 import traceback
-                print(f"[Report] Error generating activity report: {e}")
+                print(f"[Report] Error generating activity report: {e}", flush=True)
                 traceback.print_exc()
     
     def _generate_activity_report(self, report_time: datetime):
         if not self.flask_app:
-            print("[Report] No Flask app context available")
+            print("[Report] No Flask app context available", flush=True)
             return
         
         try:
-            from uber.models import db, ActivityReport
+            from models import db, ActivityReport
         except ImportError:
-            print("[Report] Cannot import models")
-            return
+            try:
+                from uber.models import db, ActivityReport
+            except ImportError:
+                print("[Report] Cannot import models", flush=True)
+                return
         
         counts = self.deduplicator.get_counts_by_type()
         zone_counts = self.deduplicator.get_counts_by_zone()
