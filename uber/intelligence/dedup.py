@@ -156,20 +156,20 @@ class SpatialGrid:
 
 
 class DriverDeduplicator:
-    DEFAULT_COORD_THRESHOLD_M = 100
-    DENSE_COORD_THRESHOLD_M = 50
-    BEARING_THRESHOLD_DEG = 30
+    DEFAULT_COORD_THRESHOLD_M = 150
+    DENSE_COORD_THRESHOLD_M = 80
+    BEARING_THRESHOLD_DEG = 45
     MAX_SPEED_MS = 28
     
-    ACTIVE_TTL_SECONDS = 30
-    MISSING_TTL_SECONDS = 60
-    DEAD_ARCHIVE_MINUTES = 5
+    ACTIVE_TTL_SECONDS = 45
+    MISSING_TTL_SECONDS = 90
+    DEAD_ARCHIVE_MINUTES = 10
     
-    MATCH_THRESHOLD = 0.55
-    FAST_MOVER_THRESHOLD = 0.45
-    HIGH_CONFIDENCE_MATCH = 0.75
+    MATCH_THRESHOLD = 0.45
+    FAST_MOVER_THRESHOLD = 0.35
+    HIGH_CONFIDENCE_MATCH = 0.70
     
-    FAST_SPEED_MS = 15
+    FAST_SPEED_MS = 12
     
     WEIGHTS = {
         'distance': 0.30,
@@ -204,7 +204,7 @@ class DriverDeduplicator:
         self.dead_archive: Dict[str, TrackedDriver] = {}
         
         self.cross_grid_cache: Dict[str, Tuple[str, float, float, datetime]] = {}
-        self.CROSS_GRID_TTL_SECONDS = 45
+        self.CROSS_GRID_TTL_SECONDS = 90
         
         self._seen_fingerprints_this_cycle: Set[str] = set()
         self._current_cycle_zone: Optional[str] = None
@@ -252,16 +252,16 @@ class DriverDeduplicator:
         is_freeway = self._is_freeway_zone(zone_id)
         
         if is_freeway:
-            return 7
+            return 10
         
         if driver_speed_ms > 20:
-            return 6
+            return 8
         elif driver_speed_ms > 15:
-            return 5
+            return 7
         elif driver_speed_ms > 10:
-            return 4
+            return 6
         else:
-            return 3
+            return 5
     
     def _get_dynamic_match_threshold(self, driver: TrackedDriver) -> float:
         if driver.last_speed_ms > self.FAST_SPEED_MS:
@@ -508,8 +508,9 @@ class DriverDeduplicator:
         zone_speed = self._get_zone_speed(sighting.zone_id)
         
         base_threshold = threshold_m
-        speed_allowance = driver.last_speed_ms * time_diff * 1.2
-        max_distance = min(base_threshold + speed_allowance, 350)
+        speed_allowance = driver.last_speed_ms * time_diff * 1.5
+        max_distance = max(base_threshold + speed_allowance, 200)
+        max_distance = min(max_distance, 600)
         
         pred_lat, pred_lng = driver.get_predicted_position(sighting.timestamp)
         distance_to_pred = haversine_m(pred_lat, pred_lng, sighting.lat, sighting.lng)
@@ -518,7 +519,7 @@ class DriverDeduplicator:
         use_predicted = len(driver.positions) >= 2 and driver.last_speed_ms > 2
         distance_m = distance_to_pred if use_predicted else distance_to_last
         
-        if distance_m > max_distance * 1.5:
+        if distance_m > max_distance * 2.0:
             return 0
         
         distance_score = max(0, 1 - (distance_m / max(max_distance, 1)))
@@ -582,9 +583,9 @@ class DriverDeduplicator:
         bearing_diff = min(bearing_diff, 360 - bearing_diff)
         
         if driver.last_speed_ms < 2:
-            return max(0.5, 1 - (bearing_diff / 180))
+            return max(0.6, 1 - (bearing_diff / 180))
         
-        return max(0, 1 - (bearing_diff / 90))
+        return max(0.3, 1 - (bearing_diff / 120))
     
     def _try_resurrect(self, sighting: DriverSighting, threshold_m: int) -> Optional[TrackedDriver]:
         best_match = None
