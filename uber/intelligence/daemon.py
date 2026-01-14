@@ -20,9 +20,9 @@ from .trajectory import get_trajectory_analyzer
 
 
 class IntelligenceDaemon:
-    POLLS_PER_COORDINATE = 2
-    POLL_INTERVAL_SEC = 2
-    CYCLE_PAUSE_SEC = 5
+    POLLS_PER_COORDINATE = 1
+    POLL_INTERVAL_SEC = 1
+    CYCLE_PAUSE_SEC = 3
     
     MAX_FETCH_RETRIES = 3
     FETCH_RETRY_DELAY = 3

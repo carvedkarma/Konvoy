@@ -54,7 +54,7 @@ class PerthGrid:
         seen_coords = set()
         
         for zone in self.PERTH_ZONES:
-            spacing_km = 0.5 if zone['dense'] else 1.0
+            spacing_km = 1.5 if zone['dense'] else 2.5
             points = self._generate_zone_points(
                 zone['lat'], zone['lng'], 
                 zone['radius'], spacing_km,
