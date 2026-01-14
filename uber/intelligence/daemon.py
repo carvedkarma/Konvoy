@@ -1,6 +1,10 @@
 """
-24/7 Intelligence Daemon
-Continuous background scanning with triple-confirmation
+24/7 Intelligence Daemon v3.0
+Continuous background scanning with:
+- Reduced polling (2 polls per coordinate)
+- Interleaved zone scanning
+- Batch processing
+- High-confidence trajectory tracking
 """
 
 import time
@@ -8,6 +12,7 @@ import uuid
 import threading
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Callable
+from collections import defaultdict
 
 from .grid import PERTH_GRID, GridPoint
 from .dedup import DriverDeduplicator, DriverSighting
@@ -15,7 +20,7 @@ from .trajectory import get_trajectory_analyzer
 
 
 class IntelligenceDaemon:
-    POLLS_PER_COORDINATE = 3
+    POLLS_PER_COORDINATE = 2
     POLL_INTERVAL_SEC = 2
     CYCLE_PAUSE_SEC = 5
     
@@ -24,6 +29,8 @@ class IntelligenceDaemon:
     WATCHDOG_INTERVAL = 60
     
     REPORT_INTERVAL_MIN = 30
+    
+    MIN_TRAJECTORY_CONFIDENCE = 0.7
     
     def __init__(self, fetch_drivers_func: Callable, flask_app=None):
         self.fetch_drivers = fetch_drivers_func
@@ -170,7 +177,8 @@ class IntelligenceDaemon:
         
         while not self._stop_event.is_set():
             try:
-                self._run_cycle(grid_points)
+                interleaved_points = self._interleave_grid_points(grid_points)
+                self._run_cycle(interleaved_points)
                 self.cycle_count += 1
                 self._record_cycle_sample()
                 
@@ -187,6 +195,25 @@ class IntelligenceDaemon:
                 self._emit('on_error', {'error': str(e)})
                 self._stop_event.wait(30)
     
+    def _interleave_grid_points(self, grid_points: List[GridPoint]) -> List[GridPoint]:
+        zone_groups = defaultdict(list)
+        for point in grid_points:
+            zone_groups[point.zone_id].append(point)
+        
+        zone_ids = list(zone_groups.keys())
+        if not zone_ids:
+            return grid_points
+        
+        interleaved = []
+        max_len = max(len(zone_groups[z]) for z in zone_ids)
+        
+        for i in range(max_len):
+            for zone_id in zone_ids:
+                if i < len(zone_groups[zone_id]):
+                    interleaved.append(zone_groups[zone_id][i])
+        
+        return interleaved
+    
     def _run_cycle(self, grid_points: List[GridPoint]):
         batch_id = str(uuid.uuid4())[:8]
         self.current_batch_id = batch_id
@@ -198,7 +225,9 @@ class IntelligenceDaemon:
             self.current_coordinate_index = idx
             self.current_zone = point.zone_id
             
+            point_sightings = []
             observations = []
+            
             for poll in range(self.POLLS_PER_COORDINATE):
                 if self._stop_event.is_set():
                     break
@@ -218,38 +247,7 @@ class IntelligenceDaemon:
                             timestamp=datetime.now(),
                             zone_id=point.zone_id
                         )
-                        
-                        fingerprint_id, confidence, is_new = self.deduplicator.process_observation(
-                            sighting, point.is_dense
-                        )
-                        
-                        observations.append({
-                            'fingerprint_id': fingerprint_id,
-                            'lat': sighting.lat,
-                            'lng': sighting.lng,
-                            'bearing': sighting.bearing,
-                            'vehicle_type': sighting.vehicle_type,
-                            'zone_id': point.zone_id,
-                            'confidence': confidence,
-                            'is_new': is_new,
-                            'batch_id': batch_id,
-                            'timestamp': sighting.timestamp
-                        })
-                        
-                        flow_event = self.trajectory_analyzer.update_driver(
-                            fingerprint_id=fingerprint_id,
-                            vehicle_type=sighting.vehicle_type,
-                            lat=sighting.lat,
-                            lng=sighting.lng,
-                            bearing=sighting.bearing,
-                            zone_id=point.zone_id,
-                            timestamp=sighting.timestamp
-                        )
-                        
-                        if flow_event:
-                            self._emit('on_flow_event', flow_event)
-                        
-                        self.total_observations += 1
+                        point_sightings.append(sighting)
                     
                 except Exception as e:
                     self.last_error = str(e)
@@ -257,6 +255,40 @@ class IntelligenceDaemon:
                 
                 if poll < self.POLLS_PER_COORDINATE - 1:
                     self._stop_event.wait(self.POLL_INTERVAL_SEC)
+            
+            if point_sightings:
+                results = self.deduplicator.process_batch(point_sightings, point.is_dense)
+                
+                for sighting, (fingerprint_id, confidence, is_new) in zip(point_sightings, results):
+                    observations.append({
+                        'fingerprint_id': fingerprint_id,
+                        'lat': sighting.lat,
+                        'lng': sighting.lng,
+                        'bearing': sighting.bearing,
+                        'vehicle_type': sighting.vehicle_type,
+                        'zone_id': point.zone_id,
+                        'confidence': confidence,
+                        'is_new': is_new,
+                        'batch_id': batch_id,
+                        'timestamp': sighting.timestamp
+                    })
+                    
+                    if confidence >= self.MIN_TRAJECTORY_CONFIDENCE:
+                        flow_event = self.trajectory_analyzer.update_driver(
+                            fingerprint_id=fingerprint_id,
+                            vehicle_type=sighting.vehicle_type,
+                            lat=sighting.lat,
+                            lng=sighting.lng,
+                            bearing=sighting.bearing,
+                            zone_id=point.zone_id,
+                            timestamp=sighting.timestamp,
+                            confidence=confidence
+                        )
+                        
+                        if flow_event:
+                            self._emit('on_flow_event', flow_event)
+                    
+                    self.total_observations += 1
             
             self.coordinates_scanned += 1
             

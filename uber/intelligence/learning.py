@@ -1,7 +1,8 @@
 """
-Self-Learning Engine v2.0
+Self-Learning Engine v3.0
 Analyzes data to discover patterns, correlations, and predictions
-Includes: Anomaly detection, expected values, confidence-weighted decisions
+Fixes: Smoothed supply, percent deviation, temporal confirmation,
+       confidence gates, higher correlation threshold, ratio-based movement
 """
 
 from datetime import datetime, timedelta
@@ -12,7 +13,11 @@ import math
 
 class LearningEngine:
     CONFIDENCE_THRESHOLD = 0.6
-    ANOMALY_THRESHOLD = 2.0
+    ANOMALY_DEVIATION_THRESHOLD = 0.35
+    MIN_CORRELATION = 0.7
+    MIN_SAMPLES_FOR_CORRELATION = 10
+    
+    SUPPLY_SMOOTHING_ALPHA = 0.3
     
     def __init__(self, db_session):
         self.db = db_session
@@ -23,6 +28,20 @@ class LearningEngine:
         self._expected_values: Dict[str, Dict] = {}
         self._anomaly_history: List[Dict] = []
         self._decision_log: List[Dict] = []
+        
+        self._smoothed_supply: Dict[str, float] = {}
+        self._recent_deviations: Dict[str, List[float]] = defaultdict(list)
+    
+    def _get_smoothed_supply(self, zone_id: str, raw_count: int) -> float:
+        if zone_id not in self._smoothed_supply:
+            self._smoothed_supply[zone_id] = float(raw_count)
+            return float(raw_count)
+        
+        alpha = self.SUPPLY_SMOOTHING_ALPHA
+        self._smoothed_supply[zone_id] = (
+            alpha * raw_count + (1 - alpha) * self._smoothed_supply[zone_id]
+        )
+        return self._smoothed_supply[zone_id]
     
     def run_hourly_analysis(self):
         from uber.models import DriverObservation, HourlySnapshot, ZoneConfig
@@ -38,6 +57,7 @@ class LearningEngine:
         
         zone_data = defaultdict(lambda: {
             'fingerprints': set(),
+            'high_conf_fingerprints': set(),
             'observations': 0,
             'types': defaultdict(int),
             'bearings': [],
@@ -52,6 +72,9 @@ class LearningEngine:
             if obs.bearing is not None:
                 data['bearings'].append(obs.bearing)
             data['confidences'].append(obs.confidence)
+            
+            if obs.confidence >= 0.7:
+                data['high_conf_fingerprints'].add(obs.fingerprint_id)
         
         for zone_id, data in zone_data.items():
             avg_bearing = None
@@ -63,11 +86,14 @@ class LearningEngine:
                 bearing_variance = sum((b - avg_bearing)**2 for b in data['bearings']) / len(data['bearings'])
                 primary_direction = self._bearing_to_direction(avg_bearing)
             
+            unique_drivers = len(data['high_conf_fingerprints'])
+            smoothed_drivers = self._get_smoothed_supply(zone_id, unique_drivers)
+            
             snapshot = HourlySnapshot(
                 zone_id=zone_id,
                 hour=hour_ago,
                 day_of_week=hour_ago.weekday(),
-                unique_drivers=len(data['fingerprints']),
+                unique_drivers=int(smoothed_drivers),
                 total_observations=data['observations'],
                 uberx_count=data['types'].get('UberX', 0),
                 comfort_count=data['types'].get('Comfort', 0),
@@ -121,7 +147,9 @@ class LearningEngine:
             
             drivers = data['drivers']
             avg_drivers = sum(drivers) / len(drivers)
-            std_drivers = math.sqrt(sum((d - avg_drivers)**2 for d in drivers) / len(drivers)) if len(drivers) > 1 else 0
+            
+            raw_std = math.sqrt(sum((d - avg_drivers)**2 for d in drivers) / len(drivers)) if len(drivers) > 1 else 0
+            std_drivers = max(raw_std, avg_drivers * 0.15)
             
             primary_dir = None
             if data['directions']:
@@ -205,33 +233,50 @@ class LearningEngine:
                        target_time: Optional[datetime] = None) -> Dict:
         expected = self.get_expected_drivers(zone_id, target_time)
         
-        if not expected['has_data'] or expected['std_dev'] is None or expected['std_dev'] == 0:
+        if not expected['has_data'] or expected['confidence'] < 0.5:
             return {
                 'is_anomaly': False,
                 'anomaly_score': 0,
                 'direction': 'unknown',
-                'confidence': 0
+                'confidence': 0,
+                'reason': 'low_confidence_data'
             }
         
-        z_score = (current_drivers - expected['expected_drivers']) / expected['std_dev']
+        expected_val = expected['expected_drivers']
+        if expected_val is None or expected_val == 0:
+            expected_val = 1
         
-        is_anomaly = abs(z_score) > self.ANOMALY_THRESHOLD
-        direction = 'high' if z_score > 0 else 'low'
+        deviation = (current_drivers - expected_val) / max(expected_val, 1)
+        
+        self._recent_deviations[zone_id].append(deviation)
+        if len(self._recent_deviations[zone_id]) > 5:
+            self._recent_deviations[zone_id] = self._recent_deviations[zone_id][-5:]
+        
+        recent = self._recent_deviations[zone_id]
+        confirmed_anomaly = False
+        
+        if len(recent) >= 2:
+            exceeding = sum(1 for d in recent[-3:] if abs(d) > self.ANOMALY_DEVIATION_THRESHOLD)
+            confirmed_anomaly = exceeding >= 2
+        else:
+            confirmed_anomaly = abs(deviation) > self.ANOMALY_DEVIATION_THRESHOLD
+        
+        direction = 'high' if deviation > 0 else 'low'
         
         anomaly_result = {
-            'is_anomaly': is_anomaly,
-            'anomaly_score': round(abs(z_score), 2),
-            'z_score': round(z_score, 2),
-            'direction': direction if is_anomaly else 'normal',
+            'is_anomaly': confirmed_anomaly,
+            'anomaly_score': round(abs(deviation), 2),
+            'deviation': round(deviation, 2),
+            'direction': direction if confirmed_anomaly else 'normal',
             'current_drivers': current_drivers,
-            'expected_drivers': round(expected['expected_drivers'], 1),
-            'std_dev': round(expected['std_dev'], 2),
+            'expected_drivers': round(expected_val, 1),
+            'std_dev': round(expected['std_dev'], 2) if expected['std_dev'] else 0,
             'confidence': expected['confidence'],
             'zone_id': zone_id,
             'timestamp': datetime.now().isoformat()
         }
         
-        if is_anomaly:
+        if confirmed_anomaly:
             self._anomaly_history.append(anomaly_result)
             if len(self._anomaly_history) > 100:
                 self._anomaly_history = self._anomaly_history[-100:]
@@ -255,39 +300,28 @@ class LearningEngine:
         from_current = current_data.get(from_zone, 0)
         to_current = current_data.get(to_zone, 0)
         
-        from_anomaly = self.detect_anomaly(from_zone, from_current)
-        to_anomaly = self.detect_anomaly(to_zone, to_current)
+        from_exp = from_expected['expected_drivers'] or 1
+        to_exp = to_expected['expected_drivers'] or 1
         
-        from_surplus = from_current > from_expected['expected_drivers']
-        to_shortage = to_current < to_expected['expected_drivers']
+        from_ratio = from_current / max(from_exp, 1)
+        to_ratio = to_current / max(to_exp, 1)
+        
+        should_move = from_ratio > 1.25 and to_ratio < 0.8
         
         data_volume = from_expected.get('sample_count', 0) + to_expected.get('sample_count', 0)
-        consistency = 1 - (abs(from_anomaly.get('z_score', 0)) + abs(to_anomaly.get('z_score', 0))) / 10
-        recency = 1.0
-        
-        decision_confidence = min(1.0, (
-            0.4 * (data_volume / 20) +
-            0.3 * max(0, consistency) +
-            0.3 * recency
-        ))
-        
-        should_move = (
-            from_surplus and 
-            to_shortage and 
-            decision_confidence >= self.CONFIDENCE_THRESHOLD
-        )
+        decision_confidence = min(1.0, data_volume / 20) * min(from_expected['confidence'], to_expected['confidence'])
         
         decision = {
-            'should_move': should_move,
+            'should_move': should_move and decision_confidence >= self.CONFIDENCE_THRESHOLD,
             'from_zone': from_zone,
             'to_zone': to_zone,
             'confidence': round(decision_confidence, 3),
             'from_current': from_current,
-            'from_expected': round(from_expected['expected_drivers'], 1) if from_expected['expected_drivers'] else None,
+            'from_expected': round(from_exp, 1),
+            'from_ratio': round(from_ratio, 2),
             'to_current': to_current,
-            'to_expected': round(to_expected['expected_drivers'], 1) if to_expected['expected_drivers'] else None,
-            'from_surplus': from_surplus,
-            'to_shortage': to_shortage,
+            'to_expected': round(to_exp, 1),
+            'to_ratio': round(to_ratio, 2),
             'reason': 'recommended' if should_move else 'not_recommended',
             'timestamp': datetime.now().isoformat()
         }
@@ -307,39 +341,41 @@ class LearningEngine:
         
         for zone_id, count in current_zone_counts.items():
             expected = self.get_expected_drivers(zone_id)
-            if not expected['has_data']:
+            if not expected['has_data'] or expected['confidence'] < self.CONFIDENCE_THRESHOLD:
                 continue
             
-            diff = count - expected['expected_drivers']
-            std = expected['std_dev'] or 1
+            exp_val = expected['expected_drivers'] or 1
+            ratio = count / max(exp_val, 1)
             
-            if diff > std:
+            if ratio > 1.25:
                 oversupplied.append({
                     'zone_id': zone_id,
-                    'surplus': diff,
-                    'z_score': diff / std,
+                    'surplus': count - exp_val,
+                    'ratio': ratio,
                     'confidence': expected['confidence']
                 })
-            elif diff < -std:
+            elif ratio < 0.8:
                 undersupplied.append({
                     'zone_id': zone_id,
-                    'shortage': abs(diff),
-                    'z_score': diff / std,
+                    'shortage': exp_val - count,
+                    'ratio': ratio,
                     'confidence': expected['confidence']
                 })
         
-        for from_zone in sorted(oversupplied, key=lambda x: -x['surplus'])[:3]:
-            for to_zone in sorted(undersupplied, key=lambda x: -x['shortage'])[:3]:
+        for from_zone in sorted(oversupplied, key=lambda x: -x['ratio'])[:3]:
+            for to_zone in sorted(undersupplied, key=lambda x: x['ratio'])[:3]:
                 if from_zone['confidence'] >= self.CONFIDENCE_THRESHOLD and \
                    to_zone['confidence'] >= self.CONFIDENCE_THRESHOLD:
                     
-                    priority = (from_zone['surplus'] + to_zone['shortage']) * \
-                               min(from_zone['confidence'], to_zone['confidence'])
+                    priority = (from_zone['ratio'] - 1) + (1 - to_zone['ratio'])
+                    priority *= min(from_zone['confidence'], to_zone['confidence'])
                     
                     suggestions.append({
                         'from_zone': from_zone['zone_id'],
                         'to_zone': to_zone['zone_id'],
                         'priority': round(priority, 2),
+                        'from_ratio': round(from_zone['ratio'], 2),
+                        'to_ratio': round(to_zone['ratio'], 2),
                         'surplus': round(from_zone['surplus'], 1),
                         'shortage': round(to_zone['shortage'], 1),
                         'confidence': round(min(from_zone['confidence'], to_zone['confidence']), 2)
@@ -374,13 +410,16 @@ class LearningEngine:
                     continue
                 
                 for lag in [1, 2, 3, 4]:
-                    correlation = self._calculate_lagged_correlation(
-                        zone_timeseries[source_zone],
-                        zone_timeseries[target_zone],
-                        lag
-                    )
+                    series1 = zone_timeseries[source_zone]
+                    series2 = zone_timeseries[target_zone]
                     
-                    if abs(correlation) > 0.5:
+                    if len(series1) < self.MIN_SAMPLES_FOR_CORRELATION or \
+                       len(series2) < self.MIN_SAMPLES_FOR_CORRELATION:
+                        continue
+                    
+                    correlation = self._calculate_lagged_correlation(series1, series2, lag)
+                    
+                    if abs(correlation) >= self.MIN_CORRELATION:
                         existing = CorrelationModel.query.filter_by(
                             source_zone_id=source_zone,
                             target_zone_id=target_zone,
@@ -399,7 +438,7 @@ class LearningEngine:
                                 correlation_strength=correlation,
                                 cause_pattern='high_drivers' if correlation > 0 else 'low_drivers',
                                 effect_pattern='surge' if correlation > 0 else 'decline',
-                                sample_count=1,
+                                sample_count=len(series1),
                                 confidence=min(1.0, abs(correlation))
                             )
                             self.db.add(corr)
@@ -419,6 +458,10 @@ class LearningEngine:
         zones = [z[0] for z in zones]
         
         for zone_id in zones:
+            pattern_check = DailyPattern.query.filter_by(zone_id=zone_id).first()
+            if pattern_check and pattern_check.confidence < 0.5:
+                continue
+            
             for hour_offset in range(1, hours_ahead + 1):
                 target_time = now + timedelta(hours=hour_offset)
                 target_dow = target_time.weekday()
@@ -430,7 +473,7 @@ class LearningEngine:
                     hour_of_day=target_hour
                 ).first()
                 
-                if not pattern:
+                if not pattern or pattern.confidence < 0.5:
                     continue
                 
                 predicted_drivers = pattern.avg_drivers
@@ -439,7 +482,7 @@ class LearningEngine:
                 correlations = CorrelationModel.query.filter_by(
                     target_zone_id=zone_id,
                     lag_hours=hour_offset
-                ).filter(CorrelationModel.correlation_strength > 0.5).all()
+                ).filter(CorrelationModel.correlation_strength >= self.MIN_CORRELATION).all()
                 
                 for corr in correlations:
                     recent_snap = HourlySnapshot.query.filter_by(
@@ -581,16 +624,18 @@ class LearningEngine:
         values1 = []
         values2 = []
         
-        for i, s1 in enumerate(series1[:-lag]):
-            target_hour = s1['hour'] + timedelta(hours=lag)
-            
-            for s2 in series2:
-                if s2['hour'] == target_hour:
-                    values1.append(s1['drivers'])
-                    values2.append(s2['drivers'])
-                    break
+        hour_map1 = {s['hour']: s['drivers'] for s in series1}
+        hour_map2 = {s['hour']: s['drivers'] for s in series2}
         
-        if len(values1) < 5:
+        for s in series1:
+            t1 = s['hour']
+            t2 = t1 + timedelta(hours=lag)
+            
+            if t1 in hour_map1 and t2 in hour_map2:
+                values1.append(hour_map1[t1])
+                values2.append(hour_map2[t2])
+        
+        if len(values1) < self.MIN_SAMPLES_FOR_CORRELATION:
             return 0
         
         mean1 = sum(values1) / len(values1)
@@ -598,10 +643,9 @@ class LearningEngine:
         
         numerator = sum((v1 - mean1) * (v2 - mean2) for v1, v2 in zip(values1, values2))
         
-        var1 = sum((v - mean1)**2 for v in values1)
-        var2 = sum((v - mean2)**2 for v in values2)
+        var1 = sum((v - mean1) ** 2 for v in values1)
+        var2 = sum((v - mean2) ** 2 for v in values2)
         
-        if var1 == 0 or var2 == 0:
-            return 0
+        denominator = math.sqrt(var1 * var2) if var1 > 0 and var2 > 0 else 1
         
-        return numerator / math.sqrt(var1 * var2)
+        return numerator / denominator if denominator > 0 else 0

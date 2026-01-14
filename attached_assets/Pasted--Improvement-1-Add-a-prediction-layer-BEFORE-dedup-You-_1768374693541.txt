@@ -1,0 +1,123 @@
+✅ Improvement 1 — Add a prediction layer BEFORE dedup
+
+You already have a trajectory_analyzer.
+
+Use it before deduplication.
+
+Concept:
+
+Instead of matching against last seen position,
+match against predicted position.
+
+Change flow like this:
+predicted = self.trajectory_analyzer.predict_position(
+    vehicle_type=sighting.vehicle_type,
+    last_lat=sighting.lat,
+    last_lng=sighting.lng,
+    bearing=sighting.bearing,
+    timestamp=sighting.timestamp
+)
+
+sighting.lat = predicted.lat
+sighting.lng = predicted.lng
+
+
+Then pass to process_observation.
+
+This alone fixes:
+
+freeway splits
+
+fast vehicle duplication
+
+zig-zag noise
+
+This is non-negotiable for accuracy.
+
+✅ Improvement 2 — Introduce speed-aware matching thresholds
+
+Your deduplicator should NOT use static distance thresholds.
+
+Inside process_observation, replace:
+
+if distance < fixed_threshold:
+
+
+with:
+
+allowed = base + speed * delta_t * factor
+
+
+Recommended Perth values:
+
+base = 25m
+
+factor = 1.2
+
+cap = 350m
+
+This is how radar systems work.
+
+✅ Improvement 3 — Grid-aware identity carryover
+
+This is subtle and powerful.
+
+Add a cross-grid grace window:
+
+If a driver disappears from Grid A and appears in Grid B
+within X seconds and reasonable distance → same fingerprint
+
+Implementation idea:
+
+Maintain a short-term global cache (30–60s)
+
+Keyed by last known predicted position
+
+Match across grid points
+
+⚠️ This is NOT long-term tracking.
+This is anti-double-counting.
+
+✅ Improvement 4 — Reduce POLLS_PER_COORDINATE
+
+This will surprise you, but it matters.
+
+Change:
+
+POLLS_PER_COORDINATE = 3
+
+
+To:
+
+POLLS_PER_COORDINATE = 1 or 2
+
+
+Why?
+
+Uber already smooths
+
+Your prediction handles continuity
+
+Fewer duplicates
+
+Cleaner history
+
+If you want confirmation, use confidence accumulation, not extra polls.
+
+✅ Improvement 5 — Track confidence decay (critical)
+
+Right now confidence only increases.
+
+You need confidence decay:
+
+If driver not seen for N seconds → confidence drops
+
+If confidence < threshold → expire track
+
+This prevents:
+
+phantom drivers
+
+lingering freeway ghosts
+
+inflated quiet periods

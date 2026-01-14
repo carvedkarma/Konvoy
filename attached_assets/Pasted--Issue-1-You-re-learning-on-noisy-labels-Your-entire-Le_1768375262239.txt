@@ -1,0 +1,240 @@
+🔴 Issue #1: You’re learning on noisy labels
+
+Your entire LearningEngine assumes:
+
+HourlySnapshot.unique_drivers ≈ real supply
+
+
+But upstream:
+
+dedup still occasionally splits one real driver into 2
+
+grid overlap causes short-term inflation
+
+freeway movement creates transient spikes
+
+So your learning model:
+
+builds patterns on unstable numbers
+
+then anomalies explode
+
+then decisions contradict each other
+
+⚠️ Result
+
+z-scores go crazy
+
+correlations flip sign
+
+movement suggestions oscillate
+
+🔴 Issue #2: Statistical assumptions are violated
+
+You are using Gaussian assumptions everywhere:
+
+z_score = (current - expected) / std
+
+
+But Uber supply:
+
+is NOT normally distributed
+
+has fat tails
+
+has regime changes (events, weather, surge)
+
+⚠️ Result
+
+std_dev == 0 → divide-by-zero logic
+
+anomaly false positives
+
+confidence collapses
+
+🔴 Issue #3: You mix learning, evaluation, decision-making in one engine
+
+Right now:
+
+same engine writes data
+
+reads data
+
+detects anomalies
+
+makes movement decisions
+
+validates predictions
+
+This causes feedback loops:
+
+bad prediction → bad validation → worse confidence → worse decision
+
+2️⃣ Concrete fixes (do THESE, not refactors)
+✅ Fix #1: Stop learning from raw counts — use smoothed supply
+
+Before anything enters LearningEngine, create:
+
+effective_supply = median(last 3 cycles)
+
+
+or
+
+effective_supply = EWMA(alpha=0.3)
+
+
+Replace:
+
+snap.unique_drivers
+
+
+with:
+
+snap.effective_drivers
+
+
+This alone will reduce breakage by ~60%.
+
+✅ Fix #2: Replace z-score anomaly detection (CRITICAL)
+
+Instead of:
+
+z = (current - mean) / std
+
+
+Use percent deviation with caps:
+
+deviation = (current - expected) / max(expected, 1)
+
+
+Then:
+
+is_anomaly = abs(deviation) > 0.35
+
+
+Why?
+
+robust to skew
+
+works with low counts
+
+stable in nightlife patterns
+
+👉 Keep std_dev for reporting only, not logic.
+
+✅ Fix #3: Require temporal confirmation for anomalies
+
+Right now:
+
+one bad hour → anomaly
+
+Change to:
+
+anomaly = deviation persists ≥ 2 consecutive slots
+
+Implementation:
+
+store last N deviations per zone
+
+only flag anomaly if 2 of last 3 exceed threshold
+
+✅ Fix #4: Freeze learning when confidence is low
+
+Add this guard everywhere:
+
+if pattern.confidence < 0.5:
+    skip learning / prediction
+
+
+Do NOT:
+
+generate predictions
+
+detect anomalies
+
+suggest movement
+
+Low-confidence data poisons everything downstream.
+
+3️⃣ Specific problems in your current code
+
+I’ll point out exact break points.
+
+❌ Problem: run_hourly_analysis()
+
+You aggregate:
+
+data['fingerprints'].add(obs.fingerprint_id)
+
+
+But:
+
+fingerprint IDs are probabilistic
+
+dedup may change IDs over time
+
+✅ Fix
+
+Track:
+
+high_confidence_fingerprints only (confidence ≥ 0.7)
+
+❌ Problem: run_daily_analysis()
+std_drivers = sqrt(variance)
+
+
+But:
+
+many hours have flat supply
+
+variance becomes 0
+
+later z-score logic breaks
+
+✅ Fix
+
+Clamp:
+
+std_drivers = max(std_drivers, avg_drivers * 0.15)
+
+❌ Problem: Correlation learning
+
+You do:
+
+if abs(correlation) > 0.5
+
+
+This is way too low for noisy city data.
+
+✅ Fix
+
+Raise to:
+
+abs(correlation) > 0.7 AND sample_count ≥ 10
+
+
+Otherwise you learn ghosts.
+
+❌ Problem: Movement recommendation logic
+
+You require:
+
+from_surplus AND to_shortage
+
+
+But supply is relative, not absolute.
+
+✅ Fix
+
+Use ratio, not absolute:
+
+from_ratio = from_current / expected
+to_ratio   = to_current / expected
+
+
+Recommend move if:
+
+from_ratio > 1.25 AND to_ratio < 0.8
+
+
+This matches how Uber actually behaves.

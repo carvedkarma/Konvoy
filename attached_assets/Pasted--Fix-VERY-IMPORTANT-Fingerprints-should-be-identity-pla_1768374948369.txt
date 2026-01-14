@@ -1,0 +1,126 @@
+✅ Fix (VERY IMPORTANT)
+
+Fingerprints should be identity placeholders, not identities.
+
+Change fingerprint creation to:
+
+random UUID
+
+NOT derived from location or time
+
+Example:
+
+return uuid.uuid4().hex[:16]
+
+
+Right now your system cannot avoid splits fully, because every unmatched sighting forces a new identity.
+
+This one change will reduce false drivers dramatically.
+
+4. Critical issue #2 — spatial grid cell size too small for freeway speed
+CELL_SIZE_M = 150
+grid_radius = 5 if is_freeway else 3
+
+
+At freeway speed:
+
+25–28 m/s
+
+10s poll → 250–280 m movement
+
+You’re barely covering the movement envelope.
+
+✅ Fix
+
+Use speed-adaptive grid radius:
+
+grid_radius = max(3, int(driver.last_speed_ms * dt / CELL_SIZE_M) + 1)
+
+
+Or simpler:
+
+freeway: radius = 6–8
+
+city: radius = 2–3
+
+This avoids missing candidates.
+
+5. Critical issue #3 — MATCH_THRESHOLD too strict for fast motion
+MATCH_THRESHOLD = 0.55
+HIGH_CONFIDENCE_MATCH = 0.75
+
+
+When speed is high:
+
+distance score drops
+
+bearing noise increases
+
+ETA fluctuates
+
+You’re unintentionally rejecting the correct match.
+
+✅ Fix (dynamic threshold)
+
+Lower threshold for fast movers:
+
+if driver.last_speed_ms > 15:
+    effective_threshold = 0.45
+else:
+    effective_threshold = self.MATCH_THRESHOLD
+
+
+This is standard radar tracking practice.
+
+6. Critical issue #4 — confidence only goes up, not down enough
+
+You do decay confidence, but too gently:
+
+driver.confidence *= 0.9
+
+
+This allows ghost tracks to linger and compete with real ones.
+
+✅ Fix
+
+Make confidence decay speed-aware and time-aware:
+
+decay = 0.85 if driver.last_speed_ms > 15 else 0.9
+driver.confidence *= decay
+
+
+Also cap resurrection confidence:
+
+driver.confidence = min(driver.confidence, 0.6)
+
+
+This prevents dead tracks from hijacking matches.
+
+7. Architectural fix you are missing (this is BIG)
+🚨 You are matching sighting → driver
+
+But you are NOT enforcing one-to-one assignment per cycle
+
+This means:
+
+Two sightings can match the same driver
+
+Or one driver spawns two new tracks in the same batch
+
+✅ Fix: Hungarian-style assignment (simplified)
+
+Per cycle:
+
+Collect all sightings
+
+Score all possible matches
+
+Assign best matches first
+
+Remove matched drivers from candidate pool
+
+Create new tracks only for unmatched sightings
+
+Even a greedy version improves accuracy a lot.
+
+This is how air-traffic and vehicle trackers avoid duplication.

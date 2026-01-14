@@ -1,0 +1,188 @@
+🔴 Problem #1 — Overlapping grid points cause duplicate sightings
+
+In dense zones (Perth CBD, Fremantle):
+
+Multiple grid points are <300m apart
+
+Same driver is visible from multiple points in the same cycle
+
+Your dedup tries to fix this — but this creates:
+
+confidence inflation
+
+occasional double tracks
+
+unstable counts
+
+✅ Fix (VERY IMPORTANT): cycle-level gating
+
+Within one scan cycle, enforce:
+
+One driver can only be “counted” once per zone per cycle.
+
+Implementation idea:
+
+Maintain a seen_fingerprints_this_cycle: set
+
+If fingerprint already seen in same zone during same cycle → do not re-count
+
+This does NOT break tracking — it fixes overcounting.
+
+🔴 Problem #2 — Grid spacing doesn’t reflect Uber visibility radius
+
+Uber’s nearby vehicle radius is roughly:
+
+~600–800m in cities
+
+sometimes more on freeways
+
+Your spacing:
+
+0.5 km
+
+1.0 km
+
+This causes heavy overlap, especially in dense zones.
+
+✅ Fix: Accept overlap, but handle it explicitly
+
+Do not increase spacing (you’ll miss drivers).
+
+Instead:
+
+Treat grid points as sampling lenses
+
+Deduplicate within-zone, within-cycle
+
+Grid overlap is fine — double counting is not.
+
+🔴 Problem #3 — Zone assignment is too simplistic
+def get_zone_for_coordinate(...)
+
+
+This assigns zone by nearest center point.
+
+This causes:
+
+Fremantle ↔ South Fremantle ambiguity
+
+Perth CBD ↔ West Perth bleed
+
+Freeway misclassification
+
+✅ Fix: zone polygons (lightweight)
+
+You do NOT need full GIS.
+
+Instead:
+
+Define rough bounding boxes per zone
+
+Or assign zone at grid-point level only
+
+Recommended:
+
+Use point.zone_id as truth
+Do NOT reassign zones by coordinate later
+
+This avoids oscillation.
+
+3. Improvements that will significantly increase accuracy
+
+These are high-leverage changes, not refactors.
+
+✅ Improvement 1 — Tag grid points with a visibility radius
+
+Add:
+
+visibility_km: float
+
+
+Example:
+
+CBD: 0.8 km
+
+Fremantle: 0.9 km
+
+Port: 1.2 km
+
+This lets your dedup logic:
+
+expect overlap
+
+weight confidence appropriately
+
+✅ Improvement 2 — Add grid “families”
+
+Group points that belong to the same zone + radius.
+
+Example:
+
+FREMANTLE_CORE
+  ├─ grid_1
+  ├─ grid_2
+  └─ grid_3
+
+
+During a cycle:
+
+If a driver appears in multiple family members → same driver
+
+This massively reduces false splits.
+
+✅ Improvement 3 — Time-sliced scanning (important)
+
+Right now:
+
+All grid points scanned sequentially
+
+This means:
+
+Fremantle first
+
+Perth CBD later
+
+Or vice versa
+
+Time skew causes:
+
+apparent movement that isn’t real
+
+Fix:
+
+Interleave zones per cycle:
+
+Cycle:
+  Perth CBD #1
+  Fremantle #1
+  Perth CBD #2
+  Fremantle #2
+
+
+This keeps timestamps comparable.
+
+4. How to scale this grid cleanly (Perth + Fremantle together)
+
+Your grid is already compatible with multi-area tracking.
+
+DO NOT:
+
+merge zones
+
+unify driver identity across cities
+
+DO:
+
+keep zones independent
+
+compare at score level
+
+Example output:
+
+{
+  "perth_cbd": { "scarcity": 0.42, "confidence": 0.81 },
+  "fremantle": { "scarcity": 0.76, "confidence": 0.87 }
+}
+
+
+Decision logic lives above the grid, not inside it.

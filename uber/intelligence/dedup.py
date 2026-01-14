@@ -1,15 +1,18 @@
 """
-Precision Driver Deduplication Engine v2.0
+Precision Driver Deduplication Engine v3.0
 Multi-factor probabilistic identity matching with:
-- Weighted signal scoring (distance, bearing, speed, ETA, time penalty)
+- Random UUID fingerprints (identity placeholders)
+- Prediction-before-dedup matching
+- Speed-aware dynamic thresholds
+- One-to-one assignment per cycle (greedy Hungarian)
 - Kalman-like motion prediction
-- Track lifecycle management (ACTIVE → MISSING → DEAD)
-- Spatial grid indexing for efficient matching
-- Confidence-weighted decisions
+- Track lifecycle with confidence decay
+- Spatial grid indexing with speed-adaptive radius
+- Cross-grid identity carryover
 """
 
 import math
-import hashlib
+import uuid
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple, Set
 from dataclasses import dataclass, field
@@ -57,6 +60,9 @@ class TrackedDriver:
     
     grid_cell: Optional[Tuple[int, int]] = None
     
+    smoothed_speed_ms: float = 0.0
+    smoothed_heading: float = 0.0
+    
     def get_predicted_position(self, target_time: datetime) -> Tuple[float, float]:
         if not self.positions:
             return (0, 0)
@@ -65,6 +71,7 @@ class TrackedDriver:
         last_lat, last_lng, last_time = last_pos
         
         dt = (target_time - last_time).total_seconds()
+        dt = min(dt, 60)
         
         predicted_lat = last_lat + self.velocity_lat * dt
         predicted_lng = last_lng + self.velocity_lng * dt
@@ -88,7 +95,20 @@ class TrackedDriver:
         self.velocity_lng = (p2[1] - p1[1]) / dt
         
         distance = haversine_m(p1[0], p1[1], p2[0], p2[1])
-        self.last_speed_ms = distance / dt
+        instant_speed = distance / dt
+        
+        alpha = 0.35
+        self.smoothed_speed_ms = alpha * instant_speed + (1 - alpha) * self.smoothed_speed_ms
+        self.last_speed_ms = self.smoothed_speed_ms
+        
+        if len(self.bearings) >= 2:
+            new_heading = calculate_bearing(p1[0], p1[1], p2[0], p2[1])
+            heading_diff = new_heading - self.smoothed_heading
+            if heading_diff > 180:
+                heading_diff -= 360
+            elif heading_diff < -180:
+                heading_diff += 360
+            self.smoothed_heading = (self.smoothed_heading + alpha * heading_diff) % 360
 
 
 class SpatialGrid:
@@ -139,14 +159,17 @@ class DriverDeduplicator:
     DEFAULT_COORD_THRESHOLD_M = 100
     DENSE_COORD_THRESHOLD_M = 50
     BEARING_THRESHOLD_DEG = 30
-    MAX_SPEED_MS = 25
+    MAX_SPEED_MS = 28
     
     ACTIVE_TTL_SECONDS = 30
     MISSING_TTL_SECONDS = 60
     DEAD_ARCHIVE_MINUTES = 5
     
     MATCH_THRESHOLD = 0.55
+    FAST_MOVER_THRESHOLD = 0.45
     HIGH_CONFIDENCE_MATCH = 0.75
+    
+    FAST_SPEED_MS = 15
     
     WEIGHTS = {
         'distance': 0.30,
@@ -161,9 +184,16 @@ class DriverDeduplicator:
         'cbd': 12, 'perth_cbd': 12, 'northbridge': 12,
         'east_perth': 14, 'west_perth': 14,
         'subiaco': 15, 'leederville': 15, 'victoria_park': 15, 'south_perth': 15,
-        'fremantle': 14,
+        'fremantle': 14, 'south_fremantle': 14, 'north_fremantle': 14,
         'airport': 17, 'perth_airport': 17, 'default_suburb': 17,
         'kwinana_fwy': 28, 'mitchell_fwy': 28, 'roe_hwy': 28, 'tonkin_hwy': 28, 'freeway': 28,
+    }
+    
+    GRID_VISIBILITY_KM = {
+        'perth_cbd': 0.8, 'northbridge': 0.8, 'cbd': 0.8,
+        'fremantle': 0.9, 'south_fremantle': 0.9, 'north_fremantle': 0.9,
+        'perth_airport': 1.2, 'airport': 1.2,
+        'default': 1.0
     }
     
     def __init__(self):
@@ -173,12 +203,23 @@ class DriverDeduplicator:
         
         self.dead_archive: Dict[str, TrackedDriver] = {}
         
+        self.cross_grid_cache: Dict[str, Tuple[str, float, float, datetime]] = {}
+        self.CROSS_GRID_TTL_SECONDS = 45
+        
+        self._seen_fingerprints_this_cycle: Set[str] = set()
+        self._current_cycle_zone: Optional[str] = None
+        
         self._stats = {
             'matches': 0,
             'new_tracks': 0,
             'resurrections': 0,
-            'expired': 0
+            'expired': 0,
+            'cycle_deduped': 0
         }
+    
+    def start_cycle(self, zone_id: Optional[str] = None):
+        self._seen_fingerprints_this_cycle.clear()
+        self._current_cycle_zone = zone_id
     
     def set_zone_threshold(self, zone_id: str, threshold_m: int):
         self.zone_thresholds[zone_id] = threshold_m
@@ -207,46 +248,198 @@ class DriverDeduplicator:
         zone_lower = zone_id.lower()
         return any(kw in zone_lower for kw in ['fwy', 'freeway', 'hwy', 'highway', 'motorway'])
     
-    def process_observation(self, sighting: DriverSighting, is_dense: bool = False) -> Tuple[str, float, bool]:
-        threshold_m = self.get_threshold_for_zone(sighting.zone_id, is_dense)
+    def _get_speed_adaptive_grid_radius(self, zone_id: str, driver_speed_ms: float = 0) -> int:
+        is_freeway = self._is_freeway_zone(zone_id)
+        
+        if is_freeway:
+            return 7
+        
+        if driver_speed_ms > 20:
+            return 6
+        elif driver_speed_ms > 15:
+            return 5
+        elif driver_speed_ms > 10:
+            return 4
+        else:
+            return 3
+    
+    def _get_dynamic_match_threshold(self, driver: TrackedDriver) -> float:
+        if driver.last_speed_ms > self.FAST_SPEED_MS:
+            return self.FAST_MOVER_THRESHOLD
+        return self.MATCH_THRESHOLD
+    
+    def _apply_confidence_decay(self, driver: TrackedDriver):
+        if driver.last_speed_ms > self.FAST_SPEED_MS:
+            driver.confidence *= 0.85
+        else:
+            driver.confidence *= 0.9
+    
+    def process_batch(self, sightings: List[DriverSighting], is_dense: bool = False) -> List[Tuple[str, float, bool]]:
+        if not sightings:
+            return []
+        
+        zone_id = sightings[0].zone_id if sightings else None
+        self.start_cycle(zone_id)
         
         self._update_track_states()
         
-        is_freeway = self._is_freeway_zone(sighting.zone_id)
-        grid_radius = 5 if is_freeway else 3
+        results = []
+        matched_drivers: Set[str] = set()
+        unmatched_sightings: List[Tuple[int, DriverSighting]] = []
         
-        nearby_ids = self.spatial_grid.get_nearby_drivers(sighting.lat, sighting.lng, radius=grid_radius)
+        all_candidates: List[Tuple[int, DriverSighting, List[Tuple[TrackedDriver, float]]]] = []
         
-        match, score = self._find_best_match(sighting, threshold_m, nearby_ids)
+        for idx, sighting in enumerate(sightings):
+            threshold_m = self.get_threshold_for_zone(sighting.zone_id, is_dense)
+            
+            is_freeway = self._is_freeway_zone(sighting.zone_id)
+            grid_radius = self._get_speed_adaptive_grid_radius(sighting.zone_id)
+            
+            nearby_ids = self.spatial_grid.get_nearby_drivers(sighting.lat, sighting.lng, radius=grid_radius)
+            
+            candidates = []
+            for fid in nearby_ids:
+                driver = self.tracked_drivers.get(fid)
+                if not driver or driver.vehicle_type != sighting.vehicle_type:
+                    continue
+                if driver.state == TrackState.DEAD:
+                    continue
+                
+                dynamic_threshold = self._get_dynamic_match_threshold(driver)
+                score = self._calculate_match_score(driver, sighting, threshold_m)
+                
+                if score >= dynamic_threshold:
+                    candidates.append((driver, score))
+            
+            all_candidates.append((idx, sighting, candidates))
         
-        if match:
-            self._update_driver(match, sighting)
-            self._stats['matches'] += 1
-            return match.fingerprint_id, match.confidence, False
+        all_candidates.sort(key=lambda x: max([s for _, s in x[2]], default=0), reverse=True)
         
-        match, score = self._find_recent_match(sighting, threshold_m)
-        if match:
-            self._update_driver(match, sighting)
-            self._stats['matches'] += 1
-            return match.fingerprint_id, match.confidence, False
+        for idx, sighting, candidates in all_candidates:
+            best_match = None
+            best_score = 0
+            
+            for driver, score in sorted(candidates, key=lambda x: -x[1]):
+                if driver.fingerprint_id not in matched_drivers:
+                    best_match = driver
+                    best_score = score
+                    break
+            
+            if best_match:
+                if best_match.fingerprint_id in self._seen_fingerprints_this_cycle:
+                    self._stats['cycle_deduped'] += 1
+                    results.append((best_match.fingerprint_id, best_match.confidence, False))
+                    continue
+                
+                matched_drivers.add(best_match.fingerprint_id)
+                self._seen_fingerprints_this_cycle.add(best_match.fingerprint_id)
+                self._update_driver(best_match, sighting)
+                self._stats['matches'] += 1
+                results.append((best_match.fingerprint_id, best_match.confidence, False))
+            else:
+                unmatched_sightings.append((idx, sighting))
         
-        resurrected = self._try_resurrect(sighting, threshold_m)
-        if resurrected:
-            self._stats['resurrections'] += 1
-            return resurrected.fingerprint_id, resurrected.confidence, False
+        for idx, sighting in unmatched_sightings:
+            threshold_m = self.get_threshold_for_zone(sighting.zone_id, is_dense)
+            
+            fallback, score = self._find_recent_match(sighting, threshold_m, matched_drivers)
+            if fallback:
+                if fallback.fingerprint_id in self._seen_fingerprints_this_cycle:
+                    self._stats['cycle_deduped'] += 1
+                    results.append((fallback.fingerprint_id, fallback.confidence, False))
+                    continue
+                    
+                matched_drivers.add(fallback.fingerprint_id)
+                self._seen_fingerprints_this_cycle.add(fallback.fingerprint_id)
+                self._update_driver(fallback, sighting)
+                self._stats['matches'] += 1
+                results.append((fallback.fingerprint_id, fallback.confidence, False))
+                continue
+            
+            cross_grid = self._check_cross_grid_cache(sighting)
+            if cross_grid:
+                if cross_grid.fingerprint_id in self._seen_fingerprints_this_cycle:
+                    self._stats['cycle_deduped'] += 1
+                    results.append((cross_grid.fingerprint_id, cross_grid.confidence, False))
+                    continue
+                    
+                matched_drivers.add(cross_grid.fingerprint_id)
+                self._seen_fingerprints_this_cycle.add(cross_grid.fingerprint_id)
+                self._update_driver(cross_grid, sighting)
+                results.append((cross_grid.fingerprint_id, cross_grid.confidence, False))
+                continue
+            
+            resurrected = self._try_resurrect(sighting, threshold_m)
+            if resurrected:
+                if resurrected.fingerprint_id in self._seen_fingerprints_this_cycle:
+                    self._stats['cycle_deduped'] += 1
+                    results.append((resurrected.fingerprint_id, resurrected.confidence, False))
+                    continue
+                    
+                matched_drivers.add(resurrected.fingerprint_id)
+                self._seen_fingerprints_this_cycle.add(resurrected.fingerprint_id)
+                self._stats['resurrections'] += 1
+                results.append((resurrected.fingerprint_id, resurrected.confidence, False))
+                continue
+            
+            fingerprint_id = self._create_fingerprint()
+            self._add_new_driver(fingerprint_id, sighting)
+            self._seen_fingerprints_this_cycle.add(fingerprint_id)
+            self._stats['new_tracks'] += 1
+            results.append((fingerprint_id, 0.5, True))
         
-        fingerprint_id = self._create_fingerprint(sighting)
-        self._add_new_driver(fingerprint_id, sighting)
-        self._stats['new_tracks'] += 1
-        return fingerprint_id, 0.5, True
+        return results
     
-    def _find_recent_match(self, sighting: DriverSighting, threshold_m: int) -> Tuple[Optional[TrackedDriver], float]:
+    def process_observation(self, sighting: DriverSighting, is_dense: bool = False) -> Tuple[str, float, bool]:
+        results = self.process_batch([sighting], is_dense)
+        return results[0] if results else (self._create_fingerprint(), 0.5, True)
+    
+    def _check_cross_grid_cache(self, sighting: DriverSighting) -> Optional[TrackedDriver]:
+        now = sighting.timestamp
+        cutoff = now - timedelta(seconds=self.CROSS_GRID_TTL_SECONDS)
+        
+        expired = [k for k, v in self.cross_grid_cache.items() if v[3] < cutoff]
+        for k in expired:
+            del self.cross_grid_cache[k]
+        
+        best_match = None
+        best_distance = float('inf')
+        
+        for fid, (vtype, lat, lng, ts) in self.cross_grid_cache.items():
+            if vtype != sighting.vehicle_type:
+                continue
+            
+            distance = haversine_m(lat, lng, sighting.lat, sighting.lng)
+            time_diff = (now - ts).total_seconds()
+            
+            max_allowed = self._get_zone_speed(sighting.zone_id) * time_diff + 150
+            
+            if distance < max_allowed and distance < best_distance:
+                driver = self.tracked_drivers.get(fid)
+                if driver and driver.state != TrackState.DEAD:
+                    best_match = driver
+                    best_distance = distance
+        
+        return best_match
+    
+    def _update_cross_grid_cache(self, driver: TrackedDriver):
+        if driver.positions:
+            lat, lng, ts = driver.positions[-1]
+            self.cross_grid_cache[driver.fingerprint_id] = (
+                driver.vehicle_type, lat, lng, ts
+            )
+    
+    def _find_recent_match(self, sighting: DriverSighting, threshold_m: int,
+                           excluded_ids: Set[str] = None) -> Tuple[Optional[TrackedDriver], float]:
         best_match = None
         best_score = 0
         now = sighting.timestamp
         zone_speed = self._get_zone_speed(sighting.zone_id)
+        excluded = excluded_ids or set()
         
         for fid, driver in self.tracked_drivers.items():
+            if fid in excluded:
+                continue
             if driver.vehicle_type != sighting.vehicle_type:
                 continue
             if driver.state == TrackState.DEAD:
@@ -259,18 +452,12 @@ class DriverDeduplicator:
             if time_diff < 0 or time_diff > 60:
                 continue
             
-            last_lat, last_lng, _ = driver.positions[-1]
-            distance_to_last = haversine_m(last_lat, last_lng, sighting.lat, sighting.lng)
-            
             pred_lat, pred_lng = driver.get_predicted_position(now)
             distance_to_pred = haversine_m(pred_lat, pred_lng, sighting.lat, sighting.lng)
             
-            use_pred = len(driver.positions) >= 2 and driver.last_speed_ms > 1
-            distance = distance_to_pred if use_pred else distance_to_last
-            
             max_allowed = zone_speed * time_diff + threshold_m + 100
             
-            if distance > max_allowed:
+            if distance_to_pred > max_allowed:
                 continue
             
             score = self._calculate_match_score(driver, sighting, threshold_m)
@@ -297,9 +484,10 @@ class DriverDeduplicator:
             if driver.state == TrackState.DEAD:
                 continue
             
+            dynamic_threshold = self._get_dynamic_match_threshold(driver)
             score = self._calculate_match_score(driver, sighting, threshold_m)
             
-            if score > best_score and score >= self.MATCH_THRESHOLD:
+            if score > best_score and score >= dynamic_threshold:
                 best_score = score
                 best_match = driver
         
@@ -318,7 +506,10 @@ class DriverDeduplicator:
             return 0
         
         zone_speed = self._get_zone_speed(sighting.zone_id)
-        max_distance = zone_speed * time_diff + threshold_m
+        
+        base_threshold = threshold_m
+        speed_allowance = driver.last_speed_ms * time_diff * 1.2
+        max_distance = min(base_threshold + speed_allowance, 350)
         
         pred_lat, pred_lng = driver.get_predicted_position(sighting.timestamp)
         distance_to_pred = haversine_m(pred_lat, pred_lng, sighting.lat, sighting.lng)
@@ -424,6 +615,7 @@ class DriverDeduplicator:
             del self.dead_archive[best_match.fingerprint_id]
             best_match.state = TrackState.ACTIVE
             best_match.missing_since = None
+            best_match.confidence = min(best_match.confidence, 0.6)
             self._update_driver(best_match, sighting)
             self.tracked_drivers[best_match.fingerprint_id] = best_match
             return best_match
@@ -440,7 +632,8 @@ class DriverDeduplicator:
                 if time_since_seen > self.ACTIVE_TTL_SECONDS:
                     driver.state = TrackState.MISSING
                     driver.missing_since = now
-                    driver.confidence *= 0.9
+                    self._apply_confidence_decay(driver)
+                    self._update_cross_grid_cache(driver)
             
             elif driver.state == TrackState.MISSING:
                 if time_since_seen > self.MISSING_TTL_SECONDS:
@@ -448,6 +641,8 @@ class DriverDeduplicator:
                     self.dead_archive[fid] = driver
                     del self.tracked_drivers[fid]
                     self.spatial_grid.remove_driver(fid, driver.grid_cell)
+                    if fid in self.cross_grid_cache:
+                        del self.cross_grid_cache[fid]
                     self._stats['expired'] += 1
         
         archive_cutoff = now - timedelta(minutes=self.DEAD_ARCHIVE_MINUTES)
@@ -478,6 +673,8 @@ class DriverDeduplicator:
             driver.fingerprint_id, driver.grid_cell, sighting.lat, sighting.lng
         )
         
+        self._update_cross_grid_cache(driver)
+        
         if len(driver.positions) > 30:
             driver.positions = driver.positions[-30:]
         if len(driver.bearings) > 30:
@@ -500,10 +697,10 @@ class DriverDeduplicator:
             last_eta=sighting.eta_seconds
         )
         self.tracked_drivers[fingerprint_id] = driver
+        self._update_cross_grid_cache(driver)
     
-    def _create_fingerprint(self, sighting: DriverSighting) -> str:
-        data = f"{sighting.vehicle_type}:{sighting.lat:.5f}:{sighting.lng:.5f}:{sighting.timestamp.isoformat()}"
-        return hashlib.md5(data.encode()).hexdigest()[:16]
+    def _create_fingerprint(self, sighting: DriverSighting = None) -> str:
+        return uuid.uuid4().hex[:16]
     
     def get_active_drivers(self) -> List[TrackedDriver]:
         return [d for d in self.tracked_drivers.values() if d.state == TrackState.ACTIVE]
@@ -574,8 +771,10 @@ class DriverDeduplicator:
     def reset(self):
         self.tracked_drivers.clear()
         self.dead_archive.clear()
+        self.cross_grid_cache.clear()
         self.spatial_grid = SpatialGrid()
-        self._stats = {'matches': 0, 'new_tracks': 0, 'resurrections': 0, 'expired': 0}
+        self._seen_fingerprints_this_cycle.clear()
+        self._stats = {'matches': 0, 'new_tracks': 0, 'resurrections': 0, 'expired': 0, 'cycle_deduped': 0}
     
     def get_stats(self) -> Dict:
         drivers = list(self.tracked_drivers.values())
@@ -587,12 +786,12 @@ class DriverDeduplicator:
             'active': len(active),
             'missing': len(missing),
             'archived': len(self.dead_archive),
+            'cross_grid_cache': len(self.cross_grid_cache),
             'avg_confidence': sum(d.confidence for d in active) / len(active) if active else 0,
             'high_confidence': len([d for d in active if d.confidence > 0.8]),
             'avg_observations': sum(d.observation_count for d in active) / len(active) if active else 0,
             'by_type': self.get_counts_by_type(),
             'matching_stats': dict(self._stats),
-            'grid_cells_used': len([c for c in self.spatial_grid.cells.values() if c])
         }
 
 

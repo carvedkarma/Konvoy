@@ -1,0 +1,188 @@
+1) 🚨 Dwell time bug (this is a real bug)
+
+In update_driver() you do:
+
+dwell_time = traj.get_current_dwell_time()
+old_metrics.record_outflow(1, dwell_time)
+
+
+But traj.add_point(point) already updated zone_entry_time when it detected the zone change.
+So when you call get_current_dwell_time(), it measures time since entering the NEW zone, not time spent in the OLD zone.
+
+✅ Fix
+
+Compute dwell using the transition timestamp and the previous entry time before you add the new point or before you change zone_entry_time.
+
+Simplest fix: make add_point() return (old_zone, dwell_in_old_zone) when it transitions.
+
+Example idea:
+
+In DriverTrajectory.add_point():
+
+detect transition
+
+compute dwell for old zone
+
+return dwell value
+
+Then in update_driver():
+
+old_zone = traj.current_zone
+dwell_old = traj.add_point(point)  # returns dwell time when zone changes
+
+if old_zone and old_zone != zone_id:
+    old_metrics.record_outflow(1, dwell_old)
+
+
+That one change will immediately stabilize dwell/heat logic.
+
+2) 🚨 ZoneMetrics.current_driver_count is not trustworthy
+
+Right now:
+
+you increment on new trajectory creation (inflow)
+
+you increment on zone change inflow
+
+you decrement on zone change outflow
+
+BUT… you never decrement when a driver disappears (expires from trajectories)
+
+AND you double count if dedup creates a new fingerprint for same real driver
+
+So current_driver_count becomes a “counter”, not “current occupancy”.
+
+✅ Fix: compute current count from trajectories (source of truth)
+
+Instead of maintaining current_driver_count by increments/decrements, compute:
+
+current_driver_count = number of trajectories with current_zone == zone_id and last_updated recent
+
+
+This is the correct “occupancy” metric.
+
+So:
+
+remove record_inflow() and record_outflow() changing current_driver_count
+
+keep them only for inflow/outflow history
+
+rebuild zone counts each _update_zone_metrics() call
+
+Why this matters: your heat score is currently built on a number that drifts over time.
+
+3) Speed is too noisy (you’re using last segment speed)
+
+avg_speed_ms is set to the last segment:
+
+self.avg_speed_ms = distance / time_diff
+
+
+That is instantaneous speed, not average. It will jump like crazy because:
+
+your sampling points are inconsistent
+
+GPS jitter and grid changes create fake speed
+
+✅ Fix: smooth speed with EWMA
+
+Keep speed_ms smoothed:
+
+alpha = 0.35
+self.avg_speed_ms = alpha * inst_speed + (1 - alpha) * self.avg_speed_ms
+
+
+Same for heading (wrap-around aware).
+
+This will improve:
+
+destination prediction
+
+flow classification
+
+freeway stability
+
+4) zone_flows is not time-aware (it grows forever)
+
+get_zone_flow_summary(minutes=30) ignores the minutes parameter. It’s returning total lifetime flow.
+
+✅ Fix
+
+Store flow events already exist (_flow_event_history). Use that for windowed summaries:
+
+filter events >= cutoff
+
+then aggregate counts
+
+This also makes inflow/outflow rates consistent with the same window.
+
+5) Destination prediction should be “only when confident”
+
+Right now, any time you have 3 points and speed > 2, you predict destination. That’s too eager.
+
+✅ Fix: require “stable heading” and “not turning”
+
+Only predict if:
+
+last 3 headings are within (say) 25–35 degrees
+
+speed above threshold (freeway/city different)
+
+the candidate destination is meaningfully aligned (bearing_diff small)
+
+Also add a confidence score:
+
+dest_conf = 1 - (bearing_diff / 60) * 0.6 - (distance_km / 15) * 0.4
+
+
+Return destination only if dest_conf > 0.55.
+
+This will stop random “destination flips”.
+
+6) Cleanup must also fix metrics
+
+When you delete trajectories in _periodic_cleanup(), you also need to:
+
+adjust inflow/outflow occupancy if you keep that model
+
+OR (better) just compute current counts from trajectories as I suggested
+
+If you do occupancy-from-trajectories, cleanup becomes safe automatically.
+
+7) One more important tracking improvement
+
+Your analyzer currently assumes every fingerprint_id is real.
+
+But your dedup sometimes splits drivers (you already know). That will poison:
+
+inflow/outflow
+
+heat
+
+hotspot detection
+
+✅ Add a “confidence gate”
+
+Only feed trajectories when the dedup confidence is high enough:
+
+In daemon:
+
+if confidence >= 0.7:
+    self.trajectory_analyzer.update_driver(...)
+
+
+Low-confidence “drivers” should not create trajectories.
+
+Best minimal patch order (biggest accuracy gain first)
+
+Fix dwell time bug (old vs new zone)
+
+Stop using current_driver_count as a running counter; compute occupancy from trajectories
+
+Smooth speed & heading (EWMA)
+
+Make flow summaries time-windowed
+
+Add destination confidence gating
+
+Only track trajectories for high-confidence fingerprints

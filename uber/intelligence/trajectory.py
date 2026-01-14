@@ -1,7 +1,9 @@
 """
-Driver Trajectory Analyzer v2.0
+Driver Trajectory Analyzer v3.0
 Tracks driver movements, predicts destinations, and detects flow patterns
 Includes: Heat map, inflow/outflow rates, dwell time, hotspot detection
+Fixes: Dwell time bug, occupancy from trajectories, EWMA smoothing,
+       time-windowed flows, destination confidence gating
 """
 
 import math
@@ -27,6 +29,7 @@ class DriverTrajectory:
     points: List[TrackPoint] = field(default_factory=list)
     current_zone: Optional[str] = None
     predicted_destination: Optional[str] = None
+    predicted_dest_confidence: float = 0.0
     heading_deg: float = 0
     avg_speed_ms: float = 0
     last_updated: datetime = field(default_factory=datetime.now)
@@ -35,17 +38,28 @@ class DriverTrajectory:
     total_dwell_time_sec: float = 0
     zones_visited: List[str] = field(default_factory=list)
     
-    def add_point(self, point: TrackPoint):
+    smoothed_speed_ms: float = 0.0
+    smoothed_heading_deg: float = 0.0
+    
+    confidence: float = 0.5
+    
+    def add_point(self, point: TrackPoint) -> Optional[Tuple[str, float]]:
+        old_zone = self.current_zone
+        old_zone_dwell = None
+        
+        if self.current_zone != point.zone_id:
+            if self.current_zone and self.zone_entry_time:
+                old_zone_dwell = (point.timestamp - self.zone_entry_time).total_seconds()
+                self.total_dwell_time_sec += old_zone_dwell
+            
+            if point.zone_id not in self.zones_visited:
+                self.zones_visited.append(point.zone_id)
+        
         self.points.append(point)
         self.last_updated = point.timestamp
         
         if self.current_zone != point.zone_id:
-            if self.current_zone and self.zone_entry_time:
-                dwell = (point.timestamp - self.zone_entry_time).total_seconds()
-                self.total_dwell_time_sec += dwell
             self.zone_entry_time = point.timestamp
-            if point.zone_id not in self.zones_visited:
-                self.zones_visited.append(point.zone_id)
         
         self.current_zone = point.zone_id
         
@@ -54,6 +68,10 @@ class DriverTrajectory:
         
         if len(self.points) >= 2:
             self._compute_velocity()
+        
+        if old_zone and old_zone != point.zone_id:
+            return (old_zone, old_zone_dwell or 0)
+        return None
     
     def _compute_velocity(self):
         if len(self.points) < 2:
@@ -67,8 +85,22 @@ class DriverTrajectory:
             return
         
         distance = haversine_m(p1.lat, p1.lng, p2.lat, p2.lng)
-        self.avg_speed_ms = distance / time_diff
-        self.heading_deg = calculate_bearing(p1.lat, p1.lng, p2.lat, p2.lng)
+        instant_speed = distance / time_diff
+        
+        alpha = 0.35
+        self.smoothed_speed_ms = alpha * instant_speed + (1 - alpha) * self.smoothed_speed_ms
+        self.avg_speed_ms = self.smoothed_speed_ms
+        
+        new_heading = calculate_bearing(p1.lat, p1.lng, p2.lat, p2.lng)
+        
+        heading_diff = new_heading - self.smoothed_heading_deg
+        if heading_diff > 180:
+            heading_diff -= 360
+        elif heading_diff < -180:
+            heading_diff += 360
+        
+        self.smoothed_heading_deg = (self.smoothed_heading_deg + alpha * heading_diff) % 360
+        self.heading_deg = self.smoothed_heading_deg
     
     def get_trail(self, max_points: int = 20) -> List[Tuple[float, float]]:
         return [(p.lat, p.lng) for p in self.points[-max_points:]]
@@ -77,6 +109,34 @@ class DriverTrajectory:
         if self.zone_entry_time:
             return (datetime.now() - self.zone_entry_time).total_seconds()
         return 0
+    
+    def has_stable_heading(self, window: int = 3, tolerance_deg: float = 30) -> bool:
+        if len(self.points) < window + 1:
+            return False
+        
+        recent_headings = []
+        for i in range(-window, 0):
+            if i + 1 == 0:
+                p1, p2 = self.points[i - 1], self.points[i]
+            else:
+                p1, p2 = self.points[i], self.points[i + 1]
+            heading = calculate_bearing(p1.lat, p1.lng, p2.lat, p2.lng)
+            recent_headings.append(heading)
+        
+        if not recent_headings:
+            return False
+        
+        avg_heading = recent_headings[0]
+        for h in recent_headings[1:]:
+            diff = h - avg_heading
+            if diff > 180:
+                diff -= 360
+            elif diff < -180:
+                diff += 360
+            if abs(diff) > tolerance_deg:
+                return False
+        
+        return True
 
 
 @dataclass
@@ -124,16 +184,14 @@ class ZoneMetrics:
     
     def record_inflow(self, count: int = 1):
         self.inflow_history.append((datetime.now(), count))
-        self.current_driver_count += count
     
     def record_outflow(self, count: int = 1, dwell_time: float = 0):
         self.outflow_history.append((datetime.now(), count))
-        self.current_driver_count = max(0, self.current_driver_count - count)
         if dwell_time > 0:
             self.dwell_times.append(dwell_time)
     
-    def calculate_heat_score(self) -> float:
-        driver_weight = min(1.0, self.current_driver_count / 20)
+    def calculate_heat_score(self, driver_count: int) -> float:
+        driver_weight = min(1.0, driver_count / 20)
         inflow_weight = min(1.0, self.inflow_rate / 5)
         dwell_weight = min(1.0, self.avg_dwell_time_sec / 300) if self.avg_dwell_time_sec > 0 else 0
         
@@ -151,6 +209,8 @@ class TrajectoryAnalyzer:
         'northbridge': (-31.9440, 115.8579),
         'subiaco': (-31.9490, 115.8270),
         'fremantle': (-32.0569, 115.7467),
+        'south_fremantle': (-32.0700, 115.7500),
+        'north_fremantle': (-32.0350, 115.7450),
         'perth_airport': (-31.9403, 115.9670),
         'scarborough': (-31.8920, 115.7570),
         'joondalup': (-31.7440, 115.7650),
@@ -176,6 +236,8 @@ class TrajectoryAnalyzer:
         'northbridge': ['northbridge'],
     }
     
+    MIN_DEST_CONFIDENCE = 0.55
+    
     def __init__(self):
         self.trajectories: Dict[str, DriverTrajectory] = {}
         self.zone_flows: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
@@ -190,19 +252,34 @@ class TrajectoryAnalyzer:
             self.zone_metrics[zone_id] = ZoneMetrics(zone_id=zone_id)
         return self.zone_metrics[zone_id]
     
+    def _compute_zone_occupancy(self, zone_id: str) -> int:
+        cutoff = datetime.now() - timedelta(minutes=5)
+        count = 0
+        for traj in self.trajectories.values():
+            if traj.current_zone == zone_id and traj.last_updated >= cutoff:
+                count += 1
+        return count
+    
     def update_driver(self, fingerprint_id: str, vehicle_type: str,
                       lat: float, lng: float, bearing: Optional[float],
-                      zone_id: str, timestamp: datetime) -> Optional[dict]:
-        if fingerprint_id not in self.trajectories:
+                      zone_id: str, timestamp: datetime,
+                      confidence: float = 0.5) -> Optional[dict]:
+        if confidence < 0.7:
+            return None
+        
+        is_new = fingerprint_id not in self.trajectories
+        
+        if is_new:
             self.trajectories[fingerprint_id] = DriverTrajectory(
                 fingerprint_id=fingerprint_id,
-                vehicle_type=vehicle_type
+                vehicle_type=vehicle_type,
+                confidence=confidence
             )
             metrics = self._get_zone_metrics(zone_id)
             metrics.record_inflow(1)
         
         traj = self.trajectories[fingerprint_id]
-        old_zone = traj.current_zone
+        traj.confidence = confidence
         
         point = TrackPoint(
             lat=lat,
@@ -211,20 +288,23 @@ class TrajectoryAnalyzer:
             timestamp=timestamp,
             zone_id=zone_id
         )
-        traj.add_point(point)
+        
+        transition_result = traj.add_point(point)
         
         flow_event = None
-        if old_zone and old_zone != zone_id:
+        if transition_result:
+            old_zone, dwell_time = transition_result
             flow_event = self._record_zone_transition(traj, old_zone, zone_id, timestamp)
             
             old_metrics = self._get_zone_metrics(old_zone)
-            dwell_time = traj.get_current_dwell_time()
             old_metrics.record_outflow(1, dwell_time)
             
             new_metrics = self._get_zone_metrics(zone_id)
             new_metrics.record_inflow(1)
         
-        traj.predicted_destination = self._predict_destination(traj)
+        dest, dest_conf = self._predict_destination_with_confidence(traj)
+        traj.predicted_destination = dest
+        traj.predicted_dest_confidence = dest_conf
         
         self._periodic_cleanup()
         self._update_zone_metrics()
@@ -268,19 +348,31 @@ class TrajectoryAnalyzer:
         return flow_event
     
     def _update_zone_metrics(self):
-        for metrics in self.zone_metrics.values():
+        for zone_id, metrics in self.zone_metrics.items():
             metrics.update_flow_rates(window_minutes=5)
-            metrics.calculate_heat_score()
+            occupancy = self._compute_zone_occupancy(zone_id)
+            metrics.current_driver_count = occupancy
+            metrics.calculate_heat_score(occupancy)
     
-    def _predict_destination(self, traj: DriverTrajectory) -> Optional[str]:
-        if len(traj.points) < 3 or traj.avg_speed_ms < 2:
-            return None
+    def _predict_destination_with_confidence(self, traj: DriverTrajectory) -> Tuple[Optional[str], float]:
+        if len(traj.points) < 3:
+            return None, 0
+        
+        is_freeway = any(kw in (traj.current_zone or '').lower() 
+                        for kw in ['fwy', 'freeway', 'hwy'])
+        min_speed = 5 if is_freeway else 2
+        
+        if traj.avg_speed_ms < min_speed:
+            return None, 0
+        
+        if not traj.has_stable_heading(window=3, tolerance_deg=30):
+            return None, 0
         
         last_point = traj.points[-1]
         heading = traj.heading_deg
         
         best_dest = None
-        best_score = float('inf')
+        best_confidence = 0
         
         for zone_id, (zone_lat, zone_lng) in self.ZONE_CENTERS.items():
             if zone_id == traj.current_zone:
@@ -297,20 +389,38 @@ class TrajectoryAnalyzer:
             if bearing_diff > 60:
                 continue
             
-            distance = haversine_m(last_point.lat, last_point.lng, zone_lat, zone_lng)
+            distance_km = haversine_m(last_point.lat, last_point.lng, zone_lat, zone_lng) / 1000
             
-            score = distance + (bearing_diff * 100)
+            bearing_score = 1 - (bearing_diff / 60)
+            distance_score = max(0, 1 - (distance_km / 15))
             
-            if score < best_score:
-                best_score = score
+            dest_confidence = bearing_score * 0.6 + distance_score * 0.4
+            
+            if dest_confidence > best_confidence:
+                best_confidence = dest_confidence
                 best_dest = zone_id
         
-        return best_dest
+        if best_confidence >= self.MIN_DEST_CONFIDENCE:
+            return best_dest, best_confidence
+        return None, 0
+    
+    def _predict_destination(self, traj: DriverTrajectory) -> Optional[str]:
+        dest, conf = self._predict_destination_with_confidence(traj)
+        return dest
     
     def get_zone_flow_summary(self, minutes: int = 30) -> Dict[str, List[dict]]:
-        result = {}
+        cutoff = datetime.now() - timedelta(minutes=minutes)
         
-        for source_zone, targets in self.zone_flows.items():
+        windowed_flows: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        
+        for event in self._flow_event_history:
+            if event['timestamp'] >= cutoff:
+                source = event['source_zone']
+                target = event['target_zone']
+                windowed_flows[source][target] += 1
+        
+        result = {}
+        for source_zone, targets in windowed_flows.items():
             flows = []
             for target_zone, count in sorted(targets.items(), key=lambda x: -x[1])[:5]:
                 flows.append({
@@ -328,13 +438,15 @@ class TrajectoryAnalyzer:
         
         for fid, traj in self.trajectories.items():
             if traj.predicted_destination and zone_lower in traj.predicted_destination.lower():
-                drivers.append({
-                    'fingerprint_id': fid,
-                    'vehicle_type': traj.vehicle_type,
-                    'current_zone': traj.current_zone,
-                    'speed_kmh': traj.avg_speed_ms * 3.6,
-                    'eta_minutes': self._estimate_eta(traj, zone_id)
-                })
+                if traj.predicted_dest_confidence >= self.MIN_DEST_CONFIDENCE:
+                    drivers.append({
+                        'fingerprint_id': fid,
+                        'vehicle_type': traj.vehicle_type,
+                        'current_zone': traj.current_zone,
+                        'speed_kmh': traj.avg_speed_ms * 3.6,
+                        'eta_minutes': self._estimate_eta(traj, zone_id),
+                        'confidence': traj.predicted_dest_confidence
+                    })
         
         return drivers
     
@@ -369,16 +481,19 @@ class TrajectoryAnalyzer:
                     'speed_kmh': traj.avg_speed_ms * 3.6,
                     'current_zone': traj.current_zone,
                     'predicted_destination': traj.predicted_destination,
+                    'dest_confidence': traj.predicted_dest_confidence,
                     'dwell_time_sec': traj.get_current_dwell_time(),
                     'zones_visited': len(traj.zones_visited)
                 })
         
         return trails
     
-    def get_flow_to_zone(self, zone_id: str) -> int:
+    def get_flow_to_zone(self, zone_id: str, minutes: int = 30) -> int:
+        cutoff = datetime.now() - timedelta(minutes=minutes)
         total = 0
-        for source, targets in self.zone_flows.items():
-            total += targets.get(zone_id, 0)
+        for event in self._flow_event_history:
+            if event['timestamp'] >= cutoff and event['target_zone'] == zone_id:
+                total += 1
         return total
     
     def get_hotspots(self, top_n: int = 10) -> List[dict]:
@@ -462,13 +577,16 @@ class TrajectoryAnalyzer:
                    if traj.last_updated < cutoff]
         for fid in expired:
             del self.trajectories[fid]
+        
+        self._update_zone_metrics()
     
     def get_stats(self) -> dict:
         active_count = len(self.trajectories)
         with_prediction = len([t for t in self.trajectories.values() 
-                               if t.predicted_destination])
-        total_flows = sum(sum(targets.values()) 
-                         for targets in self.zone_flows.values())
+                               if t.predicted_destination and t.predicted_dest_confidence >= self.MIN_DEST_CONFIDENCE])
+        
+        cutoff = datetime.now() - timedelta(minutes=30)
+        recent_flows = len([e for e in self._flow_event_history if e['timestamp'] >= cutoff])
         
         avg_dwell = 0
         dwells = [t.get_current_dwell_time() for t in self.trajectories.values() 
@@ -479,11 +597,11 @@ class TrajectoryAnalyzer:
         return {
             'active_trajectories': active_count,
             'with_predictions': with_prediction,
-            'total_flow_events': total_flows,
+            'total_flow_events': len(self._flow_event_history),
+            'recent_flow_events': recent_flows,
             'zones_tracked': len(self.zone_flows),
             'zones_with_metrics': len(self.zone_metrics),
-            'avg_current_dwell_sec': round(avg_dwell, 1),
-            'recent_flow_events': len(self._flow_event_history)
+            'avg_current_dwell_sec': round(avg_dwell, 1)
         }
     
     def reset(self):
