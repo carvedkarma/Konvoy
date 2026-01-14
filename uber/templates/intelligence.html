@@ -796,13 +796,23 @@ async function loadHotspots() {
                 return;
             }
             
-            container.innerHTML = data.hotspots.map((h, i) => `
+            const totalDrivers = data.hotspots.reduce((sum, h) => sum + h.drivers, 0);
+            
+            container.innerHTML = `
+                <div class="flex items-center justify-between mb-2 pb-2 border-b border-zinc-700">
+                    <span class="text-xs font-bold text-violet-400">Total Drivers</span>
+                    <span class="text-sm font-bold text-white">${totalDrivers}</span>
+                </div>
+            ` + data.hotspots.map((h, i) => `
                 <div class="flex items-center justify-between p-2 rounded-lg ${i === 0 ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-zinc-800/50'}">
                     <div class="flex items-center gap-2">
                         <span class="text-xs font-bold ${i === 0 ? 'text-violet-400' : 'text-zinc-500'}">#${i + 1}</span>
                         <span class="text-xs font-medium text-zinc-300">${h.zone_id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
                     </div>
-                    <span class="text-xs font-bold ${i === 0 ? 'text-violet-400' : 'text-zinc-400'}">${h.drivers}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-zinc-500">${h.uberx || 0}X ${h.comfort || 0}C ${h.xl || 0}XL</span>
+                        <span class="text-xs font-bold ${i === 0 ? 'text-violet-400' : 'text-zinc-400'}">${h.drivers}</span>
+                    </div>
                 </div>
             `).join('');
         }
