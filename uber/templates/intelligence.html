@@ -411,6 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
     refreshInterval = setInterval(loadStatus, 5000);
     driverRefreshInterval = setInterval(loadDrivers, 3000);
     trailRefreshInterval = setInterval(loadTrails, 5000);
+    setInterval(loadHotspots, 5000);
     setInterval(loadFlows, 10000);
     setInterval(loadActivityReports, 60000);
     setInterval(loadZoneHistory, 60000);
@@ -800,7 +801,20 @@ async function loadHotspots() {
                 return;
             }
             
-            container.innerHTML = data.hotspots.map((h, i) => `
+            const cbdFreoZones = ['perth_cbd', 'fremantle', 'fremantle_port', 'south_fremantle'];
+            let cbdFreoTotal = 0;
+            data.hotspots.forEach(h => {
+                if (cbdFreoZones.includes(h.zone_id)) {
+                    cbdFreoTotal += h.drivers;
+                }
+            });
+            
+            container.innerHTML = `
+                <div class="flex items-center justify-between p-2 mb-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <span class="text-xs font-medium text-emerald-400">CBD + Fremantle</span>
+                    <span class="text-sm font-bold text-emerald-400">${cbdFreoTotal}</span>
+                </div>
+            ` + data.hotspots.map((h, i) => `
                 <div class="flex items-center justify-between p-2 rounded-lg ${i === 0 ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-zinc-800/50'}">
                     <div class="flex items-center gap-2">
                         <span class="text-xs font-bold ${i === 0 ? 'text-violet-400' : 'text-zinc-500'}">#${i + 1}</span>
