@@ -383,6 +383,16 @@ let patternsChart;
 let activityChart;
 let zoneHistoryChart;
 let refreshInterval;
+
+function toPerthTime(dateStr) {
+    const date = new Date(dateStr);
+    return new Date(date.getTime() + (8 * 60 * 60 * 1000));
+}
+
+function formatPerthTime(dateStr) {
+    const perth = toPerthTime(dateStr);
+    return perth.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
 let driverRefreshInterval;
 let trailRefreshInterval;
 let lastMaxId = 0;
@@ -853,7 +863,10 @@ async function loadPatterns() {
 function renderPatternsChart(patterns) {
     const ctx = document.getElementById('patterns-chart').getContext('2d');
     
-    const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+    const hours = Array.from({length: 24}, (_, i) => {
+        const h = i.toString().padStart(2, '0');
+        return `${h}:00`;
+    });
     const datasets = [];
     
     const colors = {
@@ -901,15 +914,22 @@ function renderPatternsChart(patterns) {
         options: {
             responsive: true,
             plugins: {
+                title: {
+                    display: true,
+                    text: 'Weekly Patterns by Hour (Perth Time - AWST)',
+                    color: '#a0a0b0',
+                    font: { size: 12 }
+                },
                 legend: {
                     position: 'bottom',
-                    labels: { color: '#a0a0b0' }
+                    labels: { color: '#a0a0b0', boxWidth: 12, padding: 10 }
                 }
             },
             scales: {
                 x: {
-                    ticks: { color: '#6b7280' },
-                    grid: { color: 'rgba(139, 92, 246, 0.1)' }
+                    ticks: { color: '#6b7280', font: { size: 9 } },
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
+                    title: { display: true, text: 'Hour (AWST)', color: '#6b7280', font: { size: 10 } }
                 },
                 y: {
                     beginAtZero: true,
@@ -983,38 +1003,30 @@ function renderActivityChart(reports) {
     
     const sortedReports = [...reports].sort((a, b) => new Date(a.time) - new Date(b.time));
     
-    const labels = sortedReports.map(r => r.time_slot);
+    const labels = sortedReports.map(r => {
+        const perth = toPerthTime(r.time);
+        return perth.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false });
+    });
     const totals = sortedReports.map(r => r.total_drivers);
-    const uberx = sortedReports.map(r => r.uberx);
-    const xl = sortedReports.map(r => r.xl);
-    const black = sortedReports.map(r => r.black);
     
     if (activityChart) {
         activityChart.destroy();
     }
     
     activityChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
             labels: labels,
             datasets: [
                 {
-                    label: 'UberX',
-                    data: uberx,
-                    backgroundColor: '#22c55e',
-                    stack: 'Stack 0'
-                },
-                {
-                    label: 'XL',
-                    data: xl,
-                    backgroundColor: '#f59e0b',
-                    stack: 'Stack 0'
-                },
-                {
-                    label: 'Black',
-                    data: black,
-                    backgroundColor: '#1f2937',
-                    stack: 'Stack 0'
+                    label: 'Total Drivers',
+                    data: totals,
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#8b5cf6'
                 }
             ]
         },
@@ -1022,17 +1034,26 @@ function renderActivityChart(reports) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { boxWidth: 12, font: { size: 10 }, color: '#a0a0b0' }
+                legend: { display: false },
+                title: {
+                    display: true,
+                    text: 'Driver Activity (Perth Time)',
+                    color: '#a0a0b0',
+                    font: { size: 12 }
                 },
                 tooltip: {
                     callbacks: {
+                        title: function(context) {
+                            const idx = context[0].dataIndex;
+                            const report = sortedReports[idx];
+                            const perth = toPerthTime(report.time);
+                            return perth.toLocaleString('en-AU', { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+                        },
                         afterBody: function(context) {
                             const idx = context[0].dataIndex;
                             const report = sortedReports[idx];
                             if (report) {
-                                return `Activity: ${report.activity_level || 'N/A'}\nTrend: ${report.trend || 'N/A'}`;
+                                return `UberX: ${report.uberx} | XL: ${report.xl} | Black: ${report.black}\nActivity: ${(report.activity_level || 'N/A').replace('_', ' ')}`;
                             }
                             return '';
                         }
@@ -1041,12 +1062,11 @@ function renderActivityChart(reports) {
             },
             scales: {
                 x: {
-                    stacked: true,
-                    ticks: { font: { size: 9 }, color: '#6b7280' },
-                    grid: { color: 'rgba(139, 92, 246, 0.1)' }
+                    ticks: { font: { size: 9 }, color: '#6b7280', maxRotation: 45 },
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
+                    title: { display: true, text: 'Time (AWST)', color: '#6b7280', font: { size: 10 } }
                 },
                 y: {
-                    stacked: true,
                     beginAtZero: true,
                     ticks: { color: '#6b7280' },
                     grid: { color: 'rgba(139, 92, 246, 0.1)' },
@@ -1140,6 +1160,12 @@ function renderZoneHistoryChart(chartData) {
                 intersect: false
             },
             plugins: {
+                title: {
+                    display: true,
+                    text: 'Zone History (Perth Time - AWST)',
+                    color: '#a0a0b0',
+                    font: { size: 12 }
+                },
                 legend: {
                     position: 'bottom',
                     labels: {
@@ -1164,7 +1190,8 @@ function renderZoneHistoryChart(chartData) {
                         color: '#6b7280',
                         maxRotation: 45
                     },
-                    grid: { color: 'rgba(139, 92, 246, 0.1)' }
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
+                    title: { display: true, text: 'Time (AWST)', color: '#6b7280', font: { size: 10 } }
                 },
                 y: {
                     beginAtZero: true,
