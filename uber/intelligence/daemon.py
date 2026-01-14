@@ -455,6 +455,9 @@ class IntelligenceDaemon:
                     else:
                         trend = 'stable'
                 
+                import json
+                zone_counts_json = json.dumps(zone_counts) if zone_counts else None
+                
                 report = ActivityReport(
                     report_time=report_time,
                     day_of_week=day_of_week,
@@ -473,7 +476,8 @@ class IntelligenceDaemon:
                     change_from_previous=change_from_previous,
                     change_percentage=round(change_percentage, 1),
                     trend=trend,
-                    cycles_in_period=self._cycles_since_report
+                    cycles_in_period=self._cycles_since_report,
+                    zone_counts_json=zone_counts_json
                 )
                 
                 db.session.add(report)

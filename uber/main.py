@@ -4243,6 +4243,82 @@ def api_intelligence_activity_summary():
         return jsonify(success=False, message=str(e))
 
 
+@app.route('/api/intelligence/zone-history')
+@login_required
+def api_intelligence_zone_history():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    try:
+        hours = request.args.get('hours', 6, type=int)
+        cutoff = datetime.now() - timedelta(hours=hours)
+        
+        reports = ActivityReport.query.filter(
+            ActivityReport.report_time >= cutoff
+        ).order_by(ActivityReport.report_time.asc()).all()
+        
+        zone_history = {}
+        time_labels = []
+        
+        for r in reports:
+            time_label = r.report_time.strftime('%H:%M')
+            if time_label not in time_labels:
+                time_labels.append(time_label)
+            
+            zone_counts = r.get_zone_counts()
+            for zone_id, counts in zone_counts.items():
+                if zone_id not in zone_history:
+                    zone_history[zone_id] = []
+                
+                zone_total = sum(counts.values()) if isinstance(counts, dict) else counts
+                zone_history[zone_id].append({
+                    'time': time_label,
+                    'count': zone_total,
+                    'uberx': counts.get('UberX', 0) if isinstance(counts, dict) else 0,
+                    'xl': counts.get('XL', 0) if isinstance(counts, dict) else 0,
+                    'black': counts.get('Black', 0) if isinstance(counts, dict) else 0
+                })
+        
+        chart_data = {
+            'labels': time_labels,
+            'datasets': []
+        }
+        
+        zone_colors = {
+            'perth_cbd': '#8b5cf6',
+            'northbridge': '#a78bfa',
+            'east_perth': '#c4b5fd',
+            'west_perth': '#ddd6fe',
+            'elizabeth_quay': '#7c3aed',
+            'fremantle': '#22c55e',
+            'fremantle_port': '#4ade80',
+            'south_fremantle': '#86efac',
+            'armadale': '#f59e0b',
+            'rockingham': '#fbbf24',
+            'cannington': '#3b82f6',
+            'success': '#60a5fa'
+        }
+        
+        for zone_id, history in zone_history.items():
+            data_points = []
+            for label in time_labels:
+                point = next((h for h in history if h['time'] == label), None)
+                data_points.append(point['count'] if point else 0)
+            
+            chart_data['datasets'].append({
+                'label': zone_id.replace('_', ' ').title(),
+                'data': data_points,
+                'borderColor': zone_colors.get(zone_id, '#9ca3af'),
+                'backgroundColor': zone_colors.get(zone_id, '#9ca3af') + '20',
+                'tension': 0.3,
+                'fill': False
+            })
+        
+        return jsonify(success=True, chart_data=chart_data, zones=list(zone_history.keys()))
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
 def auto_start_intelligence_engine():
     """Auto-start the Intelligence Engine on server startup for 24/7 operation"""
     global _intelligence_daemon

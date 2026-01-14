@@ -316,6 +316,29 @@
             </div>
         </div>
 
+        <div class="intel-card p-4 lg:p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                        </svg>
+                    </div>
+                    Zone Flow History
+                    <span class="text-xs font-normal text-zinc-500">(15-min intervals per zone)</span>
+                </h2>
+                <select id="zone-history-hours" class="px-4 py-2 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg border border-zinc-700 focus:border-violet-500 focus:outline-none">
+                    <option value="3">Last 3 hours</option>
+                    <option value="6" selected>Last 6 hours</option>
+                    <option value="12">Last 12 hours</option>
+                    <option value="24">Last 24 hours</option>
+                </select>
+            </div>
+            <div class="h-[300px]">
+                <canvas id="zone-history-chart"></canvas>
+            </div>
+        </div>
+        
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="intel-card p-4 lg:p-6">
                 <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-3">
@@ -355,6 +378,7 @@ let driverMarkers = {};
 let driverTrails = {};
 let patternsChart;
 let activityChart;
+let zoneHistoryChart;
 let refreshInterval;
 let driverRefreshInterval;
 let trailRefreshInterval;
@@ -379,16 +403,19 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTrails();
     loadFlows();
     loadActivityReports();
+    loadZoneHistory();
     
     refreshInterval = setInterval(loadStatus, 5000);
     driverRefreshInterval = setInterval(loadDrivers, 3000);
     trailRefreshInterval = setInterval(loadTrails, 5000);
     setInterval(loadFlows, 10000);
     setInterval(loadActivityReports, 60000);
+    setInterval(loadZoneHistory, 60000);
     
     document.getElementById('toggle-daemon').addEventListener('click', toggleDaemon);
     document.getElementById('reset-map').addEventListener('click', resetMap);
     document.getElementById('activity-day-filter').addEventListener('change', loadActivityReports);
+    document.getElementById('zone-history-hours').addEventListener('change', loadZoneHistory);
 });
 
 function initMap() {
@@ -1047,6 +1074,86 @@ function renderActivityList(reports) {
             </div>
         `;
     }).join('');
+}
+
+async function loadZoneHistory() {
+    try {
+        const hours = document.getElementById('zone-history-hours').value || 6;
+        const res = await fetch(`/api/intelligence/zone-history?hours=${hours}`);
+        const data = await res.json();
+        
+        if (data.success && data.chart_data) {
+            renderZoneHistoryChart(data.chart_data);
+        }
+    } catch (e) {
+        console.error('Failed to load zone history:', e);
+    }
+}
+
+function renderZoneHistoryChart(chartData) {
+    const ctx = document.getElementById('zone-history-chart');
+    if (!ctx) return;
+    
+    if (chartData.labels.length === 0) {
+        ctx.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-zinc-500 text-sm">No zone history data yet. Data will appear after 15-minute reports are generated.</div>';
+        return;
+    }
+    
+    if (zoneHistoryChart) {
+        zoneHistoryChart.destroy();
+    }
+    
+    zoneHistoryChart = new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        font: { size: 11 },
+                        color: '#a0a0b0',
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(26, 26, 46, 0.95)',
+                    titleColor: '#fff',
+                    bodyColor: '#a0a0b0',
+                    borderColor: 'rgba(139, 92, 246, 0.3)',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        font: { size: 10 },
+                        color: '#6b7280',
+                        maxRotation: 45
+                    },
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#6b7280' },
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
+                    title: {
+                        display: true,
+                        text: 'Drivers per Zone',
+                        font: { size: 11 },
+                        color: '#a0a0b0'
+                    }
+                }
+            }
+        }
+    });
 }
 </script>
 {% endblock %}

@@ -460,6 +460,7 @@ class ActivityReport(db.Model):
     trend = db.Column(db.String(20), nullable=True)
     cycles_in_period = db.Column(db.Integer, default=0)
     notes = db.Column(db.Text, nullable=True)
+    zone_counts_json = db.Column(db.Text, nullable=True)
     
     __table_args__ = (
         db.Index('idx_report_time_dow', 'day_of_week', 'time_slot'),
@@ -467,6 +468,15 @@ class ActivityReport(db.Model):
     
     def __repr__(self):
         return f'<ActivityReport {self.time_slot} on dow={self.day_of_week}>'
+    
+    def get_zone_counts(self):
+        import json
+        if self.zone_counts_json:
+            try:
+                return json.loads(self.zone_counts_json)
+            except:
+                return {}
+        return {}
 
 
 class CorrelationModel(db.Model):
