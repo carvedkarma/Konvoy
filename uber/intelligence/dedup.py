@@ -186,6 +186,7 @@ class DriverDeduplicator:
         'subiaco': 15, 'leederville': 15, 'victoria_park': 15, 'south_perth': 15,
         'fremantle': 14, 'south_fremantle': 14, 'north_fremantle': 14, 'fremantle_port': 12,
         'armadale': 15, 'rockingham': 15, 'cannington': 15, 'success': 17,
+        'midland': 15, 'girrawheen': 17, 'heathridge': 17,
         'airport': 17, 'perth_airport': 17, 'default_suburb': 17,
         'kwinana_fwy': 28, 'mitchell_fwy': 28, 'roe_hwy': 28, 'tonkin_hwy': 28, 'freeway': 28,
     }

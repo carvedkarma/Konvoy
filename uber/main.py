@@ -4296,7 +4296,10 @@ def api_intelligence_zone_history():
             'armadale': '#f59e0b',
             'rockingham': '#fbbf24',
             'cannington': '#3b82f6',
-            'success': '#60a5fa'
+            'success': '#60a5fa',
+            'midland': '#ef4444',
+            'girrawheen': '#f87171',
+            'heathridge': '#fb923c'
         }
         
         for zone_id, history in zone_history.items():

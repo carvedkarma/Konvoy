@@ -39,6 +39,11 @@ class PerthGrid:
         
         # Inner Suburbs
         {'name': 'Cannington', 'lat': -32.0162, 'lng': 115.9350, 'radius': 1.5, 'dense': True, 'priority': 8},
+        
+        # Northern Suburbs
+        {'name': 'Midland', 'lat': -31.8890, 'lng': 116.0060, 'radius': 2, 'dense': True, 'priority': 8},
+        {'name': 'Girrawheen', 'lat': -31.8380, 'lng': 115.8380, 'radius': 1.5, 'dense': True, 'priority': 7},
+        {'name': 'Heathridge', 'lat': -31.7620, 'lng': 115.7620, 'radius': 1.5, 'dense': True, 'priority': 7},
     ]
     
     def __init__(self):
