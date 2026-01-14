@@ -53,6 +53,13 @@ Preferred communication style: Simple, everyday language.
 - **Trajectory Analyzer**: Tracks driver movements, predicts destinations, and records zone-to-zone transitions.
 - **Background Daemon**: Continuous 24/7 scanning with crash recovery, retry mechanisms, and a watchdog timer.
 - **Learning Engine**: Performs hourly analysis, discovers daily patterns, detects correlations, and generates/validates predictions.
+- **15-Minute Window System**: 
+  - Generates activity reports every 15 minutes aligned to clock time (00:00, 00:15, 00:30, 00:45)
+  - Clears map and resets all in-memory state after each report
+  - Preserves last window summary for display during new window collection
+  - Zone activity levels: HOT (short dwell + high outflow + moderate drivers), WARM (balanced flow), COLD, NO_DATA
+  - MOVE/STAY recommendations based on zone comparison with confidence scoring
+  - UI shows countdown timer, best zone, and actionable recommendations
 - **Dashboard**: Premium glassmorphism design displaying real-time stats, system health, live coverage map with movement trails, zone flow, hotspots, learned patterns, and predictions.
 
 ## External Dependencies
