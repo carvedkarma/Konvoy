@@ -1,6 +1,6 @@
 """
 Perth Coordinate Grid System
-Focused on Fremantle and Perth CBD for targeted analysis
+Extended coverage: Perth CBD, Fremantle, Armadale, Rockingham, Cannington, Success
 """
 
 import math
@@ -20,14 +20,25 @@ class GridPoint:
 
 class PerthGrid:
     PERTH_ZONES = [
+        # CBD Area
         {'name': 'Perth CBD', 'lat': -31.9505, 'lng': 115.8605, 'radius': 2, 'dense': True, 'priority': 10},
         {'name': 'Northbridge', 'lat': -31.9440, 'lng': 115.8575, 'radius': 1, 'dense': True, 'priority': 9},
         {'name': 'East Perth', 'lat': -31.9550, 'lng': 115.8750, 'radius': 1, 'dense': True, 'priority': 8},
         {'name': 'West Perth', 'lat': -31.9480, 'lng': 115.8430, 'radius': 1, 'dense': True, 'priority': 7},
         {'name': 'Elizabeth Quay', 'lat': -31.9580, 'lng': 115.8580, 'radius': 0.5, 'dense': True, 'priority': 9},
+        
+        # Fremantle Area
         {'name': 'Fremantle', 'lat': -32.0569, 'lng': 115.7439, 'radius': 2, 'dense': True, 'priority': 10},
         {'name': 'Fremantle Port', 'lat': -32.0480, 'lng': 115.7380, 'radius': 1, 'dense': True, 'priority': 8},
         {'name': 'South Fremantle', 'lat': -32.0720, 'lng': 115.7500, 'radius': 1, 'dense': True, 'priority': 7},
+        
+        # Southern Suburbs
+        {'name': 'Armadale', 'lat': -32.1530, 'lng': 116.0150, 'radius': 2, 'dense': True, 'priority': 8},
+        {'name': 'Rockingham', 'lat': -32.2771, 'lng': 115.7299, 'radius': 2, 'dense': True, 'priority': 8},
+        {'name': 'Success', 'lat': -32.1447, 'lng': 115.8483, 'radius': 1.5, 'dense': True, 'priority': 7},
+        
+        # Inner Suburbs
+        {'name': 'Cannington', 'lat': -32.0162, 'lng': 115.9350, 'radius': 1.5, 'dense': True, 'priority': 8},
     ]
     
     def __init__(self):
