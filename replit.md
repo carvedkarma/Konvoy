@@ -60,7 +60,14 @@ Preferred communication style: Simple, everyday language.
   - Zone activity levels: HOT (short dwell + high outflow + moderate drivers), WARM (balanced flow), COLD, NO_DATA
   - MOVE/STAY recommendations based on zone comparison with confidence scoring
   - UI shows countdown timer, best zone, and actionable recommendations
-- **Dashboard**: Premium glassmorphism design displaying real-time stats, system health, live coverage map with movement trails, zone flow, hotspots, learned patterns, and predictions.
+- **Dashboard**: Premium dark-themed design with:
+  - Larger responsive map (450px mobile, 600px tablet, 700px desktop)
+  - CSS custom properties for consistent dark theme styling
+  - Compact stat cards with integrated window timer
+  - Glassmorphic sidebar cards for recommendations, scanning status, hotspots, system health, and driver flow
+  - Dark-themed charts with violet accent grid lines
+  - Activity reports with color-coded levels and trend indicators
+  - Predictions and patterns sections with gradient styling
 
 ## External Dependencies
 
