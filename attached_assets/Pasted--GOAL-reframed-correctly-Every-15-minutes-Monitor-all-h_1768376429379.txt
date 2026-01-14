@@ -1,0 +1,230 @@
+🎯 GOAL (reframed correctly)
+
+Every 15 minutes:
+
+Monitor all hotspot areas (CBD, Fremantle, etc.)
+
+Generate a clear activity report
+
+Reset / clear the map
+
+Start a fresh observation window
+
+Avoid historical pollution
+
+This is the right model for Uber decision-making.
+
+1️⃣ Core principle: rolling time windows (NOT accumulation)
+
+Right now, parts of your system accumulate forever:
+
+zone_flows
+
+current_driver_count
+
+dwell_times
+
+heat scores
+
+That’s why things “break” or drift.
+
+✅ Correct model
+
+Treat the system like a radar sweep:
+
+[00:00–00:15] → snapshot → report → clear
+[00:15–00:30] → snapshot → report → clear
+[00:30–00:45] → snapshot → report → clear
+
+
+Each window is independent.
+
+2️⃣ Architecture you should use (simple & robust)
+🧠 Split your intelligence into 3 layers
+RAW OBSERVATIONS  →  WINDOW AGGREGATOR  →  DECISION + REPORT
+
+
+You already have RAW OBSERVATIONS.
+
+What you’re missing is a Window Aggregator.
+
+3️⃣ The 15-minute Window Aggregator (THIS IS KEY)
+
+Create a new component conceptually like:
+
+class ActivityWindow:
+    start_time
+    end_time
+    zones: Dict[zone_id, ZoneWindowStats]
+
+For each zone, track ONLY:
+
+unique high-confidence drivers
+
+inflow count
+
+outflow count
+
+avg dwell time
+
+avg speed
+
+confidence score
+
+❌ No long-term state
+❌ No prediction
+❌ No accumulation
+
+4️⃣ What to reset every 15 minutes (important)
+
+At window rollover, you MUST reset:
+
+Component	Action
+Trajectories	❌ Clear
+ZoneMetrics	❌ Clear
+Heat scores	❌ Clear
+Flow counters	❌ Clear
+Map visuals	❌ Clear
+In-memory stats	❌ Clear
+
+What you DO NOT reset:
+
+database history
+
+learning tables
+
+long-term snapshots
+
+5️⃣ How to implement the 15-minute timer cleanly
+Option A (recommended): time-bucket alignment
+
+Align windows to real clock time:
+
+00:00, 00:15, 00:30, 00:45
+
+
+You already did something similar in your daemon — reuse that pattern.
+
+Pseudocode:
+current_window_start = floor(now, 15 minutes)
+
+if now >= current_window_start + 15 minutes:
+    generate_report()
+    reset_window()
+    current_window_start = floor(now, 15 minutes)
+
+6️⃣ What the 15-minute Activity Report should contain
+
+Keep it simple and actionable.
+
+For EACH zone:
+{
+  "zone": "perth_cbd",
+  "drivers_seen": 18,
+  "avg_dwell_minutes": 3.2,
+  "inflow_rate": 1.6,
+  "outflow_rate": 2.4,
+  "net_flow": +0.8,
+  "activity_level": "HOT",
+  "confidence": 0.82
+}
+
+Global summary:
+{
+  "best_zone_now": "northbridge",
+  "worst_zone_now": "west_perth",
+  "recommendation": "MOVE",
+  "confidence": 0.78
+}
+
+7️⃣ How to calculate activity level (very important)
+
+Forget ML for now. Use rules.
+
+Example:
+HOT:
+  outflow_rate high
+  avg_dwell < 5 min
+  driver_count moderate
+
+WARM:
+  balanced flow
+  avg_dwell 5–8 min
+
+COLD:
+  low outflow
+  high dwell
+  high driver count
+
+
+This matches real Uber behavior.
+
+8️⃣ How to “clear the map” correctly
+❌ Wrong
+
+deleting DB rows
+
+wiping history
+
+restarting the daemon
+
+✅ Correct
+
+Clear in-memory window state
+
+Keep DB history intact
+
+Keep learning engine reading snapshots later
+
+Your UI map should only render:
+
+drivers/events from CURRENT window
+
+9️⃣ Where your existing code needs adjustment
+TrajectoryAnalyzer
+
+Add reset_window() method:
+
+clears trajectories
+
+clears zone_metrics
+
+clears flow events
+
+IntelligenceDaemon
+
+On 15-minute boundary:
+
+call generate_activity_report(window)
+
+call trajectory_analyzer.reset_window()
+
+reset deduplicator confidence decay (optional)
+
+LearningEngine
+
+Should ONLY read finalized 15-minute snapshots
+
+Never read live state
+
+🔟 Final mental model (remember this)
+
+Uber decisions are short-term, local, and reactive.
+
+Your system should:
+
+forget fast
+
+react calmly
+
+decide conservatively
+
+speak clearly
+
+Not:
+
+predict hours ahead
+
+chase ghosts
+
+overlearn noise

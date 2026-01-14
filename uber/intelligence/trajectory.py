@@ -609,6 +609,116 @@ class TrajectoryAnalyzer:
         self.zone_flows.clear()
         self.zone_metrics.clear()
         self._flow_event_history.clear()
+    
+    def reset_window(self) -> dict:
+        window_summary = self.get_window_summary()
+        
+        self.trajectories.clear()
+        self.zone_flows.clear()
+        self.zone_metrics.clear()
+        self._flow_event_history.clear()
+        self.active_flows.clear()
+        self._last_cleanup = datetime.now()
+        
+        return window_summary
+    
+    def get_window_summary(self) -> dict:
+        zone_summaries = {}
+        for zone_id, metrics in self.zone_metrics.items():
+            inflow_count = sum(c for _, c in metrics.inflow_history)
+            outflow_count = sum(c for _, c in metrics.outflow_history)
+            
+            avg_dwell = 0
+            if metrics.dwell_times:
+                avg_dwell = sum(metrics.dwell_times) / len(metrics.dwell_times)
+            
+            drivers_in_zone = self._compute_zone_occupancy(zone_id)
+            
+            has_short_dwell = metrics.avg_dwell_time_sec < 300
+            has_high_outflow = metrics.outflow_rate > 0.2
+            has_moderate_drivers = 3 <= drivers_in_zone <= 15
+            has_balanced_flow = metrics.net_flow > -0.5
+            
+            if has_short_dwell and has_high_outflow and has_moderate_drivers:
+                activity_level = 'HOT'
+            elif has_balanced_flow and (has_short_dwell or has_high_outflow or drivers_in_zone >= 2):
+                activity_level = 'WARM'
+            elif drivers_in_zone == 0 or inflow_count + outflow_count == 0:
+                activity_level = 'NO_DATA'
+            else:
+                activity_level = 'COLD'
+            
+            zone_summaries[zone_id] = {
+                'drivers_seen': drivers_in_zone,
+                'inflow_count': inflow_count,
+                'outflow_count': outflow_count,
+                'avg_dwell_minutes': round(avg_dwell / 60, 1),
+                'inflow_rate': round(metrics.inflow_rate, 2),
+                'outflow_rate': round(metrics.outflow_rate, 2),
+                'net_flow': round(metrics.net_flow, 2),
+                'heat_score': round(metrics.heat_score, 3),
+                'activity_level': activity_level,
+                'confidence': min(1.0, drivers_in_zone / 10) if drivers_in_zone > 0 else 0
+            }
+        
+        if zone_summaries:
+            best_zone = max(zone_summaries.items(), 
+                           key=lambda x: x[1]['outflow_rate'] if x[1]['activity_level'] == 'HOT' else 0)
+            worst_zone = min(zone_summaries.items(),
+                            key=lambda x: x[1]['outflow_rate'] if x[1]['drivers_seen'] > 0 else float('inf'))
+        else:
+            best_zone = (None, {})
+            worst_zone = (None, {})
+        
+        total_drivers = len(self.trajectories)
+        total_flow_events = len(self._flow_event_history)
+        
+        zones_with_data = [z for z, s in zone_summaries.items() if s.get('activity_level') != 'NO_DATA']
+        
+        if len(zones_with_data) < 2 or total_drivers < 3:
+            return {
+                'zones': zone_summaries,
+                'total_unique_drivers': total_drivers,
+                'flow_events': total_flow_events,
+                'best_zone': None,
+                'worst_zone': None,
+                'recommendation': 'COLLECTING',
+                'recommendation_confidence': 0,
+                'has_sufficient_data': False
+            }
+        
+        should_move = False
+        move_confidence = 0
+        move_target = None
+        
+        if best_zone[0] and worst_zone[0] and best_zone[0] != worst_zone[0]:
+            best_stats = best_zone[1]
+            worst_stats = worst_zone[1]
+            
+            if best_stats.get('activity_level') == 'HOT' and worst_stats.get('activity_level') in ['COLD', 'WARM']:
+                should_move = True
+                move_confidence = 0.8
+                move_target = best_zone[0]
+            elif best_stats.get('activity_level') == 'HOT' and best_stats.get('net_flow', 0) < 0:
+                should_move = True
+                move_confidence = 0.7
+                move_target = best_zone[0]
+            elif best_stats.get('outflow_rate', 0) > worst_stats.get('outflow_rate', 0) * 1.5:
+                should_move = True
+                move_confidence = 0.6
+                move_target = best_zone[0]
+        
+        return {
+            'zones': zone_summaries,
+            'total_unique_drivers': total_drivers,
+            'flow_events': total_flow_events,
+            'best_zone': best_zone[0],
+            'worst_zone': worst_zone[0],
+            'recommendation': 'MOVE' if should_move else 'STAY',
+            'recommendation_confidence': move_confidence,
+            'move_target': move_target,
+            'has_sufficient_data': True
+        }
 
 
 def haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:

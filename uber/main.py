@@ -4155,6 +4155,47 @@ def api_intelligence_activity_reports():
         return jsonify(success=False, message=str(e))
 
 
+@app.route('/api/intelligence/window-status')
+@login_required
+def api_intelligence_window_status():
+    if not current_user.is_owner():
+        return jsonify(success=False, message='Access denied'), 403
+    
+    global _intelligence_daemon
+    
+    try:
+        now = datetime.now()
+        interval = 15
+        current_minute = (now.minute // interval) * interval
+        window_start = now.replace(minute=current_minute, second=0, microsecond=0)
+        window_end = window_start + timedelta(minutes=interval)
+        elapsed = (now - window_start).total_seconds()
+        remaining = (window_end - now).total_seconds()
+        
+        current_summary = {}
+        last_summary = {}
+        if _intelligence_daemon:
+            if _intelligence_daemon.trajectory_analyzer:
+                current_summary = _intelligence_daemon.trajectory_analyzer.get_window_summary()
+            last_summary = _intelligence_daemon.get_last_window_summary() or {}
+        
+        return jsonify(
+            success=True,
+            window={
+                'start': window_start.isoformat(),
+                'end': window_end.isoformat(),
+                'elapsed_seconds': int(elapsed),
+                'remaining_seconds': int(remaining),
+                'elapsed_pct': round((elapsed / (interval * 60)) * 100, 1),
+                'interval_minutes': interval
+            },
+            summary=current_summary,
+            last_window=last_summary
+        )
+    except Exception as e:
+        return jsonify(success=False, message=str(e))
+
+
 @app.route('/api/intelligence/activity-summary')
 @login_required
 def api_intelligence_activity_summary():

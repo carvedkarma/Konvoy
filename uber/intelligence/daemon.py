@@ -28,7 +28,7 @@ class IntelligenceDaemon:
     FETCH_RETRY_DELAY = 3
     WATCHDOG_INTERVAL = 60
     
-    REPORT_INTERVAL_MIN = 30
+    REPORT_INTERVAL_MIN = 15
     
     MIN_TRAJECTORY_CONFIDENCE = 0.7
     
@@ -58,6 +58,7 @@ class IntelligenceDaemon:
         self._last_report_time: Optional[datetime] = None
         self._cycles_since_report = 0
         self._period_driver_samples: List[int] = []
+        self._last_window_summary: Optional[dict] = None
         
         self._callbacks: Dict[str, List[Callable]] = {
             'on_observation': [],
@@ -361,6 +362,7 @@ class IntelligenceDaemon:
             
             try:
                 self._generate_activity_report(current_slot)
+                self._reset_window_state()
                 self._last_report_time = current_slot
             except Exception as e:
                 print(f"[Report] Error generating activity report: {e}")
@@ -486,6 +488,22 @@ class IntelligenceDaemon:
         driver_count = self.deduplicator.get_driver_count()
         self._period_driver_samples.append(driver_count)
         self._cycles_since_report += 1
+    
+    def _reset_window_state(self):
+        window_summary = self.trajectory_analyzer.get_window_summary()
+        self._last_window_summary = window_summary
+        
+        self.trajectory_analyzer.reset_window()
+        self.deduplicator.reset()
+        self._period_driver_samples.clear()
+        
+        print(f"[Window] Reset complete - {window_summary.get('total_unique_drivers', 0)} drivers cleared, "
+              f"{len(window_summary.get('zones', {}))} zones reset")
+        
+        return window_summary
+    
+    def get_last_window_summary(self) -> Optional[dict]:
+        return self._last_window_summary
 
 
 _daemon_instance: Optional[IntelligenceDaemon] = None
