@@ -241,11 +241,14 @@
                 </div>
 
                 <div class="intel-card p-4">
-                    <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
-                        </svg>
-                        Hotspots
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
+                            </svg>
+                            Hotspots
+                        </span>
+                        <span id="hotspots-total" class="text-xs font-bold text-violet-400">--</span>
                     </h3>
                     <div id="hotspots-list" class="space-y-2 max-h-[200px] overflow-y-auto scrollbar-thin">
                         <p class="text-xs text-zinc-500 text-center py-3">Loading...</p>
@@ -701,6 +704,7 @@ function updateStatusUI(status) {
     document.getElementById('stat-uberx').textContent = counts.UberX || 0;
     document.getElementById('stat-xl').textContent = counts.XL || 0;
     document.getElementById('stat-black').textContent = counts.Black || 0;
+    document.getElementById('hotspots-total').textContent = status.unique_drivers || 0;
     
     const formatZone = (zone) => zone ? zone.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '--';
     
@@ -796,14 +800,7 @@ async function loadHotspots() {
                 return;
             }
             
-            const totalDrivers = data.hotspots.reduce((sum, h) => sum + h.drivers, 0);
-            
-            container.innerHTML = `
-                <div class="flex items-center justify-between mb-2 pb-2 border-b border-zinc-700">
-                    <span class="text-xs font-bold text-violet-400">Total Drivers</span>
-                    <span class="text-sm font-bold text-white">${totalDrivers}</span>
-                </div>
-            ` + data.hotspots.map((h, i) => `
+            container.innerHTML = data.hotspots.map((h, i) => `
                 <div class="flex items-center justify-between p-2 rounded-lg ${i === 0 ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-zinc-800/50'}">
                     <div class="flex items-center gap-2">
                         <span class="text-xs font-bold ${i === 0 ? 'text-violet-400' : 'text-zinc-500'}">#${i + 1}</span>
