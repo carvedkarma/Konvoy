@@ -7,254 +7,341 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-    #intel-map { height: 300px; border-radius: 16px; }
+    :root {
+        --bg-primary: #0f0f1a;
+        --bg-secondary: #1a1a2e;
+        --bg-card: rgba(26, 26, 46, 0.8);
+        --bg-card-hover: rgba(36, 36, 66, 0.9);
+        --text-primary: #ffffff;
+        --text-secondary: #a0a0b0;
+        --text-muted: #6b7280;
+        --accent: #8b5cf6;
+        --accent-glow: rgba(139, 92, 246, 0.3);
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --border: rgba(139, 92, 246, 0.2);
+    }
+    
+    #intel-map { 
+        height: 450px; 
+        border-radius: 16px;
+        border: 1px solid var(--border);
+    }
     @media (min-width: 768px) {
-        #intel-map { height: 500px; }
+        #intel-map { height: 600px; }
     }
-    .glass-card {
-        background: rgba(255, 255, 255, 0.9);
+    @media (min-width: 1280px) {
+        #intel-map { height: 700px; }
+    }
+    
+    .intel-page {
+        background: linear-gradient(135deg, var(--bg-primary) 0%, #16162e 50%, var(--bg-primary) 100%);
+        min-height: 100vh;
+    }
+    
+    .intel-card {
+        background: var(--bg-card);
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        transition: all 0.3s ease;
     }
-    .stat-glow {
-        box-shadow: 0 0 30px rgba(139, 92, 246, 0.15);
+    .intel-card:hover {
+        background: var(--bg-card-hover);
+        border-color: rgba(139, 92, 246, 0.4);
     }
+    
+    .stat-card {
+        background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.1) 100%);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent), #a78bfa);
+    }
+    
+    .window-card {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, var(--bg-card) 100%);
+        border: 2px solid var(--accent);
+        border-radius: 20px;
+        box-shadow: 0 0 40px var(--accent-glow);
+    }
+    
     .pulse-dot {
         animation: pulse 2s infinite;
     }
     @keyframes pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.2); }
+        50% { opacity: 0.5; transform: scale(1.3); }
     }
+    
+    .glow-text {
+        text-shadow: 0 0 20px var(--accent-glow);
+    }
+    
     .driver-marker {
         border-radius: 50%;
         border: 2px solid white;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     }
-    .driver-uberx { background: #22c55e; }
-    .driver-comfort { background: #3b82f6; }
-    .driver-xl { background: #f59e0b; }
-    .driver-black { background: #1f2937; }
+    
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    
+    .leaflet-container {
+        background: #1a1a2e;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-violet-900 to-slate-900">
-    <div class="max-w-7xl mx-auto px-4 py-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-            <div>
-                <h1 class="text-xl md:text-3xl font-bold text-white mb-1 flex items-center gap-2 md:gap-3">
-                    <div class="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                        </svg>
-                    </div>
-                    Intelligence Engine
-                </h1>
-                <p class="text-violet-200 text-sm md:text-base">Self-learning 24/7 driver monitoring</p>
-            </div>
-            <div class="flex items-center gap-2 md:gap-4">
-                <div id="daemon-status" class="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-zinc-800/50 border border-zinc-700">
-                    <span id="status-dot" class="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-zinc-500"></span>
-                    <span id="status-text" class="text-xs md:text-sm text-zinc-400">Loading...</span>
+<div class="intel-page">
+    <div class="max-w-[1800px] mx-auto px-4 lg:px-8 py-6 lg:py-8">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
                 </div>
-                <button id="toggle-daemon" class="px-4 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm md:text-base font-bold rounded-full hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/30">
+                <div>
+                    <h1 class="text-2xl lg:text-3xl font-bold text-white glow-text">Intelligence Engine</h1>
+                    <p class="text-violet-300 text-sm">24/7 Perth Metro Driver Monitoring</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="daemon-status" class="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/60 border border-violet-500/30 backdrop-blur">
+                    <span id="status-dot" class="w-3 h-3 rounded-full bg-zinc-500"></span>
+                    <span id="status-text" class="text-sm text-zinc-400">Loading...</span>
+                </div>
+                <button id="toggle-daemon" class="px-6 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-bold rounded-full hover:from-violet-600 hover:to-purple-700 transition-all shadow-lg shadow-violet-500/40 hover:shadow-violet-500/60">
                     Start Engine
                 </button>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-            <div class="glass-card stat-glow rounded-xl md:rounded-2xl p-3 md:p-5">
-                <div class="flex items-center justify-between mb-2 md:mb-3">
-                    <span class="text-xs font-bold text-violet-600 uppercase tracking-wide">Total</span>
-                    <span class="pulse-dot w-2 h-2 bg-violet-500 rounded-full"></span>
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 mb-6">
+            <div class="stat-card p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-violet-400 uppercase tracking-wider">Total</span>
+                    <span class="pulse-dot w-2.5 h-2.5 bg-violet-500 rounded-full"></span>
                 </div>
-                <p id="stat-total" class="text-2xl md:text-4xl font-black text-zinc-900">--</p>
-                <p class="text-xs text-zinc-500 mt-1 hidden md:block">Unique drivers</p>
+                <p id="stat-total" class="text-3xl lg:text-4xl font-black text-white glow-text">--</p>
+                <p class="text-xs text-zinc-500 mt-1">Unique drivers</p>
             </div>
-            <div class="glass-card stat-glow rounded-xl md:rounded-2xl p-3 md:p-5">
-                <div class="flex items-center justify-between mb-2 md:mb-3">
-                    <span class="text-xs font-bold text-emerald-600 uppercase tracking-wide">UberX</span>
+            <div class="stat-card p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">UberX</span>
                 </div>
-                <p id="stat-uberx" class="text-2xl md:text-4xl font-black text-zinc-900">--</p>
-                <p class="text-xs text-zinc-500 mt-1 hidden md:block">Active drivers</p>
+                <p id="stat-uberx" class="text-3xl lg:text-4xl font-black text-white">--</p>
+                <p class="text-xs text-zinc-500 mt-1">Active</p>
             </div>
-            <div class="glass-card stat-glow rounded-xl md:rounded-2xl p-3 md:p-5">
-                <div class="flex items-center justify-between mb-2 md:mb-3">
-                    <span class="text-xs font-bold text-amber-600 uppercase tracking-wide">XL</span>
+            <div class="stat-card p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">XL</span>
                 </div>
-                <p id="stat-xl" class="text-2xl md:text-4xl font-black text-zinc-900">--</p>
-                <p class="text-xs text-zinc-500 mt-1 hidden md:block">Active drivers</p>
+                <p id="stat-xl" class="text-3xl lg:text-4xl font-black text-white">--</p>
+                <p class="text-xs text-zinc-500 mt-1">Active</p>
             </div>
-            <div class="glass-card stat-glow rounded-xl md:rounded-2xl p-3 md:p-5">
-                <div class="flex items-center justify-between mb-2 md:mb-3">
-                    <span class="text-xs font-bold text-zinc-600 uppercase tracking-wide">Black</span>
+            <div class="stat-card p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Black</span>
                 </div>
-                <p id="stat-black" class="text-2xl md:text-4xl font-black text-zinc-900">--</p>
-                <p class="text-xs text-zinc-500 mt-1 hidden md:block">Active drivers</p>
+                <p id="stat-black" class="text-3xl lg:text-4xl font-black text-white">--</p>
+                <p class="text-xs text-zinc-500 mt-1">Active</p>
+            </div>
+            <div class="window-card p-4 col-span-2 lg:col-span-1">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-xs font-bold text-violet-400 uppercase tracking-wider">Window</span>
+                </div>
+                <p id="window-timer" class="text-3xl lg:text-4xl font-black font-mono text-violet-400 glow-text">--:--</p>
+                <div class="w-full bg-zinc-800 rounded-full h-1.5 mt-2">
+                    <div id="window-progress" class="bg-violet-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div class="lg:col-span-2">
-                <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6">
+            <div class="xl:col-span-3">
+                <div class="intel-card p-4 lg:p-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-                        <h2 class="text-base md:text-lg font-bold text-zinc-900 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-violet-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                            </svg>
-                            <span>Live Driver Map</span>
-                            <span id="map-driver-count" class="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-bold rounded-full">0</span>
-                        </h2>
-                        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-                            <div class="flex items-center gap-1.5 text-xs">
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span class="text-zinc-600">UberX</span>
-                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 ml-1"></span><span class="text-zinc-600">XL</span>
-                                <span class="w-2.5 h-2.5 rounded-full bg-zinc-800 ml-1"></span><span class="text-zinc-600">Black</span>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-3">
+                            <div class="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                                </svg>
                             </div>
-                            <button id="reset-map" class="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs sm:text-sm font-medium rounded-lg transition-colors flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span>Live Traffic Map</span>
+                            <span id="map-driver-count" class="px-2.5 py-1 bg-violet-500/20 text-violet-400 text-xs font-bold rounded-full border border-violet-500/30">0</span>
+                        </h2>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="flex items-center gap-2 text-xs bg-zinc-900/50 px-3 py-1.5 rounded-full">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span class="text-zinc-400">UberX</span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 ml-2"></span><span class="text-zinc-400">XL</span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-zinc-400 ml-2"></span><span class="text-zinc-400">Black</span>
+                            </div>
+                            <button id="reset-map" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 border border-zinc-700">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                 </svg>
-                                Reset
+                                Reset View
                             </button>
                         </div>
                     </div>
-                    <div id="intel-map" class="shadow-xl"></div>
+                    <div id="intel-map" class="shadow-2xl"></div>
                 </div>
             </div>
             
-            <div class="space-y-4 md:space-y-6">
-                <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6 border-l-4 border-violet-500">
-                    <h2 class="text-base md:text-lg font-bold text-zinc-900 mb-3 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <div class="space-y-4">
+                <div class="intel-card p-4">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                         </svg>
-                        15-Min Window
-                    </h2>
+                        Recommendation
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-zinc-500">Best Zone</span>
+                            <span id="window-best-zone" class="text-sm font-bold text-emerald-400">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-zinc-500">Action</span>
+                            <span id="window-recommendation" class="text-xs font-bold px-3 py-1 rounded-full bg-zinc-800 text-zinc-400">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="intel-card p-4">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Scanning
+                    </h3>
                     <div class="text-center py-2">
-                        <p id="window-timer" class="text-2xl md:text-3xl font-bold font-mono text-violet-600">--:--</p>
-                        <p class="text-xs text-zinc-500 mt-1">until next reset</p>
-                        <div class="w-full bg-zinc-200 rounded-full h-2 mt-3">
-                            <div id="window-progress" class="bg-violet-500 h-2 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div class="mt-3 pt-3 border-t border-zinc-200 space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs text-zinc-600">Best Zone</span>
-                            <span id="window-best-zone" class="text-xs font-bold text-emerald-600">--</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs text-zinc-600">Recommendation</span>
-                            <span id="window-recommendation" class="text-xs font-bold px-2 py-0.5 rounded">--</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6">
-                    <h2 class="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">System Health</h2>
-                    <div class="space-y-2 md:space-y-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs md:text-sm text-zinc-600">Uptime</span>
-                            <span id="health-uptime" class="text-xs md:text-sm font-mono text-zinc-900">--</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs md:text-sm text-zinc-600">Coords Scanned</span>
-                            <span id="health-coords" class="text-xs md:text-sm font-mono text-zinc-900">--</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs md:text-sm text-zinc-600">Observations</span>
-                            <span id="health-obs" class="text-xs md:text-sm font-mono text-zinc-900">--</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs md:text-sm text-zinc-600">Scan Cycles</span>
-                            <span id="health-cycles" class="text-xs md:text-sm font-mono text-zinc-900">--</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs md:text-sm text-zinc-600">Grid Points</span>
-                            <span id="health-grid" class="text-xs md:text-sm font-mono text-zinc-900">--</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs md:text-sm text-zinc-600">Confidence</span>
-                            <span id="health-confidence" class="text-xs md:text-sm font-mono text-zinc-900">--</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6">
-                    <h2 class="text-base md:text-lg font-bold text-zinc-900 mb-2 md:mb-4">Current Zone</h2>
-                    <div class="text-center py-2 md:py-4">
-                        <p id="current-zone" class="text-lg md:text-2xl font-bold text-violet-600">--</p>
-                        <p class="text-xs md:text-sm text-zinc-500 mt-1 md:mt-2">
-                            Point <span id="current-coord" class="font-mono">--</span> / Poll <span id="current-poll" class="font-mono">--</span>
+                        <p id="current-zone" class="text-lg font-bold text-violet-400">--</p>
+                        <p class="text-xs text-zinc-500 mt-1">
+                            Point <span id="current-coord" class="font-mono text-zinc-400">--</span> / Poll <span id="current-poll" class="font-mono text-zinc-400">--</span>
                         </p>
                     </div>
                 </div>
 
-                <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6">
-                    <h2 class="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">Top Hotspots</h2>
-                    <div id="hotspots-list" class="space-y-2">
-                        <p class="text-xs md:text-sm text-zinc-500 text-center py-2 md:py-4">Loading...</p>
+                <div class="intel-card p-4">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
+                        </svg>
+                        Hotspots
+                    </h3>
+                    <div id="hotspots-list" class="space-y-2 max-h-[200px] overflow-y-auto scrollbar-thin">
+                        <p class="text-xs text-zinc-500 text-center py-3">Loading...</p>
+                    </div>
+                </div>
+
+                <div class="intel-card p-4">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        System Health
+                    </h3>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between"><span class="text-zinc-500">Uptime</span><span id="health-uptime" class="font-mono text-zinc-300">--</span></div>
+                        <div class="flex justify-between"><span class="text-zinc-500">Cycles</span><span id="health-cycles" class="font-mono text-zinc-300">--</span></div>
+                        <div class="flex justify-between"><span class="text-zinc-500">Grid Points</span><span id="health-grid" class="font-mono text-zinc-300">--</span></div>
+                        <div class="flex justify-between"><span class="text-zinc-500">Confidence</span><span id="health-confidence" class="font-mono text-zinc-300">--</span></div>
+                    </div>
+                    <div class="hidden">
+                        <span id="health-coords"></span>
+                        <span id="health-obs"></span>
                     </div>
                 </div>
                 
-                <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6">
-                    <h2 class="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">Driver Flow</h2>
-                    <p id="trajectory-stats" class="text-xs text-zinc-500 mb-3">Loading...</p>
-                    <div id="zone-flows" class="space-y-1">
-                        <p class="text-xs text-zinc-500 text-center py-2">Loading flow data...</p>
+                <div class="intel-card p-4">
+                    <h3 class="text-sm font-bold text-white mb-3">Driver Flow</h3>
+                    <p id="trajectory-stats" class="text-xs text-zinc-500 mb-2">Loading...</p>
+                    <div id="zone-flows" class="space-y-1 max-h-[150px] overflow-y-auto scrollbar-thin">
+                        <p class="text-xs text-zinc-500 text-center py-2">Loading...</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6 mb-6">
+        <div class="intel-card p-4 lg:p-6 mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-                <h2 class="text-base md:text-lg font-bold text-zinc-900 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                    Activity Reports (15-min intervals)
+                <h2 class="text-lg font-bold text-white flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    Activity Reports
+                    <span class="text-xs font-normal text-zinc-500">(15-min intervals)</span>
                 </h2>
-                <div class="flex items-center gap-2">
-                    <select id="activity-day-filter" class="px-3 py-1.5 bg-zinc-100 text-zinc-700 text-xs font-medium rounded-lg border-none">
-                        <option value="">Last 24 hours</option>
-                        <option value="0">Monday</option>
-                        <option value="1">Tuesday</option>
-                        <option value="2">Wednesday</option>
-                        <option value="3">Thursday</option>
-                        <option value="4">Friday</option>
-                        <option value="5">Saturday</option>
-                        <option value="6">Sunday</option>
-                    </select>
-                </div>
+                <select id="activity-day-filter" class="px-4 py-2 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg border border-zinc-700 focus:border-violet-500 focus:outline-none">
+                    <option value="">Last 24 hours</option>
+                    <option value="0">Monday</option>
+                    <option value="1">Tuesday</option>
+                    <option value="2">Wednesday</option>
+                    <option value="3">Thursday</option>
+                    <option value="4">Friday</option>
+                    <option value="5">Saturday</option>
+                    <option value="6">Sunday</option>
+                </select>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2">
-                    <canvas id="activity-chart" height="180"></canvas>
+                    <canvas id="activity-chart" height="200"></canvas>
                 </div>
                 <div>
-                    <h3 class="text-sm font-bold text-zinc-700 mb-3">Recent Reports</h3>
-                    <div id="activity-reports-list" class="space-y-2 max-h-[250px] overflow-y-auto">
+                    <h3 class="text-sm font-bold text-zinc-400 mb-3">Recent Reports</h3>
+                    <div id="activity-reports-list" class="space-y-2 max-h-[280px] overflow-y-auto scrollbar-thin">
                         <p class="text-xs text-zinc-500 text-center py-4">Loading reports...</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-            <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6">
-                <h2 class="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">Learned Patterns</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="intel-card p-4 lg:p-6">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    Learned Patterns
+                </h2>
                 <div id="patterns-container" class="overflow-x-auto">
-                    <canvas id="patterns-chart" height="200"></canvas>
+                    <canvas id="patterns-chart" height="220"></canvas>
                 </div>
             </div>
             
-            <div class="glass-card rounded-xl md:rounded-2xl p-4 md:p-6">
-                <h2 class="text-base md:text-lg font-bold text-zinc-900 mb-3 md:mb-4">Predictions</h2>
-                <div id="predictions-list" class="space-y-2 md:space-y-3">
-                    <p class="text-xs md:text-sm text-zinc-500 text-center py-2 md:py-4">Predictions will appear after learning period...</p>
+            <div class="intel-card p-4 lg:p-6">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-3">
+                    <div class="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    Predictions
+                </h2>
+                <div id="predictions-list" class="space-y-3 max-h-[280px] overflow-y-auto scrollbar-thin">
+                    <p class="text-sm text-zinc-500 text-center py-6">Predictions will appear after learning period...</p>
                 </div>
             </div>
         </div>
@@ -394,8 +481,8 @@ function updateTrajectoryStats(stats) {
     const trajEl = document.getElementById('trajectory-stats');
     if (trajEl) {
         trajEl.innerHTML = `
-            <span class="text-violet-600 font-bold">${stats.active_trajectories}</span> tracked |
-            <span class="text-emerald-600 font-bold">${stats.with_predictions}</span> with destination
+            <span class="text-violet-400 font-bold">${stats.active_trajectories}</span> tracked |
+            <span class="text-emerald-400 font-bold">${stats.with_predictions}</span> with destination
         `;
     }
 }
@@ -417,15 +504,15 @@ function updateFlowDisplay(flows) {
         if (count > 0) {
             const zoneName = zone.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             html += `
-                <div class="flex items-center justify-between py-1.5 border-b border-zinc-100 last:border-0">
-                    <span class="text-xs md:text-sm text-zinc-600">${zoneName}</span>
-                    <span class="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-bold rounded-full">${count} drivers</span>
+                <div class="flex items-center justify-between py-1.5 border-b border-zinc-800 last:border-0">
+                    <span class="text-xs text-zinc-400">${zoneName}</span>
+                    <span class="px-2 py-0.5 bg-violet-500/20 text-violet-400 text-xs font-bold rounded-full">${count}</span>
                 </div>
             `;
         }
     });
     
-    flowEl.innerHTML = html || '<p class="text-xs text-zinc-500 text-center py-2">No flow data yet</p>';
+    flowEl.innerHTML = html || '<p class="text-xs text-zinc-500 text-center py-2">No flow data</p>';
 }
 
 async function loadDrivers() {
@@ -520,13 +607,13 @@ function updateWindowUI(window, summary, isFromLastWindow = false) {
     if (summary && summary.best_zone) {
         const zoneName = summary.best_zone.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         bestZoneEl.textContent = zoneName + (isFromLastWindow ? ' (prev)' : '');
-        bestZoneEl.className = isFromLastWindow ? 'text-xs font-bold text-zinc-500' : 'text-xs font-bold text-emerald-600';
+        bestZoneEl.className = isFromLastWindow ? 'text-sm font-bold text-zinc-500' : 'text-sm font-bold text-emerald-400';
     } else if (summary?.has_sufficient_data === false) {
         bestZoneEl.textContent = 'Collecting...';
-        bestZoneEl.className = 'text-xs font-bold text-blue-500';
+        bestZoneEl.className = 'text-sm font-bold text-blue-400';
     } else {
         bestZoneEl.textContent = '--';
-        bestZoneEl.className = 'text-xs font-bold text-emerald-600';
+        bestZoneEl.className = 'text-sm font-bold text-zinc-500';
     }
     
     const recEl = document.getElementById('window-recommendation');
@@ -535,18 +622,18 @@ function updateWindowUI(window, summary, isFromLastWindow = false) {
         recEl.textContent = recText;
         if (summary.recommendation === 'MOVE') {
             recEl.className = isFromLastWindow 
-                ? 'text-xs font-bold px-2 py-0.5 rounded bg-zinc-100 text-zinc-600' 
-                : 'text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700';
+                ? 'text-xs font-bold px-3 py-1 rounded-full bg-zinc-800 text-zinc-400' 
+                : 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
         } else if (summary.recommendation === 'COLLECTING') {
-            recEl.className = 'text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700';
+            recEl.className = 'text-xs font-bold px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30';
         } else {
             recEl.className = isFromLastWindow 
-                ? 'text-xs font-bold px-2 py-0.5 rounded bg-zinc-100 text-zinc-600' 
-                : 'text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-700';
+                ? 'text-xs font-bold px-3 py-1 rounded-full bg-zinc-800 text-zinc-400' 
+                : 'text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30';
         }
     } else {
         recEl.textContent = '--';
-        recEl.className = 'text-xs font-bold px-2 py-0.5 rounded bg-zinc-100 text-zinc-600';
+        recEl.className = 'text-xs font-bold px-3 py-1 rounded-full bg-zinc-800 text-zinc-400';
     }
 }
 
@@ -628,17 +715,17 @@ async function loadHotspots() {
             const container = document.getElementById('hotspots-list');
             
             if (data.hotspots.length === 0) {
-                container.innerHTML = '<p class="text-sm text-zinc-500 text-center py-4">No data yet...</p>';
+                container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-3">No data yet...</p>';
                 return;
             }
             
             container.innerHTML = data.hotspots.map((h, i) => `
-                <div class="flex items-center justify-between p-2 rounded-lg ${i === 0 ? 'bg-violet-50' : 'bg-zinc-50'}">
+                <div class="flex items-center justify-between p-2 rounded-lg ${i === 0 ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-zinc-800/50'}">
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold ${i === 0 ? 'text-violet-600' : 'text-zinc-500'}">#${i + 1}</span>
-                        <span class="text-sm font-medium text-zinc-900">${h.zone_id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                        <span class="text-xs font-bold ${i === 0 ? 'text-violet-400' : 'text-zinc-500'}">#${i + 1}</span>
+                        <span class="text-xs font-medium text-zinc-300">${h.zone_id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
                     </div>
-                    <span class="text-sm font-bold ${i === 0 ? 'text-violet-600' : 'text-zinc-600'}">${h.drivers} drivers</span>
+                    <span class="text-xs font-bold ${i === 0 ? 'text-violet-400' : 'text-zinc-400'}">${h.drivers}</span>
                 </div>
             `).join('');
         }
@@ -712,15 +799,23 @@ function renderPatternsChart(patterns) {
             responsive: true,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: { color: '#a0a0b0' }
                 }
             },
             scales: {
+                x: {
+                    ticks: { color: '#6b7280' },
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' }
+                },
                 y: {
                     beginAtZero: true,
+                    ticks: { color: '#6b7280' },
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
                     title: {
                         display: true,
-                        text: 'Avg Drivers'
+                        text: 'Avg Drivers',
+                        color: '#a0a0b0'
                     }
                 }
             }
@@ -741,14 +836,14 @@ async function loadPredictions() {
                 const confPct = (p.confidence * 100).toFixed(0);
                 
                 return `
-                    <div class="flex items-center justify-between p-3 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl">
+                    <div class="flex items-center justify-between p-3 bg-gradient-to-r from-amber-500/10 to-violet-500/10 rounded-xl border border-amber-500/20">
                         <div>
-                            <p class="text-sm font-bold text-zinc-900">${p.zone_id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                            <p class="text-sm font-bold text-white">${p.zone_id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
                             <p class="text-xs text-zinc-500">${time} • ${p.direction || 'N/A'}</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-lg font-bold text-violet-600">${p.predicted_drivers} drivers</p>
-                            <p class="text-xs text-zinc-400">${confPct}% confident</p>
+                            <p class="text-lg font-bold text-amber-400">${p.predicted_drivers} drivers</p>
+                            <p class="text-xs text-zinc-500">${confPct}% confident</p>
                         </div>
                     </div>
                 `;
@@ -826,7 +921,7 @@ function renderActivityChart(reports) {
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: { boxWidth: 12, font: { size: 10 } }
+                    labels: { boxWidth: 12, font: { size: 10 }, color: '#a0a0b0' }
                 },
                 tooltip: {
                     callbacks: {
@@ -844,12 +939,15 @@ function renderActivityChart(reports) {
             scales: {
                 x: {
                     stacked: true,
-                    ticks: { font: { size: 9 } }
+                    ticks: { font: { size: 9 }, color: '#6b7280' },
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' }
                 },
                 y: {
                     stacked: true,
                     beginAtZero: true,
-                    title: { display: true, text: 'Drivers', font: { size: 10 } }
+                    ticks: { color: '#6b7280' },
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
+                    title: { display: true, text: 'Drivers', font: { size: 10 }, color: '#a0a0b0' }
                 }
             }
         }
@@ -861,16 +959,16 @@ function renderActivityList(reports) {
     if (!container) return;
     
     if (reports.length === 0) {
-        container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">No reports yet. Reports are generated every 30 minutes.</p>';
+        container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">No reports yet. Reports are generated every 15 minutes.</p>';
         return;
     }
     
     const levelColors = {
-        'very_busy': 'bg-red-100 text-red-700',
-        'busy': 'bg-orange-100 text-orange-700',
-        'moderate': 'bg-yellow-100 text-yellow-700',
-        'quiet': 'bg-blue-100 text-blue-700',
-        'very_quiet': 'bg-zinc-100 text-zinc-600'
+        'very_busy': 'bg-red-500/20 text-red-400 border-red-500/30',
+        'busy': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+        'moderate': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+        'quiet': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        'very_quiet': 'bg-zinc-700 text-zinc-400 border-zinc-600'
     };
     
     const trendIcons = {
@@ -882,18 +980,18 @@ function renderActivityList(reports) {
     };
     
     container.innerHTML = reports.slice(0, 10).map(r => {
-        const levelClass = levelColors[r.activity_level] || 'bg-zinc-100 text-zinc-600';
+        const levelClass = levelColors[r.activity_level] || 'bg-zinc-700 text-zinc-400 border-zinc-600';
         const trendIcon = trendIcons[r.trend] || '';
         const changeText = r.change > 0 ? `+${r.change}` : r.change;
         
         return `
-            <div class="p-2 bg-zinc-50 rounded-lg border border-zinc-100">
+            <div class="p-2 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
                 <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-bold text-zinc-700">${r.day} ${r.time_slot}</span>
-                    <span class="px-1.5 py-0.5 text-[10px] font-bold rounded ${levelClass}">${(r.activity_level || '').replace('_', ' ')}</span>
+                    <span class="text-xs font-bold text-zinc-300">${r.day} ${r.time_slot}</span>
+                    <span class="px-1.5 py-0.5 text-[10px] font-bold rounded border ${levelClass}">${(r.activity_level || '').replace('_', ' ')}</span>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-violet-600">${r.total_drivers} drivers</span>
+                    <span class="text-sm font-bold text-violet-400">${r.total_drivers} drivers</span>
                     <span class="text-xs text-zinc-500">${trendIcon} ${changeText}</span>
                 </div>
             </div>
