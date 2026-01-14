@@ -327,7 +327,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
                         </svg>
                     </div>
-                    15-Minute Driver Flow
+                    Zone Driver Flow
                 </h2>
                 <select id="zone-history-hours" class="px-4 py-2 bg-zinc-800 text-zinc-300 text-sm font-medium rounded-lg border border-zinc-700 focus:border-violet-500 focus:outline-none">
                     <option value="3">Last 3 hours</option>
@@ -336,7 +336,10 @@
                     <option value="24">Last 24 hours</option>
                 </select>
             </div>
-            <div class="h-[400px]">
+            <div id="zone-tabs" class="flex flex-wrap gap-2 mb-4">
+                <p class="text-xs text-zinc-500">Loading zones...</p>
+            </div>
+            <div class="h-[350px]">
                 <canvas id="zone-history-chart"></canvas>
             </div>
         </div>
@@ -382,6 +385,8 @@ let patternsChart;
 let activityChart;
 let zoneHistoryChart;
 let refreshInterval;
+let currentZoneData = null;
+let selectedZone = null;
 
 function toPerthTime(dateStr) {
     const date = new Date(dateStr);
@@ -1127,20 +1132,57 @@ async function loadZoneHistory() {
         const res = await fetch(`/api/intelligence/zone-history?hours=${hours}`);
         const data = await res.json();
         
-        if (data.success && data.chart_data) {
-            renderZoneHistoryChart(data.chart_data);
+        if (data.success && data.zones_data) {
+            currentZoneData = { labels: data.labels, zones: data.zones_data };
+            renderZoneTabs(data.zones_data);
+            
+            if (!selectedZone && Object.keys(data.zones_data).length > 0) {
+                selectedZone = Object.keys(data.zones_data)[0];
+            }
+            if (selectedZone) {
+                renderZoneChart(selectedZone);
+            }
         }
     } catch (e) {
         console.error('Failed to load zone history:', e);
     }
 }
 
-function renderZoneHistoryChart(chartData) {
-    const ctx = document.getElementById('zone-history-chart');
-    if (!ctx) return;
+function renderZoneTabs(zonesData) {
+    const tabsContainer = document.getElementById('zone-tabs');
+    if (!tabsContainer) return;
     
-    if (chartData.labels.length === 0) {
-        ctx.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-zinc-500 text-sm">No zone history data yet. Data will appear after 15-minute reports are generated.</div>';
+    const zones = Object.keys(zonesData);
+    if (zones.length === 0) {
+        tabsContainer.innerHTML = '<p class="text-xs text-zinc-500">No zone data yet</p>';
+        return;
+    }
+    
+    tabsContainer.innerHTML = zones.map(zoneId => {
+        const zone = zonesData[zoneId];
+        const isSelected = zoneId === selectedZone;
+        const bgClass = isSelected ? 'bg-violet-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700';
+        return `<button onclick="selectZone('${zoneId}')" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${bgClass}" style="${isSelected ? `background-color: ${zone.color}` : ''}">${zone.name}</button>`;
+    }).join('');
+}
+
+function selectZone(zoneId) {
+    selectedZone = zoneId;
+    if (currentZoneData) {
+        renderZoneTabs(currentZoneData.zones);
+        renderZoneChart(zoneId);
+    }
+}
+
+function renderZoneChart(zoneId) {
+    const ctx = document.getElementById('zone-history-chart');
+    if (!ctx || !currentZoneData) return;
+    
+    const zone = currentZoneData.zones[zoneId];
+    if (!zone) return;
+    
+    if (currentZoneData.labels.length === 0) {
+        ctx.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-zinc-500 text-sm">No data yet. Data will appear after 15-minute reports.</div>';
         return;
     }
     
@@ -1150,69 +1192,49 @@ function renderZoneHistoryChart(chartData) {
     
     zoneHistoryChart = new Chart(ctx, {
         type: 'line',
-        data: chartData,
+        data: {
+            labels: currentZoneData.labels,
+            datasets: [{
+                label: zone.name,
+                data: zone.data,
+                borderColor: zone.color,
+                backgroundColor: zone.color + '60',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: zone.color
+            }]
+        },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
             plugins: {
+                legend: { display: false },
                 title: {
                     display: true,
-                    text: '15-Minute Driver Flow (Perth Time - AWST)',
-                    color: '#fff',
-                    font: { size: 14, weight: 'bold' }
-                },
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 16,
-                        font: { size: 12 },
-                        color: '#a0a0b0',
-                        padding: 20
-                    }
+                    text: `${zone.name} - 15min Flow (AWST)`,
+                    color: zone.color,
+                    font: { size: 16, weight: 'bold' }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(26, 26, 46, 0.95)',
                     titleColor: '#fff',
                     bodyColor: '#a0a0b0',
-                    borderColor: 'rgba(139, 92, 246, 0.3)',
-                    borderWidth: 1,
-                    callbacks: {
-                        afterBody: function(context) {
-                            const idx = context[0].dataIndex;
-                            const cbd = context[0].chart.data.datasets[0].data[idx];
-                            const freo = context[0].chart.data.datasets[1].data[idx];
-                            const total = context[0].chart.data.datasets[2].data[idx];
-                            const cbdPct = total > 0 ? Math.round((cbd / total) * 100) : 0;
-                            const freoPct = total > 0 ? Math.round((freo / total) * 100) : 0;
-                            return `CBD: ${cbdPct}% | Freo: ${freoPct}%`;
-                        }
-                    }
+                    borderColor: zone.color,
+                    borderWidth: 2
                 }
             },
             scales: {
                 x: {
-                    ticks: {
-                        font: { size: 11 },
-                        color: '#a0a0b0',
-                        maxRotation: 0
-                    },
-                    grid: { color: 'rgba(139, 92, 246, 0.15)' },
-                    title: { display: true, text: 'Time (AWST)', color: '#a0a0b0', font: { size: 11, weight: 'bold' } }
+                    ticks: { font: { size: 11 }, color: '#a0a0b0', maxRotation: 45 },
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
+                    title: { display: true, text: 'Time (AWST)', color: '#a0a0b0', font: { size: 11 } }
                 },
                 y: {
                     beginAtZero: true,
                     ticks: { color: '#a0a0b0', font: { size: 11 } },
-                    grid: { color: 'rgba(139, 92, 246, 0.15)' },
-                    title: {
-                        display: true,
-                        text: 'Driver Count',
-                        font: { size: 12, weight: 'bold' },
-                        color: '#a0a0b0'
-                    }
+                    grid: { color: 'rgba(139, 92, 246, 0.1)' },
+                    title: { display: true, text: 'Drivers', color: '#a0a0b0', font: { size: 12, weight: 'bold' } }
                 }
             }
         }

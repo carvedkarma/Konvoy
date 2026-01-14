@@ -4279,64 +4279,38 @@ def api_intelligence_zone_history():
                     'black': counts.get('Black', 0) if isinstance(counts, dict) else 0
                 })
         
-        cbd_zones = ['perth_cbd', 'west_perth', 'east_perth', 'northbridge', 'elizabeth_quay']
-        freo_zones = ['fremantle', 'fremantle_port', 'south_fremantle']
-        
-        cbd_data = []
-        freo_data = []
-        total_data = []
-        
-        for label in time_labels:
-            cbd_total = 0
-            freo_total = 0
-            all_total = 0
-            
-            for zone_id, history in zone_history.items():
-                point = next((h for h in history if h['time'] == label), None)
-                count = point['count'] if point else 0
-                all_total += count
-                
-                if zone_id in cbd_zones:
-                    cbd_total += count
-                elif zone_id in freo_zones:
-                    freo_total += count
-            
-            cbd_data.append(cbd_total)
-            freo_data.append(freo_total)
-            total_data.append(all_total)
-        
-        chart_data = {
-            'labels': time_labels,
-            'datasets': [
-                {
-                    'label': 'Perth CBD',
-                    'data': cbd_data,
-                    'borderColor': '#8b5cf6',
-                    'backgroundColor': 'rgba(139, 92, 246, 0.3)',
-                    'tension': 0.3,
-                    'fill': True
-                },
-                {
-                    'label': 'Fremantle',
-                    'data': freo_data,
-                    'borderColor': '#22c55e',
-                    'backgroundColor': 'rgba(34, 197, 94, 0.3)',
-                    'tension': 0.3,
-                    'fill': True
-                },
-                {
-                    'label': 'Total',
-                    'data': total_data,
-                    'borderColor': '#f59e0b',
-                    'backgroundColor': 'rgba(245, 158, 11, 0.1)',
-                    'tension': 0.3,
-                    'fill': False,
-                    'borderDash': [5, 5]
-                }
-            ]
+        zone_colors = {
+            'perth_cbd': '#8b5cf6',
+            'northbridge': '#a78bfa',
+            'east_perth': '#c4b5fd',
+            'west_perth': '#7c3aed',
+            'elizabeth_quay': '#6d28d9',
+            'fremantle': '#22c55e',
+            'fremantle_port': '#4ade80',
+            'south_fremantle': '#86efac',
+            'armadale': '#f59e0b',
+            'rockingham': '#fbbf24',
+            'cannington': '#3b82f6',
+            'success': '#60a5fa',
+            'midland': '#ef4444',
+            'girrawheen': '#f87171',
+            'heathridge': '#fb923c'
         }
         
-        return jsonify(success=True, chart_data=chart_data, zones=list(zone_history.keys()))
+        zones_data = {}
+        for zone_id, history in zone_history.items():
+            data_points = []
+            for label in time_labels:
+                point = next((h for h in history if h['time'] == label), None)
+                data_points.append(point['count'] if point else 0)
+            
+            zones_data[zone_id] = {
+                'data': data_points,
+                'color': zone_colors.get(zone_id, '#9ca3af'),
+                'name': zone_id.replace('_', ' ').title()
+            }
+        
+        return jsonify(success=True, labels=time_labels, zones_data=zones_data, zones=list(zone_history.keys()))
     except Exception as e:
         return jsonify(success=False, message=str(e))
 
